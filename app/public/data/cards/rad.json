@@ -1,5 +1,4 @@
 {
- "_mock": true,
  "title": "Radiation at Gale (RAD)",
  "badge": "Observed",
  "values": [
@@ -7,7 +6,28 @@
    "label": "Surface dose rate (GCR, average)",
    "value": 0.64,
    "unit": "mSv/day",
-   "pm": 0.12
+   "pm": 0.12,
+   "badge": "Observed"
+  },
+  {
+   "label": "Surface GCR dose range across mission",
+   "value": "0.64–0.67",
+   "unit": "mSv/day",
+   "badge": "Observed"
+  },
+  {
+   "label": "Modeled 4-hour Marswalk GCR dose (unshielded)",
+   "value": 0.11,
+   "unit": "mSv",
+   "badge": "Scenario",
+   "note": "Derived arithmetic (0.64 mSv/day × 4/24 h); suit and terrain sky-view shielding not modeled."
+  },
+  {
+   "label": "Sept 2017 surface SEP event total",
+   "value": 369,
+   "unit": "µGy",
+   "badge": "Observed",
+   "note": "Episodic solar energetic particle event measured at the surface by RAD (Zeitlin et al. 2018)."
   }
  ],
  "limits": [
@@ -15,10 +35,23 @@
    "label": "NASA career effective dose limit",
    "value": 600,
    "unit": "mSv",
-   "source": "NASA-STD-3001 Vol 1"
+   "source": "NASA-STD-3001 Vol 1",
+   "badge": "Observed"
+  },
+  {
+   "label": "Spatial radiation map at walk scale",
+   "value": "Unavailable",
+   "unit": "—",
+   "source": "RAD is the sole surface dosimeter on Mars (single roving point)",
+   "badge": "Unavailable"
   }
  ],
- "note": "Single rover-local measurement, not a map. Suit shielding not modeled.",
- "source": "Hassler et al. 2014, Science 343:1244797, doi:10.1126/science.1244797; PDS PPI MSL RAD",
- "date_range": "2012-08 → 2013-06"
+ "note": "Curiosity RAD is the only surface radiation dosimeter on Mars. Measurements are rover-local point values, not a spatial map across the ops box. Suit and terrain sky-view shielding are not modeled.",
+ "claim_boundary": "Context card only — never rendered as a spatial hazard heatmap. Modeled walk dose scales the Observed GCR baseline by excursion duration (Scenario).",
+ "source": "Hassler et al. 2014, Science 343:1244797, doi:10.1126/science.1244797; Zeitlin et al. 2018, GRL, doi:10.1029/2018GL077760; PDS PPI MSL-M-RAD-2-EDR-V1.0; NASA-STD-3001 Vol 1",
+ "source_urls": [
+  "https://pds-ppi.igpp.ucla.edu/collection/MSL-M-RAD-2-EDR-V1.0",
+  "https://www.nasa.gov/wp-content/uploads/2023/03/radiation-protection-technical-brief-ochmo.pdf"
+ ],
+ "date_range": "2012-08-07 → 2026 (GCR baseline 2012-08 → 2013-06; Sept 2017 SEP event)"
 }
