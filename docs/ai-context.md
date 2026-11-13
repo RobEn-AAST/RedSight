@@ -29,7 +29,7 @@ panel in not-configured state) — engine data, MapLibre tiles and route math ar
 | 7 | [`demo-focus-plan.md`](demo-focus-plan.md) | **Current focused plan** (2026-11-13): what we submit, narrowed scope, architecture diagram, corrected ops box + stops, data-type order, 360 + HUD, Vision Pro, first steps |
 | 7b | [`web-foundation.md`](web-foundation.md) | **App status** (2026-11-13): implemented vs planned, installed versions + Node needs, commands, folder boundaries, engine→app integration steps |
 | 7c | [`ai/voice-copilot-plan.md`](ai/voice-copilot-plan.md), [`ai/assistant-system-prompt.md`](ai/assistant-system-prompt.md) | Voice/chat copilot **plan** (UNCONNECTED): pipeline, local-vs-Groq STT tradeoffs, Gemini/Groq model IDs verified 2026-11-13, server-side-key backend proposal, typed future tool contracts, system-prompt design. Records the user's 2026-11-13 exception to D12 (planning + honest panel only; no live AI at judging without a new team decision) |
-| 7a | [`team-plan.md`](team-plan.md) | **Who builds what**: 6 owners, Must ship / If time per person, branches, checkpoints, Mission Replay hook. Teammates start a session with "I am <name>" |
+| 7a | [`team-plan.md`](team-plan.md) | **Who builds what**: 6 owners, Must ship / If time per person, branches, checkpoints, Mission Replay hook, **§4b notes for owners (Ali: O₂ numbers)**. Teammates start a session with "I am <name>" |
 | 7d | [`24-48-hour-plan.md`](24-48-hour-plan.md) | Must/Should/Stretch scope, phase plan, acceptance evidence, risks (scope/ops area superseded by demo-focus-plan) |
 | 8 | [`research/mapping-options.md`](research/mapping-options.md), [`research/routing-options.md`](research/routing-options.md) | Deep evidence: datasets/live checks/CRS traps; graph/algorithms/PNR — keep as evidence, see their Errata headers |
 | 8b | [`research/external-sources-review.md`](research/external-sources-review.md) | Verdicts on the Kaggle notebook (game data, rejected), the NASA Life Sciences Portal (EVA/walkback citations), and how each of the 5 official resources is used, by tier |
@@ -52,7 +52,7 @@ panel in not-configured state) — engine data, MapLibre tiles and route math ar
   the automatic switch to the fastest return when O₂ is low are Tier 1 (D22, demo-focus-plan §9). Crew setup (pair, body mass, load, samples) is
   Tier 1 (D19); rover-vs-foot mode is the first Tier 2 item (D20); drill-site stops (D21). Display
   formats are all optional; no fixed number is required (demo-focus-plan §1b). The challenge-text
-  traceability table is demo-focus-plan §1c. Judge-criteria ideas and the 60-second demo script: §17 (D23). Radio coverage / radio-shadow layer is Tier 1 (D24, §9b); relays Tier 2.
+  traceability table is demo-focus-plan §1c. Judge-criteria ideas and the 60-second demo script: §17 (D23). Radio coverage / radio-shadow layer is Tier 1 (D24, §9b); relays Tier 2. O₂ model (unplanned reserve, return margin, status callouts, drills): §9c (D27).
 - **Architecture:** web-first static 2D planner (MapLibre + precomputed tiles/JSON), Python engine
   offline; three.js 3D/HUD as 48 h extension (Approach 1, technical-approaches §4; reinforced by the
   independent review V2/F2: scipy Dijkstra field core, hand-written A* only as interactive/oracle).

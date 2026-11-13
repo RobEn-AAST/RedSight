@@ -31,7 +31,7 @@ engine's numbers, so the replay never invents data.
 
 | Person | Area (branch) | Must ship | If time |
 |---|---|---|---|
-| **Ali** | Engine: routing + model (`feat/ali-engine`) | Pilot gate (DEM opens, slope sane, one route); 10 m grid, slope, cost; scipy Dijkstra fields; fastest + lowest-hazard routes to the stops; time/O₂ (Pandolf + κ); `constants.json`; routes + turn-back data in the contract format | `Out_fast` / `Back_fast` / `Back_safest` fields for return zones (§9); crew-2 × 15 kg preset bucket (§8); uncertainty range |
+| **Ali** | Engine: routing + model (`feat/ali-engine`) | **Read the O₂ note in `app/public/data/README.md` first.** Pilot gate (DEM opens, slope sane, one route); 10 m grid, slope, cost; scipy Dijkstra fields; fastest + lowest-hazard routes to the stops; time/O₂ (Pandolf + κ); `constants.json`; routes + turn-back data in the contract format | `Out_fast` / `Back_fast` / `Back_safest` fields for return zones (§9); crew-2 × 15 kg preset bucket (§8); uncertainty range |
 | **Youssef** | Data + tiles (`feat/youssef-data`) | Download HiRISE ortho + DTM (USGS STAC / Trek), THEMIS TI, CRISM, SIM 3292; hillshade + slope; XYZ tiles z10–16; `meta.json`, `layers.json`; `data/PROVENANCE.md` | Radio-coverage mask with `gdal_viewshed` (§9b); terrain-RGB tiles for 3D replay; z17 core tiles |
 | **Yassin** | App shell + deploy (`feat/yassin-app`) | Vite + MapLibre app; layer panel + legends; stop picker; route cards A/B (fastest vs lowest-hazard); responsive layout; **deploy** to the public URL | Shareable plan link (state in the URL); EN/AR label toggle; printable cuff card (§17) |
 | **Ayman** | Science stops + context cards (`feat/ayman-stops`) | `stops.json`: boxwork 360 sites, Altadena + Valle de la Luna drill sites, current rover position (MMGIS waypoints); real raw photos per sol; stop cards (sample-page style); RAD + REMS card values with sources | Judge extras (§17): Curiosity's real path overlay, elevation profile + "why this route", EVA dose card, Earth-delay note |
@@ -82,6 +82,24 @@ Swapping: change the names in this table (one commit), nothing else needs editin
 | +14 | **Feature freeze for must-ship**; if-time work continues on branches |
 | +16 | Final deploy; logged-out test; slides with real screenshots |
 | +18 (Sat 09:00) | **Submit** |
+
+## 4b. Notes for owners (read yours before you start)
+
+**Ali (engine): O₂ numbers in the route files** (decision D27, [`demo-focus-plan.md`](demo-focus-plan.md) §9c)
+
+- Write **plain expected O₂ per crew member** at the planned walking rate (Pandolf + κ):
+  `cum.o2_l` (habitat → each point) and `back.o2_l` (each point → home, from your return field).
+- **Don't add** the reserve, the 20 % return margin, or pair/drill factors. The app applies them from
+  `constants.json` (`reserve_minutes`, `reserve_fraction`, `walkback_o2_lpm`, `return_cost_margin`); adding
+  them in the engine would count them twice.
+- Without `back.o2_l` the app assumes home costs the same as the way out and says so on screen.
+- `budget_l` = capacity − reserve = 385 − max(0.25 × 385, 30 × 1.22) ≈ **289 L**. To change capacity or
+  reserve, edit `constants.json`, not only the route files. Keep `constants.json` key names stable.
+- Exact file fields and the mock files to replace: [`app/public/data/README.md`](../app/public/data/README.md).
+
+**Everyone on the app side:** build against the mock files in `app/public/data/` (all `"_mock": true`)
+until the real ones land. Mission Replay is ready to plug in: `createReplay(map, { route })`, docs in
+[`app/src/replay/README.md`](../app/src/replay/README.md).
 
 ## 5. Recommendations from the web search (starting points, verify as you go)
 
