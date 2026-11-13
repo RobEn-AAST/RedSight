@@ -124,14 +124,33 @@ export interface EngineHazards {
   }[]
 }
 
+export interface EngineCardValue {
+  label: string
+  value: number | string
+  unit?: string
+  pm?: number
+  badge?: ContractBadge
+  note?: string
+}
+
+export interface EngineCardLimit {
+  label: string
+  value: number | string
+  unit?: string
+  source?: string
+  badge?: ContractBadge
+}
+
 export interface EngineCard {
   _mock?: boolean
   title: string
   badge: ContractBadge
-  values: { label: string; value: number | string; unit?: string; pm?: number }[]
-  limits?: { label: string; value: number | string; unit?: string; source?: string }[]
+  values: EngineCardValue[]
+  limits?: EngineCardLimit[]
   note?: string
+  claim_boundary?: string
   source: string
+  source_urls?: string[]
   date_range?: string
 }
 
