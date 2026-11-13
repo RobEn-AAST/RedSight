@@ -49,6 +49,36 @@ function plannedDurationS(members: PlanMember[], budgetL: number): number {
   return maxS
 }
 
+type O2Plan = ReturnType<typeof o2PlanFromConstants>['plan']
+
+/** Modeled EVA duration (s) for the dose estimate, honouring the turn-back O₂ slider when set. */
+function evaDuration(
+  activePlan: PlanFile | null | undefined,
+  activeMembers: PlanMember[],
+  o2BudgetL: number | null | undefined,
+  o2Plan: O2Plan,
+): { evaDurationS: number; sliderAdjusted: boolean } {
+  if (!activePlan || activeMembers.length === 0) {
+    return { evaDurationS: 0, sliderAdjusted: false }
+  }
+  const baseS = plannedDurationS(activeMembers, activePlan.budget_l)
+  if (o2BudgetL == null || !o2Plan) {
+    return { evaDurationS: baseS, sliderAdjusted: false }
+  }
+  const effBudget = Math.min(Math.max(o2BudgetL, 0), o2Plan.maxBudgetL)
+  let maxSliderS = 0
+  for (const m of activeMembers) {
+    const res = turnBackPoint(memberAsRouteInput(activePlan, m), effBudget, o2Plan.returnMargin)
+    if (!res) return { evaDurationS: baseS, sliderAdjusted: false }
+    const memberS = res.status === 'no-go' ? 0 : res.outTimeS + res.homeTimeS
+    maxSliderS = Math.max(maxSliderS, memberS)
+  }
+  return {
+    evaDurationS: maxSliderS,
+    sliderAdjusted: effBudget < activePlan.budget_l - 0.05 && maxSliderS < baseS - 30,
+  }
+}
+
 /**
  * EVA radiation-dose card (Tier 1, B6c — Scenario).
  *
@@ -66,27 +96,10 @@ export function EvaRadiationCard() {
   const radParams = useMemo(() => parseRadCardParams(engine.cards.rad), [engine.cards.rad])
   const { plan: o2Plan } = useMemo(() => o2PlanFromConstants(engine.constants), [engine.constants])
 
-  const { evaDurationS, sliderAdjusted } = useMemo(() => {
-    if (!activePlan || activeMembers.length === 0) {
-      return { evaDurationS: 0, sliderAdjusted: false }
-    }
-    const baseS = plannedDurationS(activeMembers, activePlan.budget_l)
-    if (o2BudgetL == null || !o2Plan) {
-      return { evaDurationS: baseS, sliderAdjusted: false }
-    }
-    const effBudget = Math.min(Math.max(o2BudgetL, 0), o2Plan.maxBudgetL)
-    let maxSliderS = 0
-    for (const m of activeMembers) {
-      const res = turnBackPoint(memberAsRouteInput(activePlan, m), effBudget, o2Plan.returnMargin)
-      if (!res) return { evaDurationS: baseS, sliderAdjusted: false }
-      const memberS = res.status === 'no-go' ? 0 : res.outTimeS + res.homeTimeS
-      maxSliderS = Math.max(maxSliderS, memberS)
-    }
-    return {
-      evaDurationS: maxSliderS,
-      sliderAdjusted: effBudget < activePlan.budget_l - 0.05 && maxSliderS < baseS - 30,
-    }
-  }, [activePlan, activeMembers, o2BudgetL, o2Plan])
+  const { evaDurationS, sliderAdjusted } = useMemo(
+    () => evaDuration(activePlan, activeMembers, o2BudgetL, o2Plan),
+    [activePlan, activeMembers, o2BudgetL, o2Plan],
+  )
 
   const estimate = useMemo(() => computeEvaRadiationDose(evaDurationS, radParams), [evaDurationS, radParams])
 

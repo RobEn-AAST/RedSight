@@ -187,6 +187,14 @@ export function MapCanvas({
     elevM: number | null
     distKm: number | null
   } | null>(null)
+  // Hiding the path clears any hovered waypoint. Adjusted during render (not in an effect) so the
+  // tooltip never flashes stale data: https://react.dev/learn/you-might-not-need-an-effect
+  const waypointsShown = Boolean(engine.curiosityPath && showCuriosityPath)
+  const [prevWaypointsShown, setPrevWaypointsShown] = useState(waypointsShown)
+  if (prevWaypointsShown !== waypointsShown) {
+    setPrevWaypointsShown(waypointsShown)
+    if (!waypointsShown) setHoveredWaypoint(null)
+  }
 
   const radiusM = marsRadiusM(engine.meta?.crs)
   const context = engine.preview?.context?.bounds ?? null
@@ -494,7 +502,6 @@ export function MapCanvas({
     for (const id of ['curiosity-path-casing', 'curiosity-path-line', 'curiosity-waypoints']) {
       if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis)
     }
-    if (!path || !showCuriosityPath) setHoveredWaypoint(null)
   }, [ready, engine.curiosityPath, showCuriosityPath])
 
   useEffect(() => {

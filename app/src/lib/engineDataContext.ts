@@ -37,7 +37,10 @@ export interface EngineLayer {
   maxzoom: number
   badge: ContractBadge
   provenance: { source: string; resolution?: string; date?: string; license?: string }
-  legend: string | null
+  legend:
+    | string
+    | { type?: string; note?: string; items?: { label: string; color: string }[] }
+    | null
   /** false until the tiles exist; the app must not request unavailable layers. */
   available: boolean
 }

@@ -76,17 +76,26 @@ export function MapWorkspace({ onOpenSources }: { onOpenSources: () => void }) {
                     />
                   </label>
                 )}
-                {available.map((l) => (
-                  <label key={l.id} className="flex items-center justify-between gap-4 text-xs text-ink">
-                    {l.name}
-                    <Toggle
-                      size="sm"
-                      checked={enabledLayers[l.id] ?? false}
-                      onChange={(next) => setLayerChoice((s) => ({ ...s, [l.id]: next }))}
-                      label={`Show ${l.name}`}
-                    />
-                  </label>
-                ))}
+                {available.map((l) => {
+                  const note = typeof l.legend === 'object' ? l.legend?.note : undefined
+                  return (
+                    <div key={l.id} className="flex flex-col gap-1">
+                      <label className="flex items-center justify-between gap-4 text-xs text-ink">
+                        {l.name}
+                        <Toggle
+                          size="sm"
+                          checked={enabledLayers[l.id] ?? false}
+                          onChange={(next) => setLayerChoice((s) => ({ ...s, [l.id]: next }))}
+                          label={`Show ${l.name}`}
+                        />
+                      </label>
+                      {/* Legend note (e.g. slope: display DEM differs from the routing DTM). */}
+                      {note && enabledLayers[l.id] && (
+                        <p className="max-w-60 text-[11px] leading-snug text-ink-faint">{note}</p>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>
