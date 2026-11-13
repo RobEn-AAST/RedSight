@@ -18,12 +18,14 @@
     "@huggingface/transformers": "^4.3.2",
     "@tailwindcss/vite": "^4.3.5",
     "kokoro-js": "^1.2.1",
+    "@types/three": "^0.170.0",
     "lucide-react": "^1.72.0",
     "maplibre-gl": "^6.18.0",
     "motion": "^14.14.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "tailwindcss": "^4.3.5"
+    "tailwindcss": "^4.3.5",
+    "three": "^0.170.0"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",

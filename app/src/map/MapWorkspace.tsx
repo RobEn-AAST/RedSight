@@ -6,6 +6,7 @@ import { opsBox as fallbackOpsBox } from '@/lib/stopsData'
 import { MapCanvas } from '@/map/MapCanvas'
 import { PlanPanel } from '@/map/PlanPanel'
 import { EmptyState } from '@/ui/EmptyState'
+import { usePlan } from '@/map/usePlan'
 import { Toggle } from '@/ui/Toggle'
 
 /**
@@ -16,6 +17,7 @@ import { Toggle } from '@/ui/Toggle'
  */
 export function MapWorkspace({ onOpenSources }: { onOpenSources: () => void }) {
   const engine = useEngineData()
+  const { showCuriosityPath, setShowCuriosityPath } = usePlan()
   const [layerChoice, setLayerChoice] = useState<Record<string, boolean>>({})
   const [showImagery, setShowImagery] = useState(true)
   const [layersOpen, setLayersOpen] = useState(false)
@@ -44,7 +46,7 @@ export function MapWorkspace({ onOpenSources }: { onOpenSources: () => void }) {
         )}
 
         {/* Map layers: one button top-right; the bottom edge belongs to the replay bar and zoom. */}
-        {(engine.preview || available.length > 0) && (
+        {(engine.preview || engine.curiosityPath || available.length > 0) && (
           <div className="absolute right-3 top-12 z-10 flex flex-col items-end gap-1">
             <button
               type="button"
@@ -61,6 +63,17 @@ export function MapWorkspace({ onOpenSources }: { onOpenSources: () => void }) {
                   <label className="flex items-center justify-between gap-4 text-xs text-ink">
                     Orbital image
                     <Toggle size="sm" checked={showImagery} onChange={setShowImagery} label="Show orbital image" />
+                  </label>
+                )}
+                {engine.curiosityPath && (
+                  <label className="flex items-center justify-between gap-4 text-xs text-ink">
+                    Curiosity's real path
+                    <Toggle
+                      size="sm"
+                      checked={showCuriosityPath}
+                      onChange={setShowCuriosityPath}
+                      label="Show Curiosity's real path"
+                    />
                   </label>
                 )}
                 {available.map((l) => (

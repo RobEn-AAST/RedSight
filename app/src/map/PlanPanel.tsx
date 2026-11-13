@@ -19,6 +19,8 @@ import {
   summarizeMember,
 } from '@/map/format'
 import { DaylightNote } from '@/map/DaylightNote'
+import { EvaRadiationCard } from '@/map/EvaRadiationCard'
+import { RouteBreakdown } from '@/map/RouteBreakdown'
 import { Fold } from '@/map/Fold'
 import { usePlan } from '@/map/usePlan'
 import { MissionReplay } from '@/replay/MissionReplay'
@@ -360,6 +362,7 @@ export function PlanPanel({ onOpenSources }: { onOpenSources: () => void }) {
 
       <Section step={2} title="Pick a route">
         <RouteChoice />
+        <RouteBreakdown />
       </Section>
 
       {activePlan?.split && (
@@ -381,6 +384,7 @@ export function PlanPanel({ onOpenSources }: { onOpenSources: () => void }) {
           ))}
           <OxygenFold plan={activePlan} members={activeMembers} />
           <DaylightNote plan={activePlan} members={activeMembers} />
+          <EvaRadiationCard />
           <Fold icon={<PlayCircle size={14} />} title="Replay the walk" answer="Play bar on the map">
             <p className="text-xs leading-relaxed text-ink-dim">
               Plays the modeled walk on the map: crew position, O₂ tank, the turn-back moment. Drills raise O₂ use from

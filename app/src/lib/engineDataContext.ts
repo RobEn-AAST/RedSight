@@ -1,5 +1,7 @@
 import { createContext } from 'react'
 
+import type { CuriosityPathData } from '@/map/curiosityPath'
+
 /**
  * Engine data contract (demo-focus-plan §15, shapes as committed in
  * app/public/data/README.md). The engine writes static JSON to
@@ -52,6 +54,8 @@ export interface EngineStop {
   photos: string[]
   panorama?: string | null
   science?: string
+  /** Observed rover elevation at the stop from stops.json card.elev_m (m). */
+  elevM?: number
   badge: ContractBadge
 }
 
@@ -91,6 +95,8 @@ export interface EngineRoute {
   constants_hash: string
   /** [[lon, lat], …] habitat → stop, N points. */
   coords: [number, number][]
+  /** Optional per-vertex elevation along the route (m), N values. */
+  elev_m?: number[]
   /** N−1 segments. */
   seg: {
     t_s: number
@@ -118,14 +124,33 @@ export interface EngineHazards {
   }[]
 }
 
+export interface EngineCardValue {
+  label: string
+  value: number | string
+  unit?: string
+  pm?: number
+  badge?: ContractBadge
+  note?: string
+}
+
+export interface EngineCardLimit {
+  label: string
+  value: number | string
+  unit?: string
+  source?: string
+  badge?: ContractBadge
+}
+
 export interface EngineCard {
   _mock?: boolean
   title: string
   badge: ContractBadge
-  values: { label: string; value: number | string; unit?: string; pm?: number }[]
-  limits?: { label: string; value: number | string; unit?: string; source?: string }[]
+  values: EngineCardValue[]
+  limits?: EngineCardLimit[]
   note?: string
+  claim_boundary?: string
   source: string
+  source_urls?: string[]
   date_range?: string
 }
 
@@ -184,8 +209,16 @@ export interface PlanMember {
   label: string
   targets: string[]
   coords: [number, number][]
+  /** Optional per-vertex elevation along the route (m), N values. */
+  elev_m?: number[]
   legs: PlanLeg[]
-  seg: { t_s: number; o2_l: number; slope_deg: number; distance_m: number }[]
+  seg: {
+    t_s: number
+    o2_l: number
+    slope_deg: number
+    distance_m: number
+    cost_terms?: { distance_m?: number } & Record<string, number>
+  }[]
   cum: { t_s: number[]; o2_l: number[] }
   back: { t_s: number[]; o2_l: number[] }
   /** Optional fastest way home from each point (app/public/data/README.md); drives the switch to it. */
@@ -239,6 +272,7 @@ export interface EngineDataState {
   preview: PreviewBasemap | null
   targets: PlanTarget[] | null
   planIndex: PlanIndexEntry[] | null
+  curiosityPath: CuriosityPathData | null
   /** true when any loaded file carries the `_mock` flag. */
   mock: boolean
   /** true once the initial load finished (found or not). */
@@ -256,6 +290,7 @@ export const emptyEngineData: EngineDataState = {
   preview: null,
   targets: null,
   planIndex: null,
+  curiosityPath: null,
   mock: false,
   probed: false,
 }

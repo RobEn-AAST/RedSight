@@ -68,3 +68,7 @@ tiles/
 
 # --- App build outputs (static site is deployed, not committed whole) ---
 app/dist/
+
+# Tile-build intermediates and other large derived arrays: reproducible, stay local
+# (engine/tiles/build_tiles.py, the supplied planetary data bundle).
+data/processed/*.npy

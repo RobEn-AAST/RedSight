@@ -1,9 +1,9 @@
 // Mission Replay — MapLibre layer + player panel. Owner: Marwan.
 // Usage: const r = createReplay(map, { route }); r.play();
-import { buildTimeline, sampleAt, trailAt, formatClock, formatDuration } from "./replay-core.js";
+import { buildTimeline, routeGoalInfo, sampleAt, trailAt, formatClock, formatDuration } from "./replay-core.js";
 import { createVoice, calloutFor } from "./voice.js";
 
-const SRC = { ends: "replay-ends", trail: "replay-trail", turn: "replay-turn", crew: "replay-crew" };
+const SRC = { ends: "replay-ends", observed: "replay-observed-stop", trail: "replay-trail", turn: "replay-turn", crew: "replay-crew" };
 const DURATIONS = [30, 60, 120]; // seconds of screen time for the whole walk
 const DRILLS = [
   { id: "leak", label: "Suit leak", factor: 2 },
@@ -39,6 +39,8 @@ export function createReplay(map, opts) {
     for (const id of Object.values(SRC)) if (!map.getSource(id)) map.addSource(id, { type: "geojson", data: empty });
     if (!map.getLayer(SRC.ends)) map.addLayer({ id: SRC.ends, type: "circle", source: SRC.ends,
       paint: { "circle-radius": 8, "circle-color": ["get", "color"], "circle-stroke-color": "#111", "circle-stroke-width": 2 } });
+    if (!map.getLayer(SRC.observed)) map.addLayer({ id: SRC.observed, type: "circle", source: SRC.observed,
+      paint: { "circle-radius": 12, "circle-color": "rgba(0,0,0,0)", "circle-stroke-color": "#f78c6b", "circle-stroke-width": 2 } });
     if (!map.getLayer(SRC.trail)) map.addLayer({ id: SRC.trail, type: "line", source: SRC.trail,
       layout: { "line-cap": "round", "line-join": "round" },
       paint: { "line-color": ["get", "color"], "line-width": ["get", "width"], "line-opacity": 0.95 } });
@@ -52,6 +54,8 @@ export function createReplay(map, opts) {
     if (!map.getSource(SRC.crew)) return; // map removed or restyled under us
     const s = sampleAt(tl, t);
     const C = tl.tankL ?? tl.capacityL, R = tl.reserveL; // percentages of the full tank
+    const goal = routeGoalInfo(route);
+    const offset = goal.offsetM === null ? null : `${goal.offsetM.toFixed(1)} m`;
     const pts = [{ pt: s.pt, color: CREW_A }];
     if (tl.members.length >= 2) pts.push({ pt: sampleAt(tl, Math.max(0, t - lagS)).pt, color: CREW_B });
     map.getSource(SRC.crew).setData(fc(pts.map((p) => pointF(p.pt, { color: p.color }))));
@@ -60,14 +64,23 @@ export function createReplay(map, opts) {
       ...(tr.out.length > 1 ? [lineF(tr.out, { color: OUT, width: 4 })] : []),
       ...(tr.back.length > 1 ? [lineF(tr.back, { color: BACK, width: 6 })] : []),
     ]));
+    map.getSource(SRC.observed).setData(fc(
+      goal.approachOnly && goal.observedStopLonlat
+        ? [pointF(goal.observedStopLonlat, {})]
+        : [],
+    ));
     map.getSource(SRC.ends).setData(fc(!showEnds ? [] : [
       pointF(route.coords[0], { color: "#ffffff" }), // habitat
-      pointF(route.coords[route.coords.length - 1], { color: "#9b5de5" }), // stop
+      pointF(goal.endpointLonlat ?? route.coords[route.coords.length - 1], { color: "#9b5de5" }), // route endpoint
     ]));
     map.getSource(SRC.turn).setData(fc([
       ...(tl.switchPoint ? [pointF(tl.switchPoint, { color: SWITCH })] : []), // own way back stops fitting
       ...(tl.turnPoint ? [pointF(tl.turnPoint, { color: "#ef476f" })] : []),
     ]));
+    ui.goalLabel.textContent = goal.approachOnly
+      ? `Derived approach point${offset ? ` (${offset} from Observed stop)` : ""}`
+      : "stop";
+    ui.observedLegend.hidden = !goal.approachOnly || !goal.observedStopLonlat;
 
     // Tank gauge: [reserve | home needed | spare margin] … empty. Fill = O2 left (worst member).
     const left = Math.max(0, s.o2Left), home = Math.max(0, s.homeL);
@@ -85,7 +98,14 @@ export function createReplay(map, opts) {
     ui.clock.textContent = `T+${formatClock(t)}`;
     ui.dist.textContent = `${(s.distM / 1000).toFixed(2)} km`;
     const fastNow = tl.switchT != null && t >= tl.switchT && s.phase !== "home";
-    ui.phase.textContent = { out: "Walking out", stop: "At the stop", back: "Walking home", home: "At the habitat" }[s.phase]
+    const approachPhase = `At approach point${offset ? ` · ${offset} from Observed stop` : ""}`;
+    ui.phase.textContent = {
+      out: "Walking out",
+      stop: goal.approachOnly ? approachPhase : "At the stop",
+      approach: approachPhase,
+      back: "Walking home",
+      home: "At the habitat",
+    }[s.phase]
       + (fastNow ? (s.phase === "back" ? " (fastest way)" : " · return: fastest way") : "");
     ui.scrub.value = tl.totalS > 0 ? String((t / tl.totalS) * 1000) : "0";
     ui.play.textContent = playing ? "❚❚" : "▶";
@@ -98,7 +118,12 @@ export function createReplay(map, opts) {
       if (performance.now() > hudMsgUntil) hud.msg.textContent = ui.phase.textContent;
     }
     ui.summary.textContent = t >= tl.totalS && tl.totalS > 0 ? arrivalText() : "";
-    ui.note.textContent = tl.backAssumed ? " Return cost assumed equal to the way out (engine back data missing)." : "";
+    const notes = [];
+    if (tl.backAssumed) notes.push("Return cost assumed equal to the way out (engine back data missing).");
+    if (goal.approachOnly) {
+      notes.push(`Route ends at the Derived approach point${offset ? ` ${offset} from the Observed stop` : ""}; no final leg is modeled.`);
+    }
+    ui.note.textContent = notes.join(" ");
     if (playing) fireEvents();
   }
 
@@ -196,7 +221,8 @@ export function createReplay(map, opts) {
       <div class="replay-o2"></div>
       <div class="replay-need"></div>
       <div class="replay-members"></div>
-      <div class="replay-legend"><i style="background:${CREW_A}"></i>crew ${showEnds ? '<i style="background:#fff"></i>habitat <i style="background:#9b5de5"></i>stop' : ""}
+      <div class="replay-legend"><i style="background:${CREW_A}"></i>crew ${showEnds ? '<i style="background:#fff"></i>habitat <i style="background:#9b5de5"></i><span class="replay-goal-label">stop</span>' : '<span class="replay-goal-label" hidden>stop</span>'}
+        <span class="replay-observed-stop" hidden> · <i style="background:transparent;border:2px solid #f78c6b"></i>Observed stop</span>
         <i style="background:${SWITCH}"></i>switch to fastest way home <i style="background:#ef476f"></i>turn-back <i style="background:${OUT}"></i>walked out <i style="background:${BACK}"></i>walked home</div>
       <div class="replay-row replay-stats"><span class="replay-phase"></span><span class="replay-clock"></span><span class="replay-dist"></span></div>
       <ul class="replay-log" aria-live="polite"></ul>
@@ -218,7 +244,8 @@ export function createReplay(map, opts) {
     const r = { el, play: q(".replay-play"), scrub: q(".replay-scrub"), speed: q(".replay-speed"), voice: q(".replay-voice"),
       fill: q(".replay-fill"), reserve: q(".replay-reserve"), home: q(".replay-home"), o2: q(".replay-o2"), need: q(".replay-need"),
       members: q(".replay-members"), phase: q(".replay-phase"), clock: q(".replay-clock"), dist: q(".replay-dist"),
-      log: q(".replay-log"), summary: q(".replay-summary"), note: q(".replay-note"), step: q(".replay-step") };
+      log: q(".replay-log"), summary: q(".replay-summary"), note: q(".replay-note"), step: q(".replay-step"),
+      goalLabel: q(".replay-goal-label"), observedLegend: q(".replay-observed-stop") };
     r.play.onclick = () => (playing ? pause() : play());
     r.scrub.oninput = () => { pause(); seek((+r.scrub.value / 1000) * tl.totalS); };
     r.speed.onchange = () => { durationS = +r.speed.value; };

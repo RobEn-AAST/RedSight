@@ -4,7 +4,7 @@
   {
    "id": "hirise",
    "name": "HiRISE optical",
-   "tiles": "tiles/hirise/{z}/{x}/{y}.png",
+   "tiles": "../tiles/hirise/{z}/{x}/{y}.png",
    "minzoom": 10,
    "maxzoom": 16,
    "badge": "Observed",
@@ -23,7 +23,7 @@
   {
    "id": "hillshade",
    "name": "Hillshade",
-   "tiles": "tiles/hillshade/{z}/{x}/{y}.png",
+   "tiles": "../tiles/hillshade/{z}/{x}/{y}.png",
    "minzoom": 10,
    "maxzoom": 16,
    "badge": "Derived",
@@ -42,7 +42,7 @@
   {
    "id": "slope",
    "name": "Slope",
-   "tiles": "tiles/slope/{z}/{x}/{y}.png",
+   "tiles": "../tiles/slope/{z}/{x}/{y}.png",
    "minzoom": 10,
    "maxzoom": 16,
    "badge": "Derived",
@@ -66,7 +66,7 @@
   {
    "id": "themis",
    "name": "THEMIS thermal inertia (sand proxy)",
-   "tiles": "tiles/themis/{z}/{x}/{y}.png",
+   "tiles": "../tiles/themis/{z}/{x}/{y}.png",
    "minzoom": 10,
    "maxzoom": 16,
    "badge": "Derived",
@@ -87,7 +87,7 @@
   {
    "id": "crism",
    "name": "CRISM mineral indicators",
-   "tiles": "tiles/crism/{z}/{x}/{y}.png",
+   "tiles": "../tiles/crism/{z}/{x}/{y}.png",
    "minzoom": 10,
    "maxzoom": 16,
    "badge": "Derived",
@@ -106,7 +106,7 @@
   {
    "id": "geology",
    "name": "Geologic units (SIM 3292)",
-   "tiles": "tiles/geology/{z}/{x}/{y}.png",
+   "tiles": "../tiles/geology/{z}/{x}/{y}.png",
    "minzoom": 10,
    "maxzoom": 16,
    "badge": "Derived",

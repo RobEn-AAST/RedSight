@@ -8,7 +8,7 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-import matplotlib.cm as cm
+import matplotlib
 import numpy as np
 import tifffile
 from PIL import Image
@@ -100,7 +100,7 @@ def colorize_themis(ti_60: np.ndarray) -> np.ndarray:
     if vmax <= vmin:
         vmax = vmin + 1.0
     norm = np.clip((np.where(valid, ti_60, vmin) - vmin) / (vmax - vmin), 0.0, 1.0)
-    cmap = cm.get_cmap("inferno")
+    cmap = matplotlib.colormaps["inferno"]  # cm.get_cmap was removed in matplotlib 3.9
     colors = (cmap(norm) * 255.0).astype(np.uint8)
     colors[..., 3] = np.where(valid, 175, 0).astype(np.uint8)
     return colors

@@ -323,6 +323,47 @@ def test_cards_rad_and_rems() -> None:
     assert len(rems["source_urls"]) >= 2
 
 
+def test_curiosity_path_geojson() -> None:
+    """Verify curiosity_path.geojson schema, Observed badge, ops-box bounds, and chronological waypoints."""
+    path_file = DATA_DIR / "curiosity_path.geojson"
+    path_fc = _load_json(path_file)
+    _assert_clean_content("curiosity_path.geojson", path_fc)
+
+    assert path_fc.get("type") == "FeatureCollection"
+    assert "crs" not in path_fc, "RFC 7946 GeoJSON must not emit top-level 'crs'"
+    features = path_fc.get("features", [])
+    assert len(features) >= 1, "Expected at least one traverse LineString segment"
+
+    prev_sol_end = -1
+    total_waypoints = 0
+    for feat in features:
+        geom = feat.get("geometry", {})
+        props = feat.get("properties", {})
+        assert geom.get("type") == "LineString"
+        coords = geom.get("coordinates", [])
+        n = len(coords)
+        assert n >= 2
+        total_waypoints += n
+        assert props.get("kind") == "traverse"
+        assert props.get("badge") == "Observed"
+        assert props.get("waypoint_count") == n
+        assert props.get("sol_start") >= prev_sol_end
+        assert props.get("sol_end") >= props.get("sol_start")
+        prev_sol_end = props["sol_end"]
+
+        for key in ("sols", "rmcs", "elev_m", "dist_km"):
+            arr = props.get(key)
+            assert isinstance(arr, list) and len(arr) == n, f"{key} length mismatch"
+
+        sols = props["sols"]
+        assert all(sols[i] <= sols[i + 1] for i in range(n - 1)), "sols must be non-decreasing"
+        for lon, lat in coords:
+            assert OPS_BOX["west"] <= lon <= OPS_BOX["east"], f"Lon {lon} outside ops box"
+            assert OPS_BOX["south"] <= lat <= OPS_BOX["north"], f"Lat {lat} outside ops box"
+
+    assert total_waypoints > 400, f"Expected >400 waypoints inside ops box, got {total_waypoints}"
+
+
 @pytest.mark.network
 def test_all_urls_reachable() -> None:
     """Verify photo, panorama, and card URLs load (HTTP 200; DOIs verified via doi.org handle API)."""
@@ -373,6 +414,7 @@ def test_all_urls_reachable() -> None:
 def main() -> None:
     tests = (
         test_stops_schema_and_size,
+        test_curiosity_path_geojson,
         test_coordinates_match_live_mmgis,
         test_photos_sols_and_instrument_diversity,
         test_cards_rad_and_rems,
