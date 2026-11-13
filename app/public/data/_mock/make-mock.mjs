@@ -11,6 +11,25 @@ const OUT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const R = 3396190;
 const write = (p, obj) => { mkdirSync(dirname(join(OUT, p)), { recursive: true }); writeFileSync(join(OUT, p), JSON.stringify(obj, null, 1) + "\n"); };
 const dist = (a, b) => { const r = (d) => (d * Math.PI) / 180; const h = Math.sin(r(b[1] - a[1]) / 2) ** 2 + Math.cos(r(a[1])) * Math.cos(r(b[1])) * Math.sin(r(b[0] - a[0]) / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
+const TEAM_MODEL_DOC = "https://github.com/RobEn-AAST/RedSight/blob/main/docs/demo-focus-plan.md";
+const SOURCE_URLS = {
+  "Norcross et al. NASA/TP-2010-216115": "https://www.lpi.usra.edu/lunar/artemis/NorcrossEtAl_NASA-TP-2010-216115_PlanetarySuitMetabolicCosts.pdf",
+  "Team assumption (no official Mars figure)": `${TEAM_MODEL_DOC}#9c-o2-model-spare-oxygen-not-arrive-at-zero`,
+  "Team assumption": TEAM_MODEL_DOC,
+  "Within Apollo LRV 20–23° favorable / 25° max (NTRS 20250011301)": "https://ntrs.nasa.gov/citations/20250011301",
+  "Scott 2005; Weir 1949": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2129144/",
+  "EMU Data Book: 0.55 kg usable primary O₂ ÷ 1.429 g/L": "https://nlsp.nasa.gov/search/data/details/IDP-LSDA_HARDWARE-0000000000000562?dataType=HARDWARE",
+  "NSSDC Mars Fact Sheet": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html",
+  "ALSJ Lunar Gaits: 1.1–2.2 km/h working": "https://www.nasa.gov/wp-content/uploads/static/history/alsj/a11/a11.gaits.html",
+  "NASA DRA 5.0 buddy rule": "https://www.nasa.gov/pdf/373665main_NASA-SP-2009-566.pdf",
+  "NASA ICES-2026-127 example (180 lbm)": "https://ntrs.nasa.gov/citations/20260003038",
+  "Team default": `${TEAM_MODEL_DOC}#8-crew-load-samples-and-rover-model-team-choice-numbers-are-scenario-unless-sourced`,
+  "Apollo traverse planning: walkback capacities after a 30-minute consumables reserve": "https://www.nasa.gov/wp-content/uploads/static/history/alsj/19790073512_1979073512.pdf",
+  "Apollo walkback planning rate 1440 BTU/h ≈ 422 W × 2.9 mL/min/W": "https://www.nasa.gov/wp-content/uploads/static/history/alsj/19790073512_1979073512.pdf",
+  "Team choice: plan the way home 20 % more expensive than expected": `${TEAM_MODEL_DOC}#9c-o2-model-spare-oxygen-not-arrive-at-zero`,
+  "EMU secondary oxygen pack (backup, never planned)": "https://www.nasa.gov/wp-content/uploads/2009/07/188963main_extravehicular_mobility_unit.pdf",
+  "Team choice: status callout every 10 % (5 % option)": `${TEAM_MODEL_DOC}#9c-o2-model-spare-oxygen-not-arrive-at-zero`,
+};
 
 const HABITAT = [137.4005, -4.8185]; // MOCK — real habitat is chosen at the pilot gate
 const CRS = "+proj=longlat +R=3396190 +no_defs";
@@ -22,7 +41,7 @@ write("meta.json", {
   build_date: "2026-11-13", constants_hash: "mock",
 });
 
-const c = (value, unit, source, badge, range) => ({ value, unit, range: range ?? null, source, badge });
+const c = (value, unit, source, badge, range) => ({ value, unit, range: range ?? null, source, source_url: SOURCE_URLS[source] ?? TEAM_MODEL_DOC, badge });
 write("constants.json", {
   _mock: true, _note: "Values are the team's cited defaults (technical-approaches §3); Ali's engine owns this file.",
   suit_factor_kappa: c(1.3, "×", "Norcross et al. NASA/TP-2010-216115", "Scenario", [1.2, 1.5]),

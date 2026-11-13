@@ -20,6 +20,18 @@ def parser():
     return root
 
 
+def build_summary(result):
+    routes = result["route_index"]["routes"]
+    return {
+        "status": "complete" if all(item["status"] == "routed" for item in routes) else "partial",
+        "output_dir": result["output_dir"],
+        "habitat": result["meta"]["habitat"],
+        "route_status": result["route_status"],
+        # Constants, metadata, route index, build manifest and hazards plus route files.
+        "files_written": len(result["exported_files"]) + 5,
+    }
+
+
 def main(argv=None):
     args = parser().parse_args(argv)
     try:
@@ -34,13 +46,7 @@ def main(argv=None):
     except Exception as exc:
         print(json.dumps({"status": "error", "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 2
-    summary = {
-        "status": "complete" if all(item["status"] == "routed" for item in result["route_index"]["routes"]) else "partial",
-        "output_dir": result["output_dir"],
-        "habitat": result["meta"]["habitat"],
-        "route_status": result["route_status"],
-        "files_written": len(result["exported_files"]) + 4,
-    }
+    summary = build_summary(result)
     print(json.dumps(summary, indent=2, ensure_ascii=False))
     return 0 if summary["status"] == "complete" else 1
 
