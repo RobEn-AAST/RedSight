@@ -7,6 +7,7 @@ import { LayerPanel } from '@/map/LayerPanel'
 import { MapCanvas } from '@/map/MapCanvas'
 import { RouteCards } from '@/map/RouteCards'
 import { StopPicker } from '@/map/StopPicker'
+import { MissionReplay } from '@/replay/MissionReplay'
 import { TurnBackPanel } from '@/turnback/TurnBackPanel'
 import { EmptyState } from '@/ui/EmptyState'
 import { LedDot } from '@/ui/LedDot'
@@ -87,6 +88,7 @@ export function MapWorkspace() {
         <StopPicker />
         <RouteCards />
         <TurnBackPanel />
+        <MissionReplay />
         <LayerPanel
           enabledLayers={enabledLayers}
           onToggleLayer={(id, next) => setLayerChoice((s) => ({ ...s, [id]: next }))}
