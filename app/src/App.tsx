@@ -256,8 +256,8 @@ function Console() {
           {/* Status bar */}
           <footer className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-seam bg-hull px-4 py-2.5">
             <p className="text-[11px] leading-snug text-ink-faint">
-              Decision-support prototype using real NASA data — <span className="text-ink-dim">not a
-              certified safety system</span>.
+              Decision-support prototype using real NASA data — <span className="text-ink-dim">modeled
+              estimates, not measurements or guarantees</span>.
             </p>
             <div className="ml-auto hidden items-center gap-4 md:flex">
               <KeyHint combo={`1–${WORKSPACES.length}`} action="workspaces" />

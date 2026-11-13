@@ -40,6 +40,7 @@ export function MissionReplay() {
       ...modelFromConstants(engine.constants),
       route: activeRoute,
       panelContainer: host,
+      showEnds: false,
     })
     replayRef.current = replay
     return () => {
