@@ -1,0 +1,142 @@
+[
+  {
+    "dataset": "hirise_ard_stac_metadata",
+    "local_path": "data/raw/stac_hirise_dtms.json",
+    "url": "https://stac.astrogeology.usgs.gov/api/search",
+    "http_status": 200,
+    "bytes": 21426,
+    "sha256": "f93f86e54f4514fb388a68202cb5298504d210eb25c63c7d28bd50c4d1f03531",
+    "note": "",
+    "fetched_utc": "2026-11-13T21:11:31.532951+00:00"
+  },
+  {
+    "dataset": "hirise_ard_provenance_DTEEC_019698",
+    "local_path": "data/raw/DTEEC_019698_provenance.txt",
+    "url": "https://astrogeo-ard.s3-us-west-2.amazonaws.com/mars/mro/hirise/controlled/dtm/ESP_019698_1750_ESP_019988_1750/provenance.txt",
+    "http_status": 200,
+    "bytes": 4036,
+    "sha256": "29875aad7e9accfd0604493d526503444bfb282cad8780f3c2015c28aa451dc5",
+    "note": "",
+    "fetched_utc": "2026-11-13T21:11:32.467648+00:00"
+  },
+  {
+    "dataset": "hirise_ard_provenance_DTEEC_009149",
+    "local_path": "data/raw/DTEEC_009149_provenance.txt",
+    "url": "https://astrogeo-ard.s3-us-west-2.amazonaws.com/mars/mro/hirise/controlled/dtm/PSP_009149_1750_PSP_009294_1750/provenance.txt",
+    "http_status": 200,
+    "bytes": 3024,
+    "sha256": "44649f9c33e78db89da2b3a34789f74a0c40a42c4f67cb41ac56b932bfaf94ce",
+    "note": "",
+    "fetched_utc": "2026-11-13T21:11:32.767901+00:00"
+  },
+  {
+    "dataset": "hirise_ard_dtm_probe_206",
+    "local_path": null,
+    "url": "https://astrogeo-ard.s3-us-west-2.amazonaws.com/mars/mro/hirise/controlled/dtm/PSP_009149_1750_PSP_009294_1750/DTEEC_009149_1750_009294_1750_U01.tif",
+    "http_status": 206,
+    "bytes": 65536,
+    "sha256": "1bc7ec0ba57d1fc0143cbbd353741b778eb043beec636e9c334445121df7f7db",
+    "note": "Ranged GET header probe; Content-Range=bytes 0-65535/181586808",
+    "fetched_utc": "2026-11-13T21:11:33.395165+00:00"
+  },
+  {
+    "dataset": "trek_gale_dem_10m",
+    "local_path": "data/raw/gale_dem_10m.tif",
+    "url": "https://trek.nasa.gov/mars/trekarcgis/rest/services/Gale_DEM_SMG_1m/ImageServer/exportImage?bbox=137.335%2C-4.85%2C137.435%2C-4.75&bboxSR=104905&imageSR=104905&size=600%2C600&format=tiff&compression=LZW&f=image",
+    "http_status": 200,
+    "bytes": 1329341,
+    "sha256": "9ddefef4020f2782beac896ca7e957aaa776f599983d14b6cbc67595fc4e543c",
+    "note": "shape=(600, 600), dtype=float32, min=-4203.14, max=-3006.18",
+    "fetched_utc": "2026-11-13T21:11:36.199515+00:00"
+  },
+  {
+    "dataset": "trek_gale_dem_2p5m",
+    "local_path": "data/raw/gale_dem_2p5m.tif",
+    "url": "https://trek.nasa.gov/mars/trekarcgis/rest/services/Gale_DEM_SMG_1m/ImageServer/exportImage?bbox=137.335%2C-4.85%2C137.435%2C-4.75&bboxSR=104905&imageSR=104905&size=2400%2C2400&format=tiff&compression=LZW&f=image",
+    "http_status": 200,
+    "bytes": 18919657,
+    "sha256": "ed3ee747a3bb84c4872d4ab53fdb16222c6adc422a5b1e0294b7c5e33d465e20",
+    "note": "shape=(2400, 2400), dtype=float32, min=-4202.96, max=-3002.19",
+    "fetched_utc": "2026-11-13T21:12:17.777528+00:00"
+  },
+  {
+    "dataset": "trek_hirise_ortho",
+    "local_path": "data/raw/hirise_ortho.png",
+    "url": "https://trek.nasa.gov/mars/trekarcgis/rest/services/curiosity_hirise_mosaic/ImageServer/exportImage?bbox=137.335%2C-4.8%2C137.385%2C-4.75&bboxSR=104905&imageSR=104905&size=2048%2C2048&format=png&f=image | https://trek.nasa.gov/mars/trekarcgis/rest/services/curiosity_hirise_mosaic/ImageServer/exportImage?bbox=137.385%2C-4.8%2C137.435%2C-4.75&bboxSR=104905&imageSR=104905&size=2048%2C2048&format=png&f=image | https://trek.nasa.gov/mars/trekarcgis/rest/services/curiosity_hirise_mosaic/ImageServer/exportImage?bbox=137.335%2C-4.85%2C137.385%2C-4.8&bboxSR=104905&imageSR=104905&size=2048%2C2048&format=png&f=image | https://trek.nasa.gov/mars/trekarcgis/rest/services/curiosity_hirise_mosaic/ImageServer/exportImage?bbox=137.385%2C-4.85%2C137.435%2C-4.8&bboxSR=104905&imageSR=104905&size=2048%2C2048&format=png&f=image",
+    "http_status": 200,
+    "bytes": 14814105,
+    "sha256": "b2aa76a13db68f67ee46cedd474c2dbb4d52dfa4ef05e3142769e9c0007fd52b",
+    "note": "4096x4096 stitched 2x2 PNG (~1.45 m/px across 5.9 km box)",
+    "fetched_utc": "2026-11-13T21:13:00.002230+00:00"
+  },
+  {
+    "dataset": "usgs_themis_ti_100m",
+    "local_path": "data/raw/themis_ti_100m.tif",
+    "url": "https://asc-astropedia.s3.us-west-2.amazonaws.com/Mars/Odyssey/THEMIS-Global-Thermal-Inertia-Mosaic/Quantitative-32-Bit/THEMIS_TI_Mosaic_Quant_30S120E_100mpp.cub",
+    "http_status": 206,
+    "bytes": 14672,
+    "sha256": "473f7fbb777e0c310c8ac147b0663195c45a8203ae8f3f2f71ad1b2f01dade9e",
+    "note": "Extracted via 2 HTTP 206 S3 ranges; TI min=255.9, max=681.2",
+    "fetched_utc": "2026-11-13T21:13:03.249945+00:00"
+  },
+  {
+    "dataset": "pds_ode_crism_mtrdr_search",
+    "local_path": "data/raw/ode_crism_mtrdr.json",
+    "url": "https://oderest.rsl.wustl.edu/live2/?target=mars&query=product&results=cmf&ihid=MRO&iid=CRISM&pt=MTRDR&minlat=-4.85&maxlat=-4.75&westernlon=137.335&easternlon=137.435&output=JSON",
+    "http_status": 200,
+    "bytes": 320350,
+    "sha256": "9c114b932c199ac64ca60860e844acda31f9c2ffe34392e58d8be7965004b792",
+    "note": "",
+    "fetched_utc": "2026-11-13T21:13:05.531270+00:00"
+  },
+  {
+    "dataset": "pds_crism_brhydj",
+    "local_path": "data/raw/crism/BRHYDJ.png",
+    "url": "https://pds-geosciences.wustl.edu/mro/mro-m-crism-5-rdr-mptargeted-v1/mrocr_4001/browse/2007/2007_112/frt000058a3/frt000058a3_07_brhydj_mtr3.png",
+    "http_status": 200,
+    "bytes": 492404,
+    "sha256": "edb01febf134249df54ca40525515f98c423f9de1894c0a6e274ecc61df03b7b",
+    "note": "Observation frt000058a3",
+    "fetched_utc": "2026-11-13T21:13:07.864010+00:00"
+  },
+  {
+    "dataset": "pds_crism_brphyj",
+    "local_path": "data/raw/crism/BRPHYJ.png",
+    "url": "https://pds-geosciences.wustl.edu/mro/mro-m-crism-5-rdr-mptargeted-v1/mrocr_4001/browse/2007/2007_112/frt000058a3/frt000058a3_07_brphyj_mtr3.png",
+    "http_status": 200,
+    "bytes": 338715,
+    "sha256": "7b21c496ac273cde19dc6ed6cc47c75683c69dbf000cfc93f5fa16fd0695dc60",
+    "note": "Observation frt000058a3",
+    "fetched_utc": "2026-11-13T21:13:09.599127+00:00"
+  },
+  {
+    "dataset": "pds_crism_brfalj",
+    "local_path": "data/raw/crism/BRFALJ.png",
+    "url": "https://pds-geosciences.wustl.edu/mro/mro-m-crism-5-rdr-mptargeted-v1/mrocr_4001/browse/2007/2007_112/frt000058a3/frt000058a3_07_brfalj_mtr3.png",
+    "http_status": 200,
+    "bytes": 678391,
+    "sha256": "188ae9d2a51dea3e96f71c993dddf02da975a5d7162273cee62492b298de1709",
+    "note": "Observation frt000058a3",
+    "fetched_utc": "2026-11-13T21:13:14.742636+00:00"
+  },
+  {
+    "dataset": "usgs_sim3292_geojson",
+    "local_path": "data/raw/sim3292_units.geojson",
+    "url": "https://astrogeology.usgs.gov/pygeoapi/collections/mars/sim3292_global_geologic_map/units/items?f=json&bbox=137.335%2C-4.85%2C137.435%2C-4.75",
+    "http_status": 200,
+    "bytes": 22072394,
+    "sha256": "ec702a7b9c48d6aef15996a2005acbda2c2a1af155220c45b9d973b7c9833d6a",
+    "note": "units=['Htu', 'AHi', 'mNh']",
+    "fetched_utc": "2026-11-13T21:13:30.683271+00:00"
+  },
+  {
+    "dataset": "trek_sim3292_geology_png",
+    "local_path": "data/raw/sim3292_geology.png",
+    "url": "https://trek.nasa.gov/mars/trekarcgis/rest/services/SIM3292_Global_Geology/MapServer/export?bbox=137.335%2C-4.85%2C137.435%2C-4.75&bboxSR=104905&imageSR=104905&size=1200%2C1200&format=png32&transparent=true&f=image",
+    "http_status": 200,
+    "bytes": 8511,
+    "sha256": "b77dd250c00c25f7ae150279d7f4ded97c1f436aac6b36caa0892d4de84ad7ec",
+    "note": "",
+    "fetched_utc": "2026-11-13T21:13:31.905986+00:00"
+  }
+]
