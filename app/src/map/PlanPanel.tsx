@@ -17,6 +17,7 @@ import {
   summarizeCrew,
   summarizeMember,
 } from '@/map/format'
+import { DaylightNote } from '@/map/DaylightNote'
 import { usePlan } from '@/map/usePlan'
 import { Button } from '@/ui/Button'
 
@@ -365,6 +366,7 @@ export function PlanPanel({ onOpenSources }: { onOpenSources: () => void }) {
             />
           ))}
           <NoReturnNote plan={activePlan} members={activeMembers} />
+          <DaylightNote plan={activePlan} members={activeMembers} />
           {preset && !preset.matchesMission && (
             <p className="text-xs leading-relaxed text-scenario">
               No plan exists yet for your exact setup. Showing crew {preset.crew}, {preset.load_kg} kg,{' '}

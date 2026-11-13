@@ -44,6 +44,7 @@ a black page. The setup questions were the one part that worked. The request:
 | No-return line | Red dashed line on the map + a note: inside it the crew can get home; past it, modeled O₂ is not enough. If a route crosses it, a **TURN BACK** marker sits on the route and the plan turns there | `plan/limits_*.geojson` (proposed); per-route `pnr_index` | User request; matches demo-focus-plan §9 "don't go beyond" boundary. Scenario estimate, worded as modeled |
 | Rover legs | Dashed line = drive, solid = walk, **P** = where the rover parks. The plan lists "Drive 1.1 km by rover → Walk 440 m → Sample → Walk back to the rover, drive home" | `legs` + `park_index` in plan files | User request; demo-focus-plan §8 "mixed plan: drive to a park point, walk the last leg" |
 | Crew split | "Walk together" or "Split up". Split: A and B each get a route to a different target, the pair drives together to one park point, and the panel states the largest gap between them against a limit | `split` in plan files | User decision 2026-11-13: **split, but stay in reach** (radio contact + rescue distance), keeping the intent of the NASA DRA 5.0 buddy rule (decision D19) |
+| Daylight (added 2026-11-13, Yassin) | A "Daylight" card under *Your plan*: Earth date + leave time (Mars local solar time) → sunrise, back-home time, sunset, latest start; a warning when the walk ends after sunset or starts before sunrise. The spare daylight is shown as time left for sampling | Habitat `meta.json` + the plan's round-trip time; sun times from `app/src/lib/mars24.ts` (NASA GISS Mars24, Allison & McEwen 2000; tests reproduce the GISS worked examples) | demo-focus-plan §17 / E4. Derived; flat horizon, so crater walls and dust are not modeled, and sampling time is not in the walk time |
 | Map | Sharp HiRISE image of the box inside a wider, coarser HiRISE image around it, so there is no hard edge; outside the box is lightly dimmed | `app/public/preview/` (temporary) | User request ("chunk square"). Both images exported once from Mars Trek, cached, not loaded live |
 
 **Findings checked while building (2026-11-13, live queries to trek.nasa.gov):**
@@ -126,6 +127,7 @@ home (the red-zone boundary in demo-focus-plan §9). Scenario-badged.
 - `app/src/map/`: `MapWorkspace.tsx` (routes screen layout), `MapCanvas.tsx` (map), `PlanPanel.tsx`
   (panel), `planStore.tsx` + `planContext.ts` + `usePlan.ts` (plan state), `format.ts` (labels, colours, sums).
 - `app/src/lib/engineData*.ts(x)`: loads `targets.geojson`, `plan/index.json` and the context image.
+- `app/src/lib/mars24.ts` + `mars24.test.mjs` (run: `node --experimental-strip-types --test src/lib/mars24.test.mjs`), `app/src/map/DaylightNote.tsx`: daylight window.
 - `app/src/mission/`: shorter setup text; `app/src/lib/materials.ts`: corrected goal sources.
 - `app/public/preview/`: `context.jpg` + `basemap.json` entry.
 - `app/public/data/_mock/make-plan-mock.mjs` + generated `targets.geojson`, `plan/`.

@@ -17,7 +17,7 @@ import { cn } from '@/lib/cn'
 import { absoluteDataUrl } from '@/lib/dataUrl'
 import type { EngineRouteMode, PlanMember } from '@/lib/engineDataContext'
 import { useEngineData } from '@/lib/useEngineData'
-import { MEMBER_B_COLOR, MODE_COLOR, NO_RETURN_COLOR, formatDistance } from '@/map/format'
+import { HAZARD_COLOR, MEMBER_B_COLOR, MODE_COLOR, NO_RETURN_COLOR, formatDistance, hazardLabel } from '@/map/format'
 import { usePlan } from '@/map/usePlan'
 
 /**
@@ -65,6 +65,30 @@ const corners = (b: Box): Corners => [
 ]
 
 /** Everything outside the ops box, dimmed so the box reads as the work area. */
+/** 12 px tile of 45° stripes in `color`, for MapLibre `fill-pattern`. */
+function hatchPattern(color: string) {
+  const size = 12
+  const [r, g, b] = [1, 3, 5].map((i) => Number.parseInt(color.slice(i, i + 2), 16))
+  const data = new Uint8Array(size * size * 4)
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const d = (x + y) % size // distance along the diagonal
+      const a = d < 2 ? 210 : 40 // stripe, or a faint tint between stripes
+      data.set([r, g, b, a], (y * size + x) * 4)
+    }
+  }
+  return { width: size, height: size, data }
+}
+
+/** Middle of a polygon's outer ring (its vertex average: fine for the small blocked areas). */
+function ringCenter(f: Feature): [number, number] | null {
+  if (f.geometry.type !== 'Polygon') return null
+  const ring = f.geometry.coordinates[0].slice(0, -1)
+  if (ring.length === 0) return null
+  const sum = ring.reduce((s, p) => [s[0] + p[0], s[1] + p[1]], [0, 0])
+  return [sum[0] / ring.length, sum[1] / ring.length]
+}
+
 function maskPolygon(box: Box, outer: Box): Feature {
   const ring = (b: Box) => [...corners(b), corners(b)[0]]
   return {
@@ -224,11 +248,19 @@ export function MapCanvas({
         source: 'ops-box',
         paint: { 'line-color': '#e9edf3', 'line-width': 1, 'line-opacity': 0.25 },
       })
+      // Blocked ground: violet hatching + outline, so it never reads as the red no-return line.
+      map.addImage('hazard-hatch', hatchPattern(HAZARD_COLOR))
       map.addLayer({
         id: 'hazards-fill',
         type: 'fill',
         source: 'hazards',
-        paint: { 'fill-color': NO_RETURN_COLOR, 'fill-opacity': 0.18 },
+        paint: { 'fill-pattern': 'hazard-hatch' },
+      })
+      map.addLayer({
+        id: 'hazards-line',
+        type: 'line',
+        source: 'hazards',
+        paint: { 'line-color': HAZARD_COLOR, 'line-width': 1.5, 'line-opacity': 0.9 },
       })
       map.addLayer({
         id: 'targets-fill',
@@ -447,6 +479,16 @@ export function MapCanvas({
       add(el, t.site)
     }
 
+    for (const f of engine.hazards?.features ?? []) {
+      const at = ringCenter(f as Feature)
+      if (!at) continue
+      const el = document.createElement('div')
+      el.title = String(f.properties?.label ?? 'Blocked ground')
+      el.className = 'pointer-events-none'
+      el.append(chip(hazardLabel(f.properties?.reason), 'border-hazard/80 bg-hull/90 text-hazard'))
+      add(el, at)
+    }
+
     const habitat = engine.meta?.habitat
     if (habitat) {
       const el = document.createElement('div')
@@ -488,9 +530,10 @@ export function MapCanvas({
     return () => {
       for (const marker of markers) marker.remove()
     }
-  }, [ready, engine.meta, plan.goalTargets, selectedTargetId, selectTarget, activeMembers, crewMode])
+  }, [ready, engine.meta, engine.hazards, plan.goalTargets, selectedTargetId, selectTarget, activeMembers, crewMode])
 
   const hasDrive = activeMembers.some((m) => m.legs.some((l) => l.kind === 'drive'))
+  const hasHazards = (engine.hazards?.features.length ?? 0) > 0
 
   return (
     <div className="absolute inset-0">
@@ -516,6 +559,17 @@ export function MapCanvas({
         <span className="flex items-center gap-1.5">
           <span className="size-3 border border-observed bg-observed/30" /> Sample area
         </span>
+        {hasHazards && (
+          <span className="flex items-center gap-1.5">
+            <span
+              className="size-3 border border-hazard"
+              style={{
+                backgroundImage: `repeating-linear-gradient(-45deg, ${HAZARD_COLOR} 0 1.5px, transparent 1.5px 4px)`,
+              }}
+            />
+            No-go ground
+          </span>
+        )}
         {noReturnLine && (
           <span className="flex items-center gap-1.5">
             <span
