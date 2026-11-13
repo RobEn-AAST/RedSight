@@ -24,8 +24,10 @@ official "no pre-work" rule; build happens inside the event window).
 | 4 | [`../README.md`](../README.md) | Project pitch, planned scope, data summary, repo layout |
 | 5 | [`competition-overview.md`](competition-overview.md) | Official requirements vs our proposal, mapping table, site choice, open decisions |
 | 6 | [`technical-approaches.md`](technical-approaches.md) | Verified data inventory, claim verdicts, model constants, architecture recommendation, honesty guardrails |
-| 7 | [`24-48-hour-plan.md`](24-48-hour-plan.md) | Must/Should/Stretch scope, phase plan, acceptance evidence, risks |
+| 7 | [`demo-focus-plan.md`](demo-focus-plan.md) | **Current focused plan** (2026-11-13): what we submit, narrowed scope, architecture diagram, corrected ops box + stops, data-type order, 360 + HUD, Vision Pro, first steps |
+| 7b | [`24-48-hour-plan.md`](24-48-hour-plan.md) | Must/Should/Stretch scope, phase plan, acceptance evidence, risks (scope/ops area superseded by demo-focus-plan) |
 | 8 | [`research/mapping-options.md`](research/mapping-options.md), [`research/routing-options.md`](research/routing-options.md) | Deep evidence: datasets/live checks/CRS traps; graph/algorithms/PNR — keep as evidence, see their Errata headers |
+| 8b | [`research/external-sources-review.md`](research/external-sources-review.md) | Verdicts on the Kaggle notebook (game data, rejected), the NASA Life Sciences Portal (EVA/walkback citations), and how each of the 5 official resources is used, by tier |
 | 9 | [`research/independent-architecture-review.md`](research/independent-architecture-review.md) | Adversarial review of the two research docs: verdicts V1–V13, findings F1–F8, pilot + gate |
 | 10 | [`documentation-review.md`](documentation-review.md) | Pre-publication audit (2026-11-13): links, consistency, F1–F8 integration, .gitignore — verdict PASS |
 | — | [`../requirements/decision-log.md`](../requirements/decision-log.md), [`../requirements/open-questions.md`](../requirements/open-questions.md), [`../requirements/quick-requirements.md`](../requirements/quick-requirements.md) | Decision history, unresolved claims (Cairo-local rules), superseded initial checklist |
@@ -34,7 +36,14 @@ official "no pre-work" rule; build happens inside the event window).
 
 - **Project name:** RedSight (user-selected). Earlier drafts say "Marswalk Planner (working title)" — superseded.
 - **Site:** Gale crater / lower Mount Sharp (user decision; challenge permits any site). Ops box
-  ~137.30–137.45°E / −4.75…−4.55° assumed in research; final habitat/target coords still open (U1).
+  **proposed 137.335–137.435°E / −4.85…−4.75°** at the boxwork site, with stops at real Curiosity
+  waypoints (D11, demo-focus-plan §5). The research-era box (137.30–137.45°E / −4.75…−4.55°) missed the
+  boxwork and was ~9×12 km. Habitat position is set at the pilot gate (U1 closes there).
+- **Scope is tiered, built strictly in order** (D12, [`demo-focus-plan.md`](demo-focus-plan.md) §3):
+  **Tier 1 base** (map + layers + stops + routes + turn-back slider + provenance/RAD/REMS cards +
+  deploy + submit) → **Tier 2 extras** (360 at stops + HUD) only after Tier 1 is submitted → **Tier 3
+  bonus** (Vision Pro WebXR, 3D fly-along) only after Tier 2 works. Before starting work, check which tier
+  is complete. Data-type order and badges: D16–D17.
 - **Architecture:** web-first static 2D planner (MapLibre + precomputed tiles/JSON), Python engine
   offline; three.js 3D/HUD as 48 h extension (Approach 1, technical-approaches §4; reinforced by the
   independent review V2/F2: scipy Dijkstra field core, hand-written A* only as interactive/oracle).
@@ -45,8 +54,8 @@ official "no pre-work" rule; build happens inside the event window).
   NASA's default for unspecified content) — team sign-off pending (U3).
 - **Demo format:** 7 slides vs ≤30 s video — undecided (U2/D03); slides currently the safer default.
 - **Labeling:** every layer/number carries Observed / Derived / Scenario / Unavailable (taxonomy in
-  technical-approaches §legend and plain-language §1). Banned wording: "safe route", "certified",
-  "real-time", "validated" (routing-options §11).
+  technical-approaches §legend and plain-language §1). Banned wording (AGENTS rule 3): "safe route",
+  "safe time remaining", "certified", "flight-safe", "real-time", "validated".
 
 ## 4. Key verified facts agents often need (full evidence in the linked docs)
 
@@ -60,8 +69,12 @@ official "no pre-work" rule; build happens inside the event window).
   product exists. REMS (Gale) and MEDA (Jezero) are rover-local weather stations; no spatial weather
   at walk scale; MCD is a coarse global model.
 - THEMIS thermal inertia: 100 m/px coarse sand-proxy, not boot-scale truth.
-- Curiosity = Gale (use its raw images via `mars.nasa.gov` JSON API; no precise per-image coordinates —
-  pin approximately). Perseverance = Jezero. Mars Trek `curiosity_path` layer ends 2018/2019 — stale.
+- Curiosity = Gale (use its raw images via `mars.nasa.gov` JSON API; no per-image coordinates, but
+  matching an image's sol to NASA's MMGIS waypoint file (`mars.nasa.gov/mmgis-maps/MSL/Layers/json/MSL_waypoints.json`,
+  current through sol 5070) gives the rover's position for that sol; otherwise pin approximately). Perseverance = Jezero.
+  Mars Trek `curiosity_path` layer ends 2018/2019 — stale.
+- Cairo event officially started Fri 2026-11-13 07:00 Africa/Cairo (official Cairo page); its page sets
+  no submission deadline; judging start time still to ask (open-questions update).
 - USGS ARD STAC serves CC0 HiRISE DTM/ortho COGs; one flagship example product was found dead with
   intermittent S3 404s — use the retry ladder (review F3). Mars Trek quantitative export needs exactly
   `format=tiff&compression=…&f=image` (F3); default export caps at 400×400 px.

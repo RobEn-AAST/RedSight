@@ -12,6 +12,13 @@ judging is Saturday ⇒ a submittable snapshot must exist by then. **T+48 h ≈ 
 > DTM + ortho → 10 m grid → scipy route → static render) and pass gates G1–G4 (DEM downloaded & licensed; CRS
 > pinned + landmark alignment; route obeys hard constraints + PNR monotone; pilot ≤ 3 h). Record the gate
 > decisions (grid resolution, mean-vs-max slope, STAC-vs-Trek primary, tiling scheme) in the decision log.
+>
+> **Scope update (2026-11-13 planning session):** scope is now **tiered and built strictly in order**:
+> Tier 1 base first and submitted, then Tier 2 (360 at stops + HUD; S2 becomes a HUD over real NASA
+> panoramas, not a camera-along-route), then Tier 3 (Vision Pro, 3D fly-along). Tiers, the corrected ops box
+> (boxwork site, D11) and the data-type order are in [`demo-focus-plan.md`](demo-focus-plan.md); where it
+> conflicts with §1 below on scope or ops area, it wins. **M4 note:** the router core is the scipy Dijkstra return-cost field (review F2);
+> "A\*" in M4 means only the later interactive variant.
 
 ---
 

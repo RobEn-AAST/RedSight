@@ -10,6 +10,10 @@ style rules come from the outer AGENTS files; this file adds only what is specif
   lower Mount Sharp (team choice — the challenge permits any site). Name and site are **team choices,
   never stated as challenge requirements**.
 - **Read [`docs/ai-context.md`](docs/ai-context.md) first** for the document map and current state.
+- **Current plan = [`docs/demo-focus-plan.md`](docs/demo-focus-plan.md).** Build in tiers, strictly in
+  order: **Tier 1 base** (map, layers, stops, routes, turn-back slider, provenance cards, deploy, submit)
+  → **Tier 2** (360 at stops + HUD) → **Tier 3** (Vision Pro, 3D fly-along). Never start a higher tier
+  while a lower one is incomplete. Ops box = boxwork site (decision D11), not the research-era box.
 
 ## Source hierarchy (resolve conflicts by rank)
 

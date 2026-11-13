@@ -12,7 +12,8 @@
 
 **Start here:** [docs/challenge-in-plain-language.md](docs/challenge-in-plain-language.md) (the challenge, the
 glossary, and the corrections behind our framing) · [docs/ai-context.md](docs/ai-context.md) (workspace state &
-navigation) · [AGENTS.md](AGENTS.md) (working rules for agents & teammates).
+navigation) · [AGENTS.md](AGENTS.md) (working rules for agents & teammates) ·
+**[docs/demo-focus-plan.md](docs/demo-focus-plan.md) (current plan: Tier 1 base → Tier 2 360/HUD → Tier 3 Vision Pro)**.
 
 ---
 

@@ -19,6 +19,18 @@ Prepared 2026-11-13. This is the initial decision log. Some source questions wer
 | D09 | **AI disclosure, credits, and content details** | [C §1.4; §2–3] requires resources, credit, copyright compliance, and AI disclosure but does not provide disclosure wording or complete content instructions. [R] relays third-party data-use obligations. | Obtain official disclosure fields/wording and content instructions; record actual AI/tool use, datasets, references, credits, and applicable terms. |
 | D10 | **Summary limits and judging details** | [C §1.3; §4] specifies summary topics and five judging criteria, without a summary word limit, scoring scale, or weights. | Confirm any original limits/scoring details and prepare the summary and evidence against all five criteria. |
 
+## Planning-session decisions — 2026-11-13 (team choices; details in [demo-focus-plan.md](../docs/demo-focus-plan.md))
+
+| ID | Decision | Status | Evidence / what closes it |
+|---|---|---|---|
+| D11 | **Ops box moved to the boxwork site:** 137.335–137.435°E / −4.85…−4.75° (≈5.9×5.9 km); stops S1 (sol 4539–4541), S2 (sols 4711–4741), S3 (sol 5070) at real Curiosity waypoints; habitat = Scenario point chosen at the pilot | **Proposed** — confirm at pilot gate | Research-era box missed the boxwork positions (NASA MMGIS waypoints, accessed 2026-11-13); closes U1 when the pilot's landmark check passes |
+| D12 | **Tiered scope, strict order.** Tier 1 base (2D map, ≥4 layers, 3 stops, fastest + safest routes, turn-back slider, provenance cards, RAD/REMS cards, deploy + submit) first; Tier 2 extras (360 + HUD) only after Tier 1 is submitted; Tier 3 bonus (Vision Pro, 3D fly-along, chemical) only after Tier 2 works; AI, rover/buddy, LOS out of this hackathon | Adopted (team) | demo-focus-plan §3 |
+| D13 | **Tier 2 — 360° view at stops** from real NASA panoramas (PIA26559, PIA26696) in a three.js sphere; no invented scenery; between stops = jump | Adopted (team), after Tier 1 | demo-focus-plan §7 |
+| D14 | **Tier 2 — HUD overlay** on the 360 view, values only from engine `routes.json`, Scenario-badged | Adopted (team), after Tier 1 | demo-focus-plan §7 |
+| D15 | **Tier 3 — Apple Vision Pro** via WebXR `immersive-vr` in Safari (same URL); no native visionOS app; demo-table bonus, judged demo never depends on it | Adopted (team), after Tier 2; device test pending | demo-focus-plan §8 |
+| D16 | **Data-type build order:** optical → topographic → thermal (3 by Friday night) → spectral → radiation card → atmospheric card → chemical (Sunday); geophysical skipped | Adopted (team) | demo-focus-plan §6 |
+| D17 | **Badge decision:** DEM = Observed; slope/hillshade/cost = Derived; THEMIS thermal inertia = Derived | Adopted (team) | Resolves drift between technical-approaches §1 and mapping-options §13 |
+
 ## Working boundary
 
 The companion [quick-requirements.md](quick-requirements.md) is a checklist of the supplied document's claims. None of its boxes represents completed competition compliance; obtaining missing official material and choosing a site/demo are follow-up decisions, not blockers to creating these two artifacts.
