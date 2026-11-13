@@ -33,10 +33,26 @@ engine's numbers, so the replay never invents data.
 |---|---|---|---|
 | **Ali** | Engine: routing + model (`feat/ali-engine`) | Pilot gate (DEM opens, slope sane, one route); 10 m grid, slope, cost; scipy Dijkstra fields; fastest + lowest-hazard routes to the stops; time/O₂ (Pandolf + κ); `constants.json`; routes + turn-back data in the contract format | `Out_fast` / `Back_fast` / `Back_safest` fields for return zones (§9); crew-2 × 15 kg preset bucket (§8); uncertainty range |
 | **Youssef** | Data + tiles (`feat/youssef-data`) | Download HiRISE ortho + DTM (USGS STAC / Trek), THEMIS TI, CRISM, SIM 3292; hillshade + slope; XYZ tiles z10–16; `meta.json`, `layers.json`; `data/PROVENANCE.md` | Radio-coverage mask with `gdal_viewshed` (§9b); terrain-RGB tiles for 3D replay; z17 core tiles |
-| **Ayman** | App shell (`feat/ayman-app`) | Vite + MapLibre app; layer panel + legends; stop picker; route cards A/B (fastest vs lowest-hazard); source card on every layer/number; responsive; **deploy** to the public URL | Zones layer + "don't go beyond" line (§9); crew preset toggle (§8); radio-shadow layer UI |
-| **Marwan** | Turn-back + Mission Replay + integration (`feat/marwan-replay`) | Turn-back slider (budget → marker); Mission Replay lite; **integration owner**: reviews and merges PRs to `main` at each checkpoint | Full replay: 3D terrain camera, voice callouts, auto-switch to the fastest return (§9), radio/zone events |
-| **Yassin** | Science stops + context cards (`feat/yassin-stops`) | `stops.json`: boxwork 360 sites, Altadena + Valle de la Luna drill sites, current rover position (MMGIS waypoints); real raw photos per sol; stop cards (sample-page style); RAD + REMS card values with sources | Judge extras (§17): Curiosity's real path overlay, elevation profile + "why this route", EVA dose card, Earth-delay note |
-| **Jana** | Story + submission + QA (`feat/jana-story`) | 7 slides (§14); project page text; NASA Data list; AI disclosure; 60-second demo script; logged-out test on phone + laptop; Local Lead questions (open-questions.md); **submits** (or confirms who does) | Demo recording/GIF; cuff card (printable route card); EN/AR labels; banned-word + label audit of the UI |
+| **Yassin** | App shell + deploy (`feat/yassin-app`) | Vite + MapLibre app; layer panel + legends; stop picker; route cards A/B (fastest vs lowest-hazard); responsive layout; **deploy** to the public URL | Shareable plan link (state in the URL); EN/AR label toggle; printable cuff card (§17) |
+| **Ayman** | Science stops + context cards (`feat/ayman-stops`) | `stops.json`: boxwork 360 sites, Altadena + Valle de la Luna drill sites, current rover position (MMGIS waypoints); real raw photos per sol; stop cards (sample-page style); RAD + REMS card values with sources | Judge extras (§17): Curiosity's real path overlay, elevation profile + "why this route", EVA dose card, Earth-delay note |
+| **Marwan** | Mission Replay + integration (`feat/marwan-replay`) | Mission Replay lite; **integration owner**: reviews and merges PRs to `main` at each checkpoint | Full replay: 3D terrain camera, voice callouts, auto-switch to the fastest return (§9), radio/zone events |
+| **Jana** | Turn-back + planner panels (`feat/jana-planner`) | Turn-back slider (budget → marker moves along the route); source/provenance card component used on every layer and number (Observed/Derived/Scenario badges) | Zones layer + "don't go beyond" line (§9); crew preset toggle (§8); radio-shadow layer UI (§9b) |
+
+### Shared delivery pool: anyone who finishes their Must ship takes the next open item
+
+Claim an item by writing your name in the **Taken by** column (one small commit to `main` via PR, or tell
+Marwan). Work it on your own branch. Order = priority.
+
+| # | Delivery item | Taken by |
+|---|---|---|
+| 1 | Ask the Local Lead the open questions (open-questions.md: cutoff, who submits, edits after submit) | |
+| 2 | 7 slides (§14) with real screenshots | |
+| 3 | Project page text + NASA Data list + AI disclosure (README sections) | |
+| 4 | 60-second demo script (§17) and a rehearsal | |
+| 5 | Logged-out test of the public URL on phone + laptop | |
+| 6 | Wording + badge audit of the UI (AGENTS rule 3) | |
+| 7 | Demo GIF/recording for the project page | |
+| 8 | **Submit** (by whoever the Local Lead says may submit) | |
 
 Swapping: change the names in this table (one commit), nothing else needs editing.
 
@@ -46,12 +62,12 @@ Swapping: change the names in this table (one commit), nothing else needs editin
   `main`; **Marwan merges** at each checkpoint. Don't push straight to `main`.
 - **Stay in your folders** so merges don't collide:
   `engine/route`, `engine/model` (Ali) · `engine/data`, `engine/tiles`, `data/` (Youssef) ·
-  `app/src/map`, `app/src/ui`, app config (Ayman) · `app/src/replay`, `app/src/turnback` (Marwan) ·
-  `app/public/data/stops.json`, `app/public/data/cards/`, `engine/content` (Yassin) ·
-  `docs/submission/`, `assets/` (Jana).
+  `app/src/map`, `app/src/ui`, app config (Yassin) · `app/public/data/stops.json`, `app/public/data/cards/`,
+  `engine/content` (Ayman) · `app/src/replay` (Marwan) · `app/src/turnback`, `app/src/panels`,
+  `app/src/provenance` (Jana) · `docs/submission/`, `assets/` (whoever holds that delivery item).
 - **The data contract (§15) is the handshake.** App people start right away on **mock JSON** shaped like
   the contract; the engine replaces the mocks when ready. Changing the contract = tell everyone first,
-  then Ali/Ayman agree and commit it in one PR.
+  then Ali/Yassin agree and commit it in one PR.
 - `constants.json` is the only place numbers live. The UI never hardcodes a model number.
 - `main` must always build and deploy.
 

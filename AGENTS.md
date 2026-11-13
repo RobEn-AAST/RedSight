@@ -20,7 +20,9 @@ style rules come from the outer AGENTS files; this file adds only what is specif
 - When a teammate says **"I am <name>"** (Ali, Youssef, Ayman, Marwan, Yassin, Jana): read
   [`docs/team-plan.md`](docs/team-plan.md), find their row, check out (or create) their branch
   `feat/<name>-<area>` from the latest `main`, and work **only on their Must-ship items first**, inside
-  their folders. Move to their If-time items only after the Must-ship part is merged to `main`.
+  their folders. Move to their If-time items only after the Must-ship part is merged to `main`. When their Must ship is done,
+  they also take the next open item in the **shared delivery pool** (team-plan §3) before If-time work
+  if the submit is near.
 - The team plan is direction, not a spec: search the web for the current best way to build the part,
   then build it. Keep the data contract (`docs/demo-focus-plan.md` §15) and `constants.json` as the only
   shared interfaces; contract changes are announced to the team first.
