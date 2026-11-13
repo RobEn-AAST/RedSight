@@ -1,6 +1,6 @@
 # RedSight Data Provenance & Processing Record
 
-**Owner:** Youssef (`feat/youssef-data`)
+**Owner:** Youssef (`feat/youssef-data`) · **How to run:** [`README.md`](README.md)
 **Access Date:** 2026-11-13
 **Operations Box:** `137.335°E – 137.435°E`, `−4.85° – −4.75°` (~`5.93 × 5.93 km` in Gale crater / lower Mount Sharp)
 **Coordinate Reference System (CRS):** `+proj=longlat +R=3396190 +no_defs` (planetocentric, east-positive longitude, Mars IAU sphere radius `3,396,190 m`)
