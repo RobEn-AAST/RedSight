@@ -68,3 +68,6 @@ tiles/
 
 # --- App build outputs (static site is deployed, not committed whole) ---
 app/dist/
+# Locally downloaded planetary data from the supplied bundle
+# Large derived arrays are reproducible and remain local alongside data/raw/.
+data/processed/*.npy
