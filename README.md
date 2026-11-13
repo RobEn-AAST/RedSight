@@ -27,7 +27,7 @@ simulated.
 
 ## What it does *(planned scope — Must tier; see [docs/24-48-hour-plan.md](docs/24-48-hour-plan.md))*
 
-*Current scope is tiered — full detail in [docs/demo-focus-plan.md](docs/demo-focus-plan.md) §3.*
+*Who builds what (6 people): [docs/team-plan.md](docs/team-plan.md).* *Current scope is tiered — full detail in [docs/demo-focus-plan.md](docs/demo-focus-plan.md) §3.*
 
 **Tier 1 — base (submitted first):**
 - **Layered map** of a ~6×6 km area at the Mount Sharp **boxwork site** (137.335–137.435°E, 4.75–4.85°S):

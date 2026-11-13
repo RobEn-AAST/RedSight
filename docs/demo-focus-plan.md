@@ -72,6 +72,10 @@ and no specific number of formats is required.** Our plan covers three with one 
 
 ## 3. Scope in tiers (build strictly in order)
 
+**20-hour cut (2026-11-13, D25):** Tier 1 is split into **Must ship** = B1, B2, B3, B4, B5, B6, B7 +
+Mission Replay lite; and **If time** = B4b, B4c, B6b, B6c + full replay (3D terrain, voice callouts).
+Owners and branches: [`team-plan.md`](team-plan.md).
+
 ### Tier 1 — Base (do first; this is what gets submitted Saturday 09:00)
 
 | # | Item | Done when (evidence) |
