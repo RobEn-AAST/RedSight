@@ -35,6 +35,32 @@ turn-back point.*
 > (Apple Vision Pro). Extras never delay or break the base. Any session/agent picking up work: check
 > which tier is complete before starting anything from a higher tier.
 
+### 1b. Display formats: we don't have to build two
+
+The challenge lists display formats under "You may (but are not required to)": a planner inside the
+spacecraft/habitat, a carried tablet, a helmet-visor HUD, "or another format you imagine". **None is required,
+and no specific number of formats is required.** Our plan covers three with one codebase:
+**habitat planning station** = the Tier 1 web map on a laptop/screen · **tablet** = the same responsive page ·
+**helmet HUD** = Tier 2 overlay (Tier 3 immersive on Vision Pro).
+
+### 1c. Challenge text → our plan (traceability, re-read 2026-11-13)
+
+| Challenge sentence (official page) | Class | RedSight answer | Tier |
+|---|---|---|---|
+| "create a layered, integrated view of a location or route… data from multiple NASA science missions" | **Must** (core) | Layered map from MRO, Mars Odyssey, Curiosity + USGS/Trek | 1 |
+| "help a human explorer plan and carry out a successful Marswalk… conducting… science" | **Must** (core) | Science stops → modeled route → turn-back point | 1 |
+| "identifying some scientific goals… boxwork… Mount Sharp region" | Example | Boxwork stops + Curiosity drill sites (§5, §7a) | 1 |
+| "at least three kinds of data" | Recommended | 6 types (§6) | 1 |
+| "consider what information might help a crew move safely… radiation… space weather data" | Recommended | RAD card + SEP scenario note (no spatial map: Unavailable) | 1 |
+| "wearing spacesuits and possibly carrying scientific equipment and other supplies. Consider how this might impact their mobility" | Recommended | Crew setup: body mass, load, samples, suit factor (§7a) | 1 |
+| "if possible, include a route map… avoiding significant obstacles such as large rock formations" | Recommended | Slope-blocked routes; step/rock limits stated (§7a) | 1 |
+| Habitat display / tablet / helmet HUD / other | Optional | Station + tablet (1), HUD (2), Vision Pro (3) | 1–3 |
+| Static, interactive, or map generator | Optional | Interactive | 1 |
+| Time frame past/future/none | Optional | Present-day terrain; RAD/REMS as observed climatology | 1 |
+| "point-of-view images… so the astronaut knows what to expect" | Optional | Raw photos per stop (1), 360 panoramas (2) | 1–2 |
+| "rovers or other robotic systems to help transport the crew and their tools" | Optional | Rover vs foot mode, rover carries samples (§7a) | 2 |
+| "astronauts might work in pairs" | Optional | Crew of 2 default, buddy rule, pair turn-back (§7a) | 1 |
+
 ## 2. Rules versus ideas
 
 | Class | Items |
@@ -54,17 +80,20 @@ turn-back point.*
 | B2 | 3 science stops at real Curiosity positions, with raw photos from those sols (§5) | Clicking a stop shows its card + photos + sources |
 | B3 | Fastest + safest routes per stop, precomputed (scipy Dijkstra field, review F2) | Routes never cross a >15° cell (asserted in the engine) |
 | B4 | **Turn-back slider**: budget → PNR marker moves along the route | Marker moves toward the habitat as the budget drops |
+| B4b | **Return-budget zones + automatic switch to the fastest way home** (§7b): map shading for "any return OK / fastest return only / beyond turn-back", a "don't go beyond" boundary line, hazard no-go overlay, and a "walk along the route" slider that switches the recommended return to fastest when O₂ gets low | Zones shrink as budget drops; the recommendation switches at the computed point; never recommends a return that doesn't fit the budget |
 | B5 | Provenance card on every layer and number (Observed / Derived / Scenario) | No visible layer or number without a card |
 | B6 | RAD + REMS context **cards** (not map layers) | Cards cite their PDS sources |
+| B6b | **Crew setup panel** (§7a): crew of 1 or 2 (default 2, buddy rule), body mass, carried load, sample mass picked up per stop; time/O₂/turn-back recompute | Changing mass/load/crew changes O₂ and the turn-back point monotonically |
 | B7 | Deployed public URL + 7 slides + project page submitted | Submitted page; links tested logged-out |
 
 ### Tier 2 — Extras (start only after Tier 1 is submitted)
 
 | # | Item | Detail |
 |---|---|---|
+| E0 | **Rover vs foot mode** (§7a): separate rover traversability grid, "rover can't go here, why" reasons, mixed plan = drive to a park point + walk the last leg, walkback check if the rover fails | §7a — engine-side, reuses the Tier 1 grid |
 | E1 | 360° view at stops from real NASA panoramas (PIA26559, PIA26696) | §7 |
 | E2 | HUD overlay on the 360 view | §7 |
-| E3 | Resubmit with E1–E2 + updated slides | Only if the Lead confirms post-judging edits count |
+| E3 | Resubmit with E0–E2 + updated slides | Only if the Lead confirms post-judging edits count |
 
 ### Tier 3 — Bonus (only after Tier 2 works on a normal browser)
 
@@ -76,7 +105,7 @@ turn-back point.*
 
 ### Not in this hackathon
 
-AI assistant · rover/robot/buddy logic · in-browser re-routing (JS A\*) · comms line-of-sight · storm
+AI assistant · robot helpers beyond the rover-carries-samples option · splitting the pair onto different routes · in-browser re-routing (JS A\*) · comms line-of-sight · storm
 re-route · spatial radiation/weather maps (**Unavailable**: never shown as maps) · street view *between*
 stops (no such imagery exists).
 
@@ -205,6 +234,101 @@ and cost = **Derived**; THEMIS thermal inertia = **Derived** (a model product fr
 research docs disagree on the last two (technical-approaches §1 vs mapping-options §13); the app uses this
 table.
 
+## 7a. Crew, load, samples and rover model (Team choice; numbers are Scenario unless sourced)
+
+### Crew and load: Tier 1 (B6b)
+
+| Input | Default | Range | Source / badge |
+|---|---|---|---|
+| Crew size | **2** | 1–2 | NASA DRA 5.0 (SP-2009-566): Mars surface EVAs use a minimum of two people with a "buddy system" — Team choice default |
+| Body mass W (each) | 82 kg | 43–110 kg | NASA JSC ICES-2026-127 *Mars Spacesuit Mass Requirements*: crew mass range 94–243 lbm (1st-pct female to 99th-pct male); its worked example uses a 180 lbm (82 kg) human |
+| Carried load L (tools, kit) | 15 kg | 0–40 kg | Scenario slider. Context: ICES-2026-127 cites the NIOSH carry limit 51 lbf (227 N) |
+| Samples picked up per stop | 2 kg | 0–10 kg | Scenario. Added to L for every leg **after** that stop, so the return leg costs more |
+| Suit effect | κ = 1.3 | 1.2–1.5 | Norcross NASA/TP-2010-216115 (as before). Context card: the lunar xEMU is 391 lbm (177 kg); ICES-2026-127 recommends 230 lbm as a starting maximum Mars suit mass |
+| Felt weight on Mars | (W + suit + L) × 3.71 m/s² | — | Derived arithmetic, shown on the crew card ("you carry X kg of Earth-weight") |
+
+**Pair logic:** the pair walks at the pace of the slower member; each suit has its own O₂, so the pair's
+turn-back point is the **earlier** of the two members' points. Load can be split evenly or carried by one
+member (toggle). Stature/size isn't modeled; only mass enters the energy equation (stated on the card).
+**Sample logistics:** every stop adds sample mass to whoever carries it (an astronaut, or the rover in
+Tier 2). This is where "carrying equipment affects mobility" shows up visibly in the numbers.
+
+### Science targets = rover drill sites + 360 sites (Tier 1 stop cards)
+
+The Perseverance sample page the team shared (30 of 38 sample tubes filled, all at **Jezero**) is the
+model for our stop-card layout: name, sample type, sol, rock type, size, location. At Gale, the equivalent
+real targets are **Curiosity's drill sites**:
+
+| Stop | Evidence | Nearest waypoint |
+|---|---|---|
+| **Altadena** drill site (boxwork-unit edge, drilled 2025-06-08) | JPL news 2025-06-23 | sol 4558–4560: 137.38350°E, −4.79981° (approximate: nearest waypoint) |
+| **Valle de la Luna** block, "Monte Grande" hollow (boxwork-unit drill campaign, Oct 2025) | NASA Curiosity blog, sols 4689–4694 | sol 4687: 137.38104°E, −4.80784° (approximate) |
+| + S1/S2 360 sites and S3 current position (§5) | — | — |
+
+### Rover vs foot: Tier 2 (E0)
+
+One planning grid, **two traversability rules**. The UI explains *why* the rover can't go somewhere:
+
+| Terrain feature (from data) | Astronaut on foot | Crewed rover | Basis |
+|---|---|---|---|
+| Slope | blocked > **15°** (Team default) | blocked > **20°** (Team default, within LRV's 20–23° favorable / 25° max design) | Apollo LRV performance (NASA NTRS 20250011301); foot limit as before |
+| Abrupt step / ledge (elevation jump between neighboring 1 m DEM cells) | passable up to ~0.5 m (step over/scramble) | blocked > **0.3 m** | LRV obstacle capability ~1 ft (secondary source, to verify); DEM vertical precision is tens of cm, so steps < ~0.5 m are **Unavailable** |
+| Individual rocks/boulders | walk around | blocked | Rocks below HiRISE's ~1 m-scale resolution are **Unavailable**; stated, not hidden |
+| Low thermal inertia (likely sand) | soft cost (slower) | **hard-avoid in safest mode** (entrapment risk: Spirit got stuck in soft soil in 2009) | THEMIS TI proxy (Derived); Spirit as context |
+| Narrow passages between ridges (boxwork) | passable | blocked if narrower than vehicle width (scenario width 2.3 m) | Derived from slope mask morphology |
+| Speed | 1.1–2.2 km/h working | ≤ 9–13 km/h design max on good ground (we use 5 km/h; Apollo slowed below 5 km/h around obstacles) | NASA NTRS 20250011301; ALSJ |
+
+**Mixed plan:** the rover drives to a **park point** (nearest rover-reachable cell to the stop), and the pair
+walks the last leg and back. The turn-back logic runs on the walking leg, measured to the rover.
+**Walkback check:** if the rover fails at the park point, can the pair walk home to the habitat within
+reserve? NASA's EVA Walkback Test concept (10 km suited walkback, NLSP record EWT; NASA TP-2009-214796)
+is the reference. Our ≈6 km box always passes the distance part, so we show the O₂ check, not just distance.
+**Rover carries samples:** with the rover, collected samples go on the rover, so crew load L stays constant.
+
+## 7b. Return-budget logic: zones, "don't go beyond" line, automatic fastest-return switch (Tier 1, B4b)
+
+All outputs are **Scenario** estimates (they inherit the O₂ model's assumptions) and are worded as
+modeled guidance, never as a guarantee (AGENTS rule 3).
+
+**What the engine computes (same scipy Dijkstra machinery, a few extra fields):**
+
+| Field | Meaning |
+|---|---|
+| `Out_fast(x)` | Modeled O₂ to reach cell x from the habitat by the fastest route |
+| `Back_fast(x)` | Modeled O₂ to return from x to the habitat (or the rover park point) by the **fastest** return |
+| `Back_safest(x)` | Modeled O₂ to return by the **lowest-hazard** return |
+| `B` | Usable budget = capacity × (1 − reserve), per crew member; for a pair, the lower member's (§7a) |
+
+**Map zones (static layer for the current crew/load/budget):**
+
+| Zone | Rule | Map style |
+|---|---|---|
+| **Return OK (any route)** | `Out_fast(x) + Back_safest(x) ≤ B` | green |
+| **Fastest return only** | `Out_fast(x) + Back_fast(x) ≤ B < Out_fast(x) + Back_safest(x)` | amber |
+| **Beyond turn-back** | `Out_fast(x) + Back_fast(x) > B` | red, outlined by the **"don't go beyond" boundary** |
+| **Hazard no-go** | Hard-blocked cells (slope > limit; rover rules in Tier 2) + flagged data gaps | hatched, with a reason tooltip ("17° slope", "no elevation data") |
+
+The boundary line is the edge of the red zone. It's the single clearest picture of "if you go farther
+than this, getting back is modeled as not fitting your O₂".
+
+**Along the planned route (the "walk along" slider in Tier 1; live in the HUD in Tier 2):** at each point x
+with O₂ used so far `U(x)`, the remaining budget is `R(x) = B − U(x)`. Then:
+
+1. If `R(x) ≥ Back_safest(x)` → recommend the **lowest-hazard return** (normal state).
+2. Else if `R(x) ≥ Back_fast(x)` → **automatically switch** the recommendation to the **fastest return** and
+   show an amber alert: "O₂ getting low: switching to the fastest way back".
+3. Else → red alert: "past modeled turn-back point: return now by the fastest route". This state should be
+   unreachable on a planned route (planning stops at the PNR), but the slider and HUD can show it when the
+   user drags past it or changes the budget.
+
+**Extra warnings:** approaching the boundary line (within N minutes of modeled walking, configurable)
+shows "turn-back point ahead". Entering a hazard no-go cell isn't possible on a planned route (hard
+constraint), but if the user drags a custom point there, the tooltip gives the reason.
+
+**Tests (extend the T-suite):** zones are nested (green ⊆ green∪amber ⊆ reachable); lowering B only
+shrinks zones; the switch point on a route is monotone in B; the recommended return always satisfies
+`R(x) ≥ Back(x)` until state 3; pair mode never shows a later turn-back than either member alone.
+
 ## 7. Tier 2 — 360° view at stops + HUD (Optional per the challenge; Team choice; after Tier 1)
 
 The challenge itself suggests both a helmet HUD and point-of-view images "so the astronaut knows what to
@@ -216,8 +340,9 @@ expect when they arrive at their destination".
 - **Viewer:** a three.js textured sphere (MIT) rather than Pannellum, because three.js also gives a WebXR
   mode for Vision Pro (§8) with the same code. Use NASA's downsized versions (~8–16k px wide). Check
   whether each mosaic covers the full sphere and limit the vertical range if not.
-- **HUD overlay:** heading · O2 remaining · distance/ETA to next stop · turn-back warning. All values come
-  from `routes.json` (**Scenario** model outputs, badged as such on the HUD).
+- **HUD overlay:** heading · O2 remaining · distance/ETA to next stop · turn-back warning · current zone
+  (green/amber/red) · recommended return (lowest-hazard or fastest, auto-switching per §7b). All values
+  come from `routes.json` and the §7b fields (**Scenario** model outputs, badged as such on the HUD).
 - **Limit stated on screen:** real imagery exists **only at stops**. Moving between stops is a jump, like
   street-view points. A 3D fly-along from DEM + ortho is a Sunday extra, labeled "visualization from
   orbital data, not a photograph". No AI-generated Mars scenery; if any is used, SI watermark rules apply.
@@ -285,6 +410,19 @@ credits in `data/PROVENANCE.md`. Building the viewer waits until Tier 1 is submi
   https://www.jpl.nasa.gov/images/pia26696-curiosity-captures-a-360-degree-view-at-nevado-sajama/
 - JPL, Curiosity starts unpacking boxwork formations (2025-06-23):
   https://www.jpl.nasa.gov/news/nasas-curiosity-mars-rover-starts-unpacking-boxwork-formations/
+- Ogilvie, Swartout, Hoffmann, McFarland, Hickox, *Mars Spacesuit Mass Requirements*, ICES-2026-127, NASA JSC
+  (NTRS 20260003038): https://ntrs.nasa.gov/citations/20260003038 (xEMU 391 lbm; 230 lbm recommended Mars max;
+  crew mass 94–243 lbm; NIOSH 51 lbf; VO₂max ≥ 36.5 ml/min/kg for surface EVA)
+- Apollo LRV performance (20–23° favorable, 25° max design slope; 9–13 km/h): NASA NTRS 20250011301,
+  https://ntrs.nasa.gov/citations/20250011301 · ALSJ LRV performance:
+  https://nasa.gov/wp-content/uploads/static/history/alsj/WOTM/WOTM-LRVPerformance.html
+- NASA DRA 5.0, NASA/SP-2009-566 (buddy rule; surface strategy options): https://www.nasa.gov/pdf/373665main_NASA-SP-2009-566.pdf
+- NASA Mars Rock Samples (Perseverance, Jezero; 30 of 38 sample tubes, 5 witness tubes):
+  https://science.nasa.gov/mission/mars-2020-perseverance/mars-rock-samples/
+- NASA Curiosity blog, sols 4689–4694, "Drill in the boxwork unit is go":
+  https://science.nasa.gov/blog/curiosity-blog-sols-4689-4694-drill-in-the-boxwork-unit-is-go/
+- Curiosity and Perseverance designed for slopes up to 30° (JPL):
+  https://www.nasa.gov/centers-and-facilities/jpl/this-transforming-rover-can-explore-the-toughest-terrain
 - WebXR on visionOS. Apple Developer Forums (WebKit supports `immersive-vr`; AR module unsupported):
   https://developer.apple.com/forums/thread/743655 · https://developer.apple.com/forums/thread/756850 ·
   default-on in visionOS 2 (secondary report): https://roadtovr.com/visionos-2-webxr-support-vision-pro/

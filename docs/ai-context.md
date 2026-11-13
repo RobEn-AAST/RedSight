@@ -43,7 +43,11 @@ official "no pre-work" rule; build happens inside the event window).
   **Tier 1 base** (map + layers + stops + routes + turn-back slider + provenance/RAD/REMS cards +
   deploy + submit) → **Tier 2 extras** (360 at stops + HUD) only after Tier 1 is submitted → **Tier 3
   bonus** (Vision Pro WebXR, 3D fly-along) only after Tier 2 works. Before starting work, check which tier
-  is complete. Data-type order and badges: D16–D17.
+  is complete. Data-type order and badges: D16–D17. Return-budget zones, the "don't go beyond" line and
+  the automatic switch to the fastest return when O₂ is low are Tier 1 (D22, demo-focus-plan §7b). Crew setup (pair, body mass, load, samples) is
+  Tier 1 (D19); rover-vs-foot mode is the first Tier 2 item (D20); drill-site stops (D21). Display
+  formats are all optional; no fixed number is required (demo-focus-plan §1b). The challenge-text
+  traceability table is demo-focus-plan §1c.
 - **Architecture:** web-first static 2D planner (MapLibre + precomputed tiles/JSON), Python engine
   offline; three.js 3D/HUD as 48 h extension (Approach 1, technical-approaches §4; reinforced by the
   independent review V2/F2: scipy Dijkstra field core, hand-written A* only as interactive/oracle).
