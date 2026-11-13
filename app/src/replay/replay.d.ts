@@ -39,6 +39,8 @@ export interface Replay {
   clearDrill(): void
   /** Move the replay layers back on top of the host map's layers. */
   raise(): void
+  /** The current model timeline (shape in replay-core.d.ts). */
+  readonly timeline: unknown
   destroy(): void
 }
 
