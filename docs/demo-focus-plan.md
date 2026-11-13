@@ -124,6 +124,26 @@ engine JSON, so they cannot disagree (review §7 integration contract).
 Deployment note: `.gitignore` excludes `tiles/` and `app/dist/`, so a plain "GitHub Pages from the main
 branch" deploy would ship without tiles. Deploy by uploading the built folder, or use a deploy branch.
 
+## 5a. Why Gale, not Jezero (site re-confirmed 2026-11-13, decision D02)
+
+Jezero was reconsidered in the planning session because it is data-rich. **Gale stays** (Team choice):
+
+| | Gale / Mount Sharp (chosen) | Jezero |
+|---|---|---|
+| Rover | Curiosity (since 2012) | Perseverance (since 2021) |
+| Challenge's own worked example | **Yes**: boxwork in the Mount Sharp region | Not mentioned |
+| Surface radiation measurement | **RAD**, the only surface dosimeter on Mars | None (no dosimeter on Perseverance) |
+| Weather station | REMS (longest record) | MEDA |
+| HiRISE imagery + 1 m-class elevation | Yes, plus Trek's ready 1 m Gale DEM | Yes (landing-site mapping) |
+| Rover photos / 360s | Yes, incl. boxwork 360s (PIA26559, PIA26696) | Yes, very many |
+| Science story | Water history, sulfates, boxwork veins | Delta/lake, potential biosignatures |
+
+**Why Gale wins for this challenge:** (1) it is the challenge's own example (Relevance); (2) the challenge
+asks for radiation/space-weather safety context, and only Gale has observed surface radiation (Jezero
+would be Scenario-only). Switching would also discard the box, stops, DEM selection and panoramas.
+Jezero is the better choice only if the science goal is "ancient life / delta". That's not our goal.
+The Perseverance raw-image resource is therefore not used (wrong site); Curiosity imagery replaces it.
+
 ## 5. Ops area: corrected (supersedes the research-era box)
 
 **Finding (2026-11-13, Observed):** the box assumed in the research docs, 137.30–137.45°E / −4.75…−4.55°,

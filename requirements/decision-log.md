@@ -29,6 +29,7 @@ Prepared 2026-11-13. This is the initial decision log. Some source questions wer
 | D14 | **Tier 2 — HUD overlay** on the 360 view, values only from engine `routes.json`, Scenario-badged | Adopted (team), after Tier 1 | demo-focus-plan §7 |
 | D15 | **Tier 3 — Apple Vision Pro** via WebXR `immersive-vr` in Safari (same URL); no native visionOS app; demo-table bonus, judged demo never depends on it | Adopted (team), after Tier 2; device test pending | demo-focus-plan §8 |
 | D16 | **Data-type build order:** optical → topographic → thermal (3 by Friday night) → spectral → radiation card → atmospheric card → chemical (Sunday); geophysical skipped | Adopted (team) | demo-focus-plan §6 |
+| D18 | **Site re-confirmed: Gale over Jezero** (D02 stands) | Adopted (user, 2026-11-13) | Challenge example = Mount Sharp boxwork; only Gale has surface radiation data (RAD); switching would discard the ops box, stops, DEM and panoramas. Comparison in demo-focus-plan §5a |
 | D17 | **Badge decision:** DEM = Observed; slope/hillshade/cost = Derived; THEMIS thermal inertia = Derived | Adopted (team) | Resolves drift between technical-approaches §1 and mapping-options §13 |
 
 ## Working boundary
