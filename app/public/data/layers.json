@@ -48,12 +48,13 @@
    "badge": "Derived",
    "provenance": {
     "source": "Derived from Mars Trek Gale_DEM_SMG_1m (Mars sphere R = 3,396,190 m)",
-    "resolution": "2.5 m display; 10 m max-slope used for >15 deg constraint",
+    "resolution": "2.5 m display (central-difference slope of the Trek DEM export); not the routing slope",
     "date": "2026-11-13",
     "license": "NASA/JPL-Caltech/Univ. of Arizona"
    },
    "legend": {
     "type": "discrete",
+    "note": "Display slope from the Trek 2.5 m DEM. Routing uses the native ~1 m HiRISE DTM (DTEEC_019698_1750_019988_1750_U01) with Horn 3x3 slope and a 15 deg hard mask, so a modeled route can cross ground this layer colours as steep.",
     "items": [
      { "label": "0-5 deg (low slope)", "color": "#4caf50" },
      { "label": "5-10 deg (moderate)", "color": "#ffeb3b" },

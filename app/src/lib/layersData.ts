@@ -34,11 +34,11 @@ export const layerCatalog: LayerCard[] = [
     name: 'Slope (from DEM)',
     instrument: 'Computed from Gale DEM',
     evidence: 'derived',
-    resolution: 'planning grid 5–10 m/px (resampled)',
+    resolution: 'map: 2.5 m/px Trek DEM export · routing: ~1 m/px HiRISE DTM',
     status: 'planned',
     sourceName: 'RedSight engine (offline preprocessing, pending)',
     sourceUrl: 'https://github.com/RobEn-AAST/RedSight',
-    note: 'Hard-constraint layer ~15° max planning slope — team assumption, configurable.',
+    note: 'Two slopes: the map layer is display slope from the Trek 2.5 m DEM (central differences); routes use Horn 3×3 slope on the native ~1 m HiRISE DTM with a 15° hard mask (team assumption, configurable). A route can cross ground the map layer colours as steep.',
   },
   {
     id: 'themis-inertia',

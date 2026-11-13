@@ -55,7 +55,7 @@ python engine/tiles/build_tiles.py
 - **`app/public/tiles/<layer>/{z}/{x}/{y}.png`** (for **Yassin**'s MapLibre app & deploy, `z10–16`):
   - `hirise/` (`Observed`, `29.22 MB`)
   - `hillshade/` (`Derived`, `24.52 MB`)
-  - `slope/` (`Derived`, `4.39 MB`)
+  - `slope/` (`Derived`, `4.39 MB`) — display slope only (Trek `2.5 m` DEM, central differences); routes use Horn `3×3` slope on the native ~`1 m` HiRISE DTM with the `15°` mask ([`engine/README.md`](../engine/README.md)), so the two can disagree locally
   - `themis/` (`Derived`, `0.53 MB`)
   - `crism/` (`Derived`, `17.58 MB`)
   - `geology/` (`Derived`, `0.40 MB`)
