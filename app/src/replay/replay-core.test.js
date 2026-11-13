@@ -69,3 +69,10 @@ test("low-O2 event and no-go case", () => {
   const none = buildTimeline({ ...route, cum: { t_s: [0, 600, 1200], o2_l: [1, 5, 10] } }, { budgetL: 1 });
   assert.equal(none.events[0].type, "no-go");
 });
+
+test("turn-back-ahead warning comes before the turn", () => {
+  const tl = buildTimeline(route, { budgetL: 15, aheadS: 300 });
+  const ahead = tl.events.find((e) => e.type === "turnback-ahead");
+  const turn = tl.events.find((e) => e.type === "turnback");
+  assert.ok(ahead && ahead.t === turn.t - 300);
+});

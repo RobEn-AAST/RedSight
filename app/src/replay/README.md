@@ -13,8 +13,9 @@ replay.setBudget(60);   // Jana's turn-back slider calls this
 replay.setRoute(other); // route card A/B switch (Yassin)
 ```
 
-**Dev page:** `cd app/src/replay && python3 -m http.server 8765` → http://localhost:8765/dev.html
-(mock route + a stand-in budget slider). **Tests:** `node --test app/src/replay/replay-core.test.js`.
+**Dev page:** `cd app && python3 -m http.server 8765` → http://localhost:8765/src/replay/dev.html
+(uses the mock contract route `public/data/routes/S1_fastest_2_15.json`; add `?route=<path>` for another;
+the top-left slider stands in for Jana's turn-back slider). **Voice:** 🔇/🔊 button, or `createReplay(map, { voice: true })`. **Tests:** `node --test app/src/replay/replay-core.test.js`.
 
 ## Route file fields the replay reads (proposal for the §15 contract — Ali/Yassin please confirm)
 
@@ -28,8 +29,8 @@ replay.setRoute(other); // route card A/B switch (Yassin)
 
 Turn-back rule (threshold only, no modeling in the browser): the crew keeps walking while
 `cum.o2_l[i] + back.o2_l[i] ≤ budget`; the exact turn spot is interpolated inside the crossing segment.
-Return leg = the same path reversed (lite). `mock/route.json` is **MOCK** data from `mock/make-mock.mjs`.
+Return leg = the same path reversed (lite). Mock routes live in `app/public/data/routes/` (see that folder's README).
 
 ## Next (if time)
-Voice callouts from `onEvent` (Web Speech API), 3D terrain follow camera, auto-switch to the fastest return
+3D terrain follow camera, auto-switch to the fastest return
 when the zones fields arrive, radio-shadow events.

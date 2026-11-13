@@ -119,6 +119,8 @@ export function buildTimeline(route, opts = {}) {
     events.push({ t, type: "return", label: "Heading home" });
   } else {
     events.push({ t, type: "turnback", label: "Modeled turn-back point reached: heading home" });
+    const ahead = opts.aheadS ?? 600; // warn this much mission time before the turn
+    if (t - ahead > 0) events.push({ t: t - ahead, type: "turnback-ahead", label: "Turn-back point ahead" });
   }
 
   // Return along the same path (reversed). Costs from the back arrays, relative to the turn spot.

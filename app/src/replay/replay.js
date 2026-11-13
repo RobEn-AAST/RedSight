@@ -1,6 +1,7 @@
 // Mission Replay — MapLibre layer + player panel. Owner: Marwan.
 // Usage: const r = createReplay(map, { route, budgetL }); r.play();
 import { buildTimeline, sampleAt, trailAt, formatClock } from "./replay-core.js";
+import { createVoice, calloutFor } from "./voice.js";
 
 const SRC = { crew: "replay-crew", trail: "replay-trail", turn: "replay-turn" };
 const DURATIONS = [30, 60, 120]; // seconds of screen time for the whole walk
@@ -12,6 +13,7 @@ export function createReplay(map, opts) {
   const lagS = opts.pairLagS ?? 45; // second crew member trails by this much mission time
   const crewSize = opts.crew ?? route.crew ?? 2;
   const onEvent = opts.onEvent ?? (() => {});
+  const voice = createVoice({ enabled: opts.voice ?? false });
   let tl = buildTimeline(route, { budgetL, dwellS: opts.dwellS, dwellO2L: opts.dwellO2L });
   let t = 0, playing = false, raf = 0, last = 0, firedUpTo = -1;
 
@@ -57,6 +59,7 @@ export function createReplay(map, opts) {
       if (e.t <= t && e.t > firedUpTo) {
         ui.event.textContent = e.label;
         ui.event.dataset.type = e.type;
+        voice.say(calloutFor(e));
         onEvent(e);
       }
     }
@@ -107,6 +110,7 @@ export function createReplay(map, opts) {
         <select class="replay-speed" aria-label="Replay length">
           ${DURATIONS.map((d) => `<option value="${d}" ${d === durationS ? "selected" : ""}>${d} s</option>`).join("")}
         </select>
+        <button class="replay-voice" aria-label="Spoken callouts" title="Spoken callouts">🔇</button>
       </div>
       <div class="replay-gauge"><div class="replay-bar"></div></div>
       <div class="replay-row replay-stats">
@@ -119,7 +123,10 @@ export function createReplay(map, opts) {
     const q = (c) => el.querySelector(c);
     const refs = { el, play: q(".replay-play"), scrub: q(".replay-scrub"), speed: q(".replay-speed"), bar: q(".replay-bar"),
       o2: q(".replay-o2"), clock: q(".replay-clock"), dist: q(".replay-dist"), phase: q(".replay-phase"),
-      event: q(".replay-event"), note: q(".replay-note") };
+      event: q(".replay-event"), note: q(".replay-note"), voice: q(".replay-voice") };
+    if (!voice.supported) refs.voice.hidden = true;
+    refs.voice.textContent = voice.enabled ? "🔊" : "🔇";
+    refs.voice.onclick = () => { voice.setEnabled(!voice.enabled); refs.voice.textContent = voice.enabled ? "🔊" : "🔇"; };
     refs.play.onclick = () => (playing ? pause() : play());
     refs.scrub.oninput = () => { pause(); seek((+refs.scrub.value / 1000) * tl.totalS); };
     refs.speed.onchange = () => { durationS = +refs.speed.value; };
@@ -132,8 +139,10 @@ export function createReplay(map, opts) {
     setBudget(l) { budgetL = l; rebuild(); },
     setRoute(r) { route = r; budgetL = budgetL ?? r.budget_l; rebuild(); },
     get timeline() { return tl; },
+    voice,
     destroy() {
       pause();
+      voice.setEnabled(false);
       ui.el.remove();
       for (const id of Object.values(SRC)) { if (map.getLayer(id)) map.removeLayer(id); if (map.getSource(id)) map.removeSource(id); }
     },

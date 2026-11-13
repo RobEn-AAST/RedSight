@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Mission Replay dev</title>
+  <!-- Serve from app/: python3 -m http.server 8765 → http://localhost:8765/src/replay/dev.html -->
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
   <link rel="stylesheet" href="./replay.css">
   <style>
@@ -16,11 +17,11 @@
 <body>
   <div id="map"></div>
   <!-- Stand-in for Jana's turn-back slider: drives replay.setBudget() -->
-  <label class="dev-budget">MOCK budget: <input id="budget" type="range" min="10" max="110" value="90"> <span id="bv">90</span> L</label>
+  <label class="dev-budget">MOCK budget: <input id="budget" type="range" min="20" max="300" value="289"> <span id="bv">289</span> L</label>
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script type="module">
     import { createReplay } from "./replay.js";
-    const route = await (await fetch("./mock/route.json")).json();
+    const route = await (await fetch(new URLSearchParams(location.search).get("route") ?? "../../public/data/routes/S1_fastest_2_15.json")).json();
     const map = new maplibregl.Map({
       container: "map",
       style: { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": "#6b3f2a" } }] },
@@ -29,7 +30,7 @@
     map.on("load", () => {
       map.addSource("plan", { type: "geojson", data: { type: "Feature", geometry: { type: "LineString", coordinates: route.coords } } });
       map.addLayer({ id: "plan", type: "line", source: "plan", paint: { "line-color": "#fff", "line-width": 2, "line-dasharray": [2, 2] } });
-      const replay = createReplay(map, { route, budgetL: 90, onEvent: (e) => console.log("[replay]", e.type, e.label) });
+      const replay = createReplay(map, { route, budgetL: 289, voice: false, onEvent: (e) => console.log("[replay]", e.type, e.label) });
       window.replay = replay;
       const b = document.getElementById("budget"), bv = document.getElementById("bv");
       b.oninput = () => { bv.textContent = b.value; replay.setBudget(+b.value); };
