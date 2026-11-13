@@ -47,7 +47,8 @@ def _handoff_sources(manifest, primary_dem):
             "source_url": primary_dem.source_url,
             "license": primary_dem.license,
             "local_path": primary_dem.source_path,
-            "sha256": primary_dem.source_sha256,
+            "local_crop_sha256": primary_dem.local_crop_sha256,
+            "source_asset_sha256": "not computed; the full COG was not retained after HTTP range reads",
             "resolution_m": [primary_dem.resolution_x_m, primary_dem.resolution_y_m],
             "valid_cells": int(primary_dem.valid.sum()),
             "total_cells": int(primary_dem.valid.size),
@@ -94,7 +95,7 @@ def _handoff_sources(manifest, primary_dem):
                 "source_url": item.get("source_url", ""),
                 "license": item.get("license", ""),
                 "local_path": str(path),
-                "sha256": digest,
+                "local_crop_sha256": digest,
                 "valid_pixel_percent": item.get("valid_pixel_percent"),
                 "extent": item.get("extent"),
                 "used_for_routing": False,
@@ -108,7 +109,7 @@ def _handoff_sources(manifest, primary_dem):
             raise ValueError("coverage mosaic checksum does not match the handoff manifest")
         result["mosaic_reference"] = {
             "local_path": str(mosaic_path),
-            "sha256": mosaic_hash,
+            "local_sha256": mosaic_hash,
             "shape_hw": coverage.get("shape_hw"),
             "valid_percent": coverage.get("valid_percent"),
             "used_for_routing": False,
@@ -305,7 +306,7 @@ def build_real_routes(
                     "goal_cell_rc": list(stop["cell"]),
                     "objective_cost": path.objective_cost,
                     "distance_m": float(sum(item["cost_terms"]["distance_m"] for item in arrays["seg"])),
-                    "input_sha256": dem.source_sha256,
+                    "primary_crop_sha256": dem.local_crop_sha256,
                     "model_note": "Scenario: 10 m mean-elevation slopes and thermal terrain factor 1.0; no sub-cell scarp, THEMIS sand cost, or sample pickup load is included in this base 15 kg route bucket.",
                 }
                 _write_json(routes_dir / filename, route_payload)

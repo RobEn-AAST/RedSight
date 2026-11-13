@@ -43,4 +43,4 @@ def test_reads_and_hash_checks_primary_projected_dem_without_filling_nodata(tmp_
     assert loaded.elevation_m[1, 2] == 14
     assert loaded.valid.sum() == 5
     assert loaded.resolution_m == 10
-    assert loaded.source_sha256 == digest
+    assert loaded.local_crop_sha256 == digest

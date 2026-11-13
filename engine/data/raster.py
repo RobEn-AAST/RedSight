@@ -23,7 +23,7 @@ class RasterDem:
     source_path: str
     source_url: str
     license: str
-    source_sha256: str
+    local_crop_sha256: str
     manifest_sha256: str
 
     @property
@@ -103,6 +103,6 @@ def read_primary_dem(manifest_path: str | Path) -> RasterDem:
             source_path=str(source_path),
             source_url=item.get("source_url", ""),
             license=item.get("license", ""),
-            source_sha256=digest,
+            local_crop_sha256=digest,
             manifest_sha256=hashlib.sha256(manifest_bytes).hexdigest(),
         )
