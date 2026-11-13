@@ -44,6 +44,8 @@ export interface PlanStore {
   setCrewMode: (mode: CrewMode) => void
   /** Plan files for the selected target, by mode. */
   plans: Partial<Record<EngineRouteMode, PlanFile>>
+  /** §15 route contract files for the selected target (carry seg[].cost_terms). */
+  contractRoutes: Partial<Record<EngineRouteMode, EngineRoute>>
   status: PlanStatus
   /** The plan for the selected target and mode, if loaded. */
   activePlan: PlanFile | null
@@ -67,6 +69,9 @@ export interface PlanStore {
    */
   o2BudgetL: number | null
   setO2BudgetL: (l: number | null) => void
+  /** Whether Curiosity's Observed MMGIS traverse overlay is visible on the map. */
+  showCuriosityPath: boolean
+  setShowCuriosityPath: (show: boolean) => void
   map: MapLibreMap | null
   setMap: (map: MapLibreMap | null) => void
 }

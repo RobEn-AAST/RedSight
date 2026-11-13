@@ -1,12 +1,12 @@
 import { useState } from 'react'
+import { Layers } from 'lucide-react'
 
 import { useEngineData } from '@/lib/useEngineData'
 import { opsBox as fallbackOpsBox } from '@/lib/stopsData'
 import { MapCanvas } from '@/map/MapCanvas'
 import { PlanPanel } from '@/map/PlanPanel'
-import { MissionReplay } from '@/replay/MissionReplay'
-import { TurnBackPanel } from '@/turnback/TurnBackPanel'
 import { EmptyState } from '@/ui/EmptyState'
+import { usePlan } from '@/map/usePlan'
 import { Toggle } from '@/ui/Toggle'
 
 /**
@@ -17,8 +17,10 @@ import { Toggle } from '@/ui/Toggle'
  */
 export function MapWorkspace({ onOpenSources }: { onOpenSources: () => void }) {
   const engine = useEngineData()
+  const { showCuriosityPath, setShowCuriosityPath } = usePlan()
   const [layerChoice, setLayerChoice] = useState<Record<string, boolean>>({})
   const [showImagery, setShowImagery] = useState(true)
+  const [layersOpen, setLayersOpen] = useState(false)
 
   const layers = engine.layers ?? []
   const available = layers.filter((l) => l.available)
@@ -43,26 +45,50 @@ export function MapWorkspace({ onOpenSources }: { onOpenSources: () => void }) {
           />
         )}
 
-        {/* Map layers: the orbital image plus any tiled data layers that exist. */}
-        {(engine.preview || available.length > 0) && (
-          <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 flex-wrap items-center justify-center gap-x-4 gap-y-2 border border-seam bg-hull/90 px-3 py-1.5">
-            {engine.preview && (
-              <label className="flex items-center gap-2 text-xs text-ink">
-                <Toggle size="sm" checked={showImagery} onChange={setShowImagery} label="Show orbital image" />
-                Orbital image
-              </label>
+        {/* Map layers: one button top-right; the bottom edge belongs to the replay bar and zoom. */}
+        {(engine.preview || engine.curiosityPath || available.length > 0) && (
+          <div className="absolute right-3 top-12 z-10 flex flex-col items-end gap-1">
+            <button
+              type="button"
+              onClick={() => setLayersOpen((o) => !o)}
+              aria-expanded={layersOpen}
+              aria-controls="map-layers"
+              className="label-console flex min-h-10 items-center gap-1.5 border border-seam-lit bg-hull/90 px-3 text-ink hover:text-signal"
+            >
+              <Layers size={14} aria-hidden /> Layers
+            </button>
+            {layersOpen && (
+              <div id="map-layers" className="flex flex-col gap-2.5 border border-seam bg-hull/95 px-3 py-2.5">
+                {engine.preview && (
+                  <label className="flex items-center justify-between gap-4 text-xs text-ink">
+                    Orbital image
+                    <Toggle size="sm" checked={showImagery} onChange={setShowImagery} label="Show orbital image" />
+                  </label>
+                )}
+                {engine.curiosityPath && (
+                  <label className="flex items-center justify-between gap-4 text-xs text-ink">
+                    Curiosity's real path
+                    <Toggle
+                      size="sm"
+                      checked={showCuriosityPath}
+                      onChange={setShowCuriosityPath}
+                      label="Show Curiosity's real path"
+                    />
+                  </label>
+                )}
+                {available.map((l) => (
+                  <label key={l.id} className="flex items-center justify-between gap-4 text-xs text-ink">
+                    {l.name}
+                    <Toggle
+                      size="sm"
+                      checked={enabledLayers[l.id] ?? false}
+                      onChange={(next) => setLayerChoice((s) => ({ ...s, [l.id]: next }))}
+                      label={`Show ${l.name}`}
+                    />
+                  </label>
+                ))}
+              </div>
             )}
-            {available.map((l) => (
-              <label key={l.id} className="flex items-center gap-2 text-xs text-ink">
-                <Toggle
-                  size="sm"
-                  checked={enabledLayers[l.id] ?? false}
-                  onChange={(next) => setLayerChoice((s) => ({ ...s, [l.id]: next }))}
-                  label={`Show ${l.name}`}
-                />
-                {l.name}
-              </label>
-            ))}
           </div>
         )}
       </div>
@@ -73,11 +99,6 @@ export function MapWorkspace({ onOpenSources }: { onOpenSources: () => void }) {
         aria-label="Plan"
       >
         <PlanPanel onOpenSources={onOpenSources} />
-        {/* Jana's turn-back slider and Marwan's Mission Replay read usePlan().activeRoute. */}
-        <div className="flex flex-col gap-3 border-t border-seam p-3">
-          <TurnBackPanel />
-          <MissionReplay />
-        </div>
       </aside>
     </div>
   )

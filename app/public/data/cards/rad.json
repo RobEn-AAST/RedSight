@@ -3,31 +3,34 @@
  "badge": "Observed",
  "values": [
   {
-   "label": "Surface dose rate (GCR, average)",
+   "label": "Surface GCR dose equivalent rate (average)",
    "value": 0.64,
    "unit": "mSv/day",
    "pm": 0.12,
-   "badge": "Observed"
+   "badge": "Observed",
+   "note": "Measured on the Gale Crater traverse during sols 13–300 near solar maximum (Hassler et al. 2014)."
   },
   {
-   "label": "Surface GCR dose range across mission",
-   "value": "0.64–0.67",
-   "unit": "mSv/day",
-   "badge": "Observed"
+   "label": "Surface GCR absorbed dose rate (tissue-like plastic)",
+   "value": 210,
+   "unit": "µGy/day",
+   "pm": 40,
+   "badge": "Observed",
+   "note": "Detector E tissue-equivalent plastic scintillator average over sols 13–300 (Hassler et al. 2014, Table 1)."
+  },
+  {
+   "label": "Sept 2017 surface SEP event (absorbed dose in silicon)",
+   "value": 418,
+   "unit": "µGy (Si)",
+   "badge": "Observed",
+   "note": "Largest solar energetic particle event recorded at Mars surface by RAD silicon detector B during 10–13 Sept 2017 (Zeitlin et al. 2018; Cohen & Mewaldt 2018)."
   },
   {
    "label": "Modeled 4-hour Marswalk GCR dose (unshielded)",
    "value": 0.11,
    "unit": "mSv",
    "badge": "Scenario",
-   "note": "Derived arithmetic (0.64 mSv/day × 4/24 h); suit and terrain sky-view shielding not modeled."
-  },
-  {
-   "label": "Sept 2017 surface SEP event total",
-   "value": 369,
-   "unit": "µGy",
-   "badge": "Observed",
-   "note": "Episodic solar energetic particle event measured at the surface by RAD (Zeitlin et al. 2018)."
+   "note": "Scenario estimate scaling the 0.64 mSv/day GCR baseline to a 4-hour excursion; suit and terrain sky-view shielding not modeled."
   }
  ],
  "limits": [
@@ -35,23 +38,25 @@
    "label": "NASA career effective dose limit",
    "value": 600,
    "unit": "mSv",
-   "source": "NASA-STD-3001 Vol 1",
-   "badge": "Observed"
+   "source": "NASA-STD-3001 Vol 1 (career limit for all astronauts)"
   },
   {
    "label": "Spatial radiation map at walk scale",
    "value": "Unavailable",
    "unit": "—",
-   "source": "RAD is the sole surface dosimeter on Mars (single roving point)",
+   "source": "RAD is a single rover-local point dosimeter (the only surface dosimeter on Mars); no walk-scale spatial map exists",
    "badge": "Unavailable"
   }
  ],
- "note": "Curiosity RAD is the only surface radiation dosimeter on Mars. Measurements are rover-local point values, not a spatial map across the ops box. Suit and terrain sky-view shielding are not modeled.",
+ "note": "Curiosity RAD is a rover-local dosimeter, not a spatial map across the ops box. SEP peak value (418 µGy) is absorbed dose in silicon, not directly equivalent to mSv effective dose.",
  "claim_boundary": "Context card only — never rendered as a spatial hazard heatmap. Modeled walk dose scales the Observed GCR baseline by excursion duration (Scenario).",
- "source": "Hassler et al. 2014, Science 343:1244797, doi:10.1126/science.1244797; Zeitlin et al. 2018, GRL, doi:10.1029/2018GL077760; PDS PPI MSL-M-RAD-2-EDR-V1.0; NASA-STD-3001 Vol 1",
+ "source": "Hassler et al. 2014, Science 343:1244797, doi:10.1126/science.1244797; Zeitlin et al. 2018, GRL 45:5845–5851, doi:10.1029/2018GL077760; Cohen & Mewaldt 2018, Space Weather 16:1616–1623, doi:10.1029/2018SW002006; PDS PPI MSL-M-RAD-2-EDR-V1.0; NASA-STD-3001 Vol 1",
  "source_urls": [
+  "https://doi.org/10.1126/science.1244797",
+  "https://doi.org/10.1029/2018GL077760",
+  "https://doi.org/10.1029/2018SW002006",
   "https://pds-ppi.igpp.ucla.edu/collection/MSL-M-RAD-2-EDR-V1.0",
   "https://www.nasa.gov/wp-content/uploads/2023/03/radiation-protection-technical-brief-ochmo.pdf"
  ],
- "date_range": "2012-08-07 → 2026 (GCR baseline 2012-08 → 2013-06; Sept 2017 SEP event)"
+ "date_range": "2012-08 → 2013-06 (sols 13–300 GCR baseline, Hassler et al. 2014); 2017-09-10 → 2017-09-13 (Sept 2017 SEP event, Zeitlin et al. 2018)"
 }

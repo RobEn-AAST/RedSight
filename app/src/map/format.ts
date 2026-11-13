@@ -42,6 +42,32 @@ export const MEMBER_B_COLOR = '#e9edf3'
 
 export const NO_RETURN_COLOR = '#ff6d6d'
 
+/** Blocked ground (hazards.geojson). Must match `--color-hazard` in tokens.css. */
+export const HAZARD_COLOR = '#b98cff'
+
+/** Ground the engine cannot judge (no elevation data, map edge): routes avoid it too. */
+export const UNKNOWN_GROUND_COLOR = '#9aa3b2'
+
+/** Short map label for a hazards.geojson `reason` (codes from demo-focus-plan §15). */
+export function hazardLabel(reason: unknown): string {
+  switch (reason) {
+    case 'slope':
+      return 'Too steep'
+    case 'nodata':
+      return 'No elevation data'
+    case 'edge':
+      return 'Map edge'
+    case 'rover_step':
+      return 'Rover: step too high'
+    case 'rover_sand':
+      return 'Rover: soft sand'
+    case 'rover_width':
+      return 'Rover: too narrow'
+    default:
+      return 'No-go'
+  }
+}
+
 export function formatDuration(seconds: number): string {
   const total = Math.max(0, Math.round(seconds / 60))
   const h = Math.floor(total / 60)

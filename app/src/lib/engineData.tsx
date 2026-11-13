@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 
 import { fetchData, fetchJsonUrl, previewUrl } from '@/lib/dataUrl'
+import { parseCuriosityPath } from '@/map/curiosityPath'
 import {
   EngineDataContext,
   emptyEngineData,
@@ -75,6 +76,7 @@ function parseStops(raw: unknown): EngineStop[] | null {
         : [],
       panorama: typeof p.panorama === 'string' ? p.panorama : null,
       science: typeof p.science === 'string' ? p.science : undefined,
+      elevM: isObject(p.card) && isNumber(p.card.elev_m) ? p.card.elev_m : undefined,
       badge: (p.badge as EngineStop['badge']) ?? 'Observed',
     })
   }
@@ -179,10 +181,23 @@ export function EngineDataProvider({ children }: { children: ReactNode }) {
       fetchJsonUrl<unknown>(previewUrl('basemap.json')),
       fetchData<unknown>('targets.geojson'),
       fetchData<unknown>('plan/index.json'),
+      fetchData<unknown>('curiosity_path.geojson'),
     ]).then((results) => {
       if (cancelled) return
-      const [meta, layers, stops, constants, routeIndex, hazards, rad, rems, preview, targets, planIndex] =
-        results
+      const [
+        meta,
+        layers,
+        stops,
+        constants,
+        routeIndex,
+        hazards,
+        rad,
+        rems,
+        preview,
+        targets,
+        planIndex,
+        curiosityPath,
+      ] = results
       setState({
         meta: parseMeta(meta),
         layers: parseLayers(layers),
@@ -194,6 +209,7 @@ export function EngineDataProvider({ children }: { children: ReactNode }) {
         preview: parsePreview(preview),
         targets: parseTargets(targets),
         planIndex: parsePlanIndex(planIndex),
+        curiosityPath: parseCuriosityPath(curiosityPath),
         mock: results.some(isMock),
         probed: true,
       })
