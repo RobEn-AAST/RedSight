@@ -3,7 +3,9 @@ import {
   Map as MapLibreMap,
   Marker,
   NavigationControl,
+  Popup,
   setWorkerUrl,
+  type ExpressionSpecification,
   type GeoJSONSource,
   type LngLatBoundsLike,
   type StyleSpecification,
@@ -18,7 +20,7 @@ import { absoluteDataUrl } from '@/lib/dataUrl'
 import type { EngineRouteMode, PlanMember } from '@/lib/engineDataContext'
 import { useEngineData } from '@/lib/useEngineData'
 import { curiosityLineCollection, curiosityWaypointCollection } from '@/map/curiosityPath'
-import { HAZARD_COLOR, MEMBER_B_COLOR, MODE_COLOR, NO_RETURN_COLOR, formatDistance, hazardLabel } from '@/map/format'
+import { HAZARD_COLOR, MEMBER_B_COLOR, UNKNOWN_GROUND_COLOR, MODE_COLOR, NO_RETURN_COLOR, formatDistance, hazardLabel } from '@/map/format'
 import { usePlan } from '@/map/usePlan'
 
 /**
@@ -66,30 +68,6 @@ const corners = (b: Box): Corners => [
 ]
 
 /** Everything outside the ops box, dimmed so the box reads as the work area. */
-/** 12 px tile of 45° stripes in `color`, for MapLibre `fill-pattern`. */
-function hatchPattern(color: string) {
-  const size = 12
-  const [r, g, b] = [1, 3, 5].map((i) => Number.parseInt(color.slice(i, i + 2), 16))
-  const data = new Uint8Array(size * size * 4)
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const d = (x + y) % size // distance along the diagonal
-      const a = d < 2 ? 210 : 40 // stripe, or a faint tint between stripes
-      data.set([r, g, b, a], (y * size + x) * 4)
-    }
-  }
-  return { width: size, height: size, data }
-}
-
-/** Middle of a polygon's outer ring (its vertex average: fine for the small blocked areas). */
-function ringCenter(f: Feature): [number, number] | null {
-  if (f.geometry.type !== 'Polygon') return null
-  const ring = f.geometry.coordinates[0].slice(0, -1)
-  if (ring.length === 0) return null
-  const sum = ring.reduce((s, p) => [s[0] + p[0], s[1] + p[1]], [0, 0])
-  return [sum[0] / ring.length, sum[1] / ring.length]
-}
-
 function maskPolygon(box: Box, outer: Box): Feature {
   const ring = (b: Box) => [...corners(b), corners(b)[0]]
   return {
@@ -267,20 +245,47 @@ export function MapCanvas({
         source: 'ops-box',
         paint: { 'line-color': '#e9edf3', 'line-width': 1, 'line-opacity': 0.25 },
       })
-      // Blocked ground: violet hatching + outline, so it never reads as the red no-return line.
-      map.addImage('hazard-hatch', hatchPattern(HAZARD_COLOR))
+      // Blocked ground, coloured by reason: steep = violet, unknown ground (no elevation data,
+      // map edge) = grey. A light tint, because real slope areas cover km² of the box.
+      const hazardColor: ExpressionSpecification = [
+        'match',
+        ['get', 'reason'],
+        ['nodata', 'edge'],
+        UNKNOWN_GROUND_COLOR,
+        HAZARD_COLOR,
+      ]
       map.addLayer({
         id: 'hazards-fill',
         type: 'fill',
         source: 'hazards',
-        paint: { 'fill-pattern': 'hazard-hatch' },
+        paint: { 'fill-color': hazardColor, 'fill-opacity': 0.2 },
       })
       map.addLayer({
         id: 'hazards-line',
         type: 'line',
         source: 'hazards',
-        paint: { 'line-color': HAZARD_COLOR, 'line-width': 1.5, 'line-opacity': 0.9 },
+        paint: {
+          'line-color': hazardColor,
+          'line-width': ['interpolate', ['linear'], ['zoom'], 13, 0.4, 16, 1.2],
+          'line-opacity': 0.6,
+        },
       })
+      // The engine ships thousands of blocked cells: their reason shows on tap, not as a label each.
+      map.on('click', 'hazards-fill', (e) => {
+        const p = e.features?.[0]?.properties
+        if (!p) return
+        const box = document.createElement('div')
+        box.className = 'text-xs'
+        const title = document.createElement('strong')
+        title.textContent = hazardLabel(p.reason)
+        const note = document.createElement('p')
+        note.className = 'mt-0.5 text-ink-dim'
+        note.textContent = String(p.label ?? '')
+        box.append(title, note)
+        new Popup({ closeButton: false, maxWidth: '240px', className: 'rs-popup' }).setLngLat(e.lngLat).setDOMContent(box).addTo(map)
+      })
+      map.on('mouseenter', 'hazards-fill', () => (map.getCanvas().style.cursor = 'help'))
+      map.on('mouseleave', 'hazards-fill', () => (map.getCanvas().style.cursor = ''))
       map.addLayer({
         id: 'targets-fill',
         type: 'fill',
@@ -574,16 +579,6 @@ export function MapCanvas({
       add(el, t.site)
     }
 
-    for (const f of engine.hazards?.features ?? []) {
-      const at = ringCenter(f as Feature)
-      if (!at) continue
-      const el = document.createElement('div')
-      el.title = String(f.properties?.label ?? 'Blocked ground')
-      el.className = 'pointer-events-none'
-      el.append(chip(hazardLabel(f.properties?.reason), 'border-hazard/80 bg-hull/90 text-hazard'))
-      add(el, at)
-    }
-
     const habitat = engine.meta?.habitat
     if (habitat) {
       const el = document.createElement('div')
@@ -604,13 +599,8 @@ export function MapCanvas({
         el.append(chip('P', 'border-ink bg-ink text-void'))
         add(el, m.coords[m.park_index])
       }
+      // The turn-back marker is drawn by the turn-back slider (it moves with the O₂ budget).
       const last = m.coords.length - 1
-      if (m.pnr_index < last && m.coords[m.pnr_index]) {
-        const el = document.createElement('div')
-        el.title = 'Modeled no-return point on this route'
-        el.append(chip('TURN BACK', 'border-caution bg-caution text-void'))
-        add(el, m.coords[m.pnr_index])
-      }
       if (crewMode === 'split') {
         const el = document.createElement('div')
         el.append(
@@ -625,10 +615,13 @@ export function MapCanvas({
     return () => {
       for (const marker of markers) marker.remove()
     }
-  }, [ready, engine.meta, engine.hazards, plan.goalTargets, selectedTargetId, selectTarget, activeMembers, crewMode])
+  }, [ready, engine.meta, plan.goalTargets, selectedTargetId, selectTarget, activeMembers, crewMode])
 
   const hasDrive = activeMembers.some((m) => m.legs.some((l) => l.kind === 'drive'))
-  const hasHazards = (engine.hazards?.features.length ?? 0) > 0
+  const hazardReasons = {
+    steep: engine.hazards?.features.some((f) => !['nodata', 'edge'].includes(String(f.properties?.reason))) ?? false,
+    unknown: engine.hazards?.features.some((f) => ['nodata', 'edge'].includes(String(f.properties?.reason))) ?? false,
+  }
 
   return (
     <div className="absolute inset-0">
@@ -654,15 +647,15 @@ export function MapCanvas({
         <span className="flex items-center gap-1.5">
           <span className="size-3 border border-observed bg-observed/30" /> Sample area
         </span>
-        {hasHazards && (
+        {hazardReasons.steep && (
           <span className="flex items-center gap-1.5">
-            <span
-              className="size-3 border border-hazard"
-              style={{
-                backgroundImage: `repeating-linear-gradient(-45deg, ${HAZARD_COLOR} 0 1.5px, transparent 1.5px 4px)`,
-              }}
-            />
-            No-go ground
+            <span className="size-3 border border-hazard bg-hazard/30" /> Too steep
+          </span>
+        )}
+        {hazardReasons.unknown && (
+          <span className="flex items-center gap-1.5">
+            <span className="size-3 border" style={{ borderColor: UNKNOWN_GROUND_COLOR, backgroundColor: `${UNKNOWN_GROUND_COLOR}4d` }} />{' '}
+            No elevation data
           </span>
         )}
         {noReturnLine && (

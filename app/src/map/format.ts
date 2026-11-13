@@ -45,6 +45,9 @@ export const NO_RETURN_COLOR = '#ff6d6d'
 /** Blocked ground (hazards.geojson). Must match `--color-hazard` in tokens.css. */
 export const HAZARD_COLOR = '#b98cff'
 
+/** Ground the engine cannot judge (no elevation data, map edge): routes avoid it too. */
+export const UNKNOWN_GROUND_COLOR = '#9aa3b2'
+
 /** Short map label for a hazards.geojson `reason` (codes from demo-focus-plan §15). */
 export function hazardLabel(reason: unknown): string {
   switch (reason) {
