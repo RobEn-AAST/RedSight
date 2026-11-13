@@ -21,6 +21,8 @@ export interface ReplayOptions {
   voice?: boolean
   /** Put the player panel here instead of over the map. */
   panelContainer?: HTMLElement
+  /** Draw habitat + stop dots (default true); off when the host map has its own markers. */
+  showEnds?: boolean
   onEvent?: (e: ReplayEvent) => void
 }
 

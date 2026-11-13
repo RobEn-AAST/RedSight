@@ -9,6 +9,8 @@ const DRILLS = [
   { id: "leak", label: "Suit leak", factor: 2 },
   { id: "work", label: "Hard work", factor: 1.5 },
 ];
+// Trail/crew colours chosen to stand out from the app's route lines (fastest amber, lowest-hazard green).
+const OUT = "#f4f1ea", BACK = "#4cc9f0", CREW_A = "#ff5fd2", CREW_B = "#b98cff";
 const pct = (x, c) => `${Math.round((x / c) * 100)}%`;
 
 export function createReplay(map, opts) {
@@ -17,6 +19,7 @@ export function createReplay(map, opts) {
   let durationS = opts.durationS ?? 60;
   const lagS = opts.pairLagS ?? 45; // second crew member trails by this much mission time
   const onEvent = opts.onEvent ?? (() => {});
+  const showEnds = opts.showEnds ?? true; // false when the host map already draws habitat + stop markers
   const voice = createVoice({ enabled: opts.voice ?? false });
   let tl = build();
   let t = 0, playing = false, raf = 0, last = 0, firedUpTo = -1;
@@ -45,15 +48,15 @@ export function createReplay(map, opts) {
   function render() {
     const s = sampleAt(tl, t);
     const C = tl.capacityL, R = tl.reserveL;
-    const pts = [{ pt: s.pt, color: "#06d6a0" }];
-    if (tl.members.length >= 2) pts.push({ pt: sampleAt(tl, Math.max(0, t - lagS)).pt, color: "#118ab2" });
+    const pts = [{ pt: s.pt, color: CREW_A }];
+    if (tl.members.length >= 2) pts.push({ pt: sampleAt(tl, Math.max(0, t - lagS)).pt, color: CREW_B });
     map.getSource(SRC.crew).setData(fc(pts.map((p) => pointF(p.pt, { color: p.color }))));
     const tr = trailAt(tl, t);
     map.getSource(SRC.trail).setData(fc([
-      ...(tr.out.length > 1 ? [lineF(tr.out, { color: "#ffd166", width: 4 })] : []),
-      ...(tr.back.length > 1 ? [lineF(tr.back, { color: "#4cc9f0", width: 6 })] : []),
+      ...(tr.out.length > 1 ? [lineF(tr.out, { color: OUT, width: 4 })] : []),
+      ...(tr.back.length > 1 ? [lineF(tr.back, { color: BACK, width: 6 })] : []),
     ]));
-    map.getSource(SRC.ends).setData(fc([
+    map.getSource(SRC.ends).setData(fc(!showEnds ? [] : [
       pointF(route.coords[0], { color: "#ffffff" }), // habitat
       pointF(route.coords[route.coords.length - 1], { color: "#9b5de5" }), // stop
     ]));
@@ -160,8 +163,8 @@ export function createReplay(map, opts) {
       <div class="replay-o2"></div>
       <div class="replay-need"></div>
       <div class="replay-members"></div>
-      <div class="replay-legend"><i style="background:#fff"></i>habitat <i style="background:#9b5de5"></i>stop
-        <i style="background:#ef476f"></i>turn-back <i style="background:#ffd166"></i>walked out <i style="background:#4cc9f0"></i>walked home</div>
+      <div class="replay-legend"><i style="background:${CREW_A}"></i>crew ${showEnds ? '<i style="background:#fff"></i>habitat <i style="background:#9b5de5"></i>stop' : ""}
+        <i style="background:#ef476f"></i>turn-back <i style="background:${OUT}"></i>walked out <i style="background:${BACK}"></i>walked home</div>
       <div class="replay-row replay-stats"><span class="replay-phase"></span><span class="replay-clock"></span><span class="replay-dist"></span></div>
       <ul class="replay-log" aria-live="polite"></ul>
       <div class="replay-summary"></div>
