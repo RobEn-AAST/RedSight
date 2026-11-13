@@ -56,6 +56,12 @@ Marwan). Work it on your own branch. Order = priority.
 
 Swapping: change the names in this table (one commit), nothing else needs editing.
 
+**Handoff (2026-11-13):** Ali scaffolded the app shell (React + TypeScript + Tailwind spacecraft console,
+branch `feat/spacecraft-web-copilot`, merged to `main`; status in [`web-foundation.md`](web-foundation.md)) and
+handed it to **Yassin**, who continues the app shell from `main` (next: MapLibre map + real layers + route
+cards). Ali's own row (engine) is unchanged. The AI copilot panel stays an unconnected placeholder until
+after submission (team decision needed to go further).
+
 ## 4. How we work in parallel
 
 - **One branch per person** from `main`: `feat/<name>-<area>`. Small commits, push often. Open a PR to
