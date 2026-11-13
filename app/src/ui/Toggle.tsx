@@ -34,6 +34,9 @@ export function Toggle({
       className={cn(
         'relative inline-flex flex-none items-center border transition-colors duration-150',
         'disabled:cursor-not-allowed disabled:opacity-40',
+        // Hit-slop: the visual track is compact; the invisible ::after pad
+        // extends the pointer/touch target to ~44px (WCAG 2.2 AA target size).
+        "after:absolute after:-inset-3 after:content-['']",
         dims.track,
         dims.pad,
         checked ? 'border-signal/60 bg-signal-soft' : 'border-seam-lit bg-inset',

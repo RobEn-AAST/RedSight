@@ -1,11 +1,12 @@
 # Web Foundation — app/ status, versions, and integration path
 
-**Written:** 2026-11-13 (hackathon day 1) by the web-foundation worker. Live status of the React app
+**Written:** 2026-11-13 (hackathon day 1) by the web-foundation worker; verified + finished the
+same day by the resumed web-copilot worker (verification record §7). Live status of the React app
 versus planned work. Companion: [`demo-focus-plan.md`](demo-focus-plan.md) (tier plan + §15 data
 contract) · [`ai/voice-copilot-plan.md`](ai/voice-copilot-plan.md) (copilot) · surface brief:
 [`impeccable-brief-app-console.md`](impeccable-brief-app-console.md) + `PRODUCT.md` (root).
 
-## 1. Implemented now (all visible in the running app)
+## 1. Implemented now (all visible in the running app; build/lint/typecheck verified green)
 
 - **Stack:** official `create-vite` react-ts template, restructured into feature folders; Tailwind
   v4 official Vite integration; Motion for React; lucide icons; self-hosted fonts. Verified against
@@ -48,19 +49,20 @@ contract) · [`ai/voice-copilot-plan.md`](ai/voice-copilot-plan.md) (copilot) ·
   [`ai/voice-copilot-plan.md`](ai/voice-copilot-plan.md). Keys server-side only.
 - Tier 2/3 features (rover mode, 360 + HUD, Vision Pro) — after Tier 1 ships (§3 build order).
 
-## 3. Installed versions (verified 2026-11-13; lockfile: `app/package-lock.json`)
+## 3. Installed versions (exact, from `npm ci` on the lockfile, 2026-11-13)
 
-| Package | Version | Note |
+| Package | Installed | Note |
 |---|---|---|
-| vite | ^8.3.6 | Node ^20.19.0 \|\| >=22.12.0 (machine: v26.8.1) |
-| react / react-dom | ^19.3.1 | |
-| typescript | ~7.0.2 | TS7 native compiler — `baseUrl` removed; alias via `paths` relative to tsconfig |
-| tailwindcss + @tailwindcss/vite | ^4.3.5 | Official Vite plugin; tokens via `@theme` CSS, no tailwind.config |
-| motion | ^14.14.0 | `motion/react`; `MotionConfig reducedMotion="user"` |
-| lucide-react | ^1.72.0 | Single icon family, consistent stroke |
-| @fontsource/chakra-petch, /ibm-plex-sans, /ibm-plex-mono | ^5.3.0 | Self-hosted (offline demo-safe) |
-| @vitejs/plugin-react | ^6.1.2 | |
-| oxlint | ^1.90.0 | Template default linter (flat `.oxlintrc.json`) |
+| vite | 8.3.8 | Node ^20.19.0 \|\| >=22.12.0 (machine: v26.8.1, npm 11.19.0) |
+| react / react-dom | 19.3.1 | |
+| typescript | 7.0.2 | TS7 native compiler — `baseUrl` removed; alias via `paths` relative to tsconfig |
+| tailwindcss + @tailwindcss/vite | 4.3.5 | Official Vite plugin; tokens via `@theme` CSS, no tailwind.config |
+| motion | 14.14.0 | `motion/react`; `MotionConfig reducedMotion="user"` |
+| lucide-react | 1.72.0 | Single icon family, consistent stroke |
+| @fontsource/chakra-petch, /ibm-plex-sans, /ibm-plex-mono | 5.3.0 | Self-hosted (offline demo-safe) |
+| @vitejs/plugin-react | 6.3.0 | |
+| @types/node | 24.19.2 | devDependency |
+| oxlint | 1.93.0 | Template default linter (flat `.oxlintrc.json`) |
 | maplibre-gl | **not installed** | Deliberate — see §2 |
 
 ## 4. Commands (from `app/`)
@@ -84,6 +86,7 @@ app/src/
 │                 · validation.ts (§8 limits) · materials.ts (goal options)
 │                 · layersData.ts + stopsData.ts (research-era fallbacks, §6-verified)
 │                 · engineData(tsx)/engineDataContext/useEngineData (§15 contract loader)
+│                 · useMediaQuery.ts (xl breakpoint → one copilot dock per viewport)
 ├── ui/           Panel, Button, Field, Badge, Toggle, LedDot, EmptyState, KeyHint
 ├── mission/      MissionSetup + MissionSteps + MissionWorkspace (setup/review)
 ├── map/ routes/ provenance/ hud/ copilot/   one folder per workspace feature
@@ -104,3 +107,26 @@ feature-agnostic.
    hardcodes a number it displays).
 4. Turn-back slider + zones + walk-along slider per plan §9 (threshold/lookup on `fields/*.png`).
 5. Copilot: build the minimal proxy (plan §6) only when the user approves and supplies keys.
+
+## 7. Verification record (2026-11-13, resumed web-copilot worker)
+
+Checked and green on this pass (evidence: command outputs in the session log; screenshots were
+temporary inspection artifacts, not committed):
+
+- `npm ci` (lockfile) → `npm run build` (tsc -b + vite build) ✓ · `npm run lint` (oxlint)
+  0 warnings / 0 errors ✓ · `npx tsc -b --force` ✓ · Node v26.8.1.
+- Full user flow in headless Chromium (desktop 1440×900 + mobile 390×844): setup stepper →
+  confirm → map → routes → provenance → HUD → copilot send → invalid-load validation.
+  **Zero browser console errors.** DOM-level checks: validation alert fires, Next is gated,
+  exactly one `#copilot-input` per viewport.
+- Fixes landed during the pass (found by that inspection):
+  1. duplicate `#copilot-input` (desktop dock + mobile drawer both mounted) → dock/drawer now
+     gated on the 1280 px breakpoint via `useMediaQuery`; drawer autofocuses its composer;
+  2. `ink-faint` contrast raised #66717f → #7d8895 (was ~3.7–4.0:1, now ≥4.5:1 on the lightest
+     surface — WCAG 2.2 AA bar from PRODUCT.md);
+  3. mobile map frame: ops-box caption moved from absolute to in-flow footer (was overlapping
+     the empty-state copy; verified fixed by element-geometry check);
+  4. Toggle hit-slop (~44 px target) via invisible `::after` pad;
+  5. `SetMissionParamsArgs` gained `sampleKgPerStop` (was missing vs voice-copilot-plan §7).
+- Not checked / out of scope here: real-engine integration (§6 waits for `engine/` outputs),
+  MapLibre rendering, deploy, and anything owned by other team-plan rows.

@@ -19,7 +19,9 @@
   /* -- Ink --------------------------------------------------------------- */
   --color-ink: #e9edf3;
   --color-ink-dim: #9aa6b5;
-  --color-ink-faint: #66717f;
+  /* Faint tier still clears WCAG 2.2 AA (≥4.5:1) on panel-2, the lightest
+     surface it is used on (PRODUCT.md sets AA as the working bar). */
+  --color-ink-faint: #7d8895;
 
   /* -- Signal + status ---------------------------------------------------- */
   --color-signal: #ffb224;
