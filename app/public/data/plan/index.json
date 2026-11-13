@@ -1,61 +1,7 @@
 {
  "_mock": true,
- "_proposal": "docs/app-redesign.md §4 (proposed contract, not agreed yet)",
+ "_contract": "docs/app-redesign.md §4",
  "plans": [
-  {
-   "id": "S1_fastest_c1_l15_foot",
-   "target": "S1",
-   "mode": "fastest",
-   "crew": 1,
-   "load_kg": 15,
-   "rover": false,
-   "file": "plan/S1_fastest_c1_l15_foot.json"
-  },
-  {
-   "id": "S1_safest_c1_l15_foot",
-   "target": "S1",
-   "mode": "safest",
-   "crew": 1,
-   "load_kg": 15,
-   "rover": false,
-   "file": "plan/S1_safest_c1_l15_foot.json"
-  },
-  {
-   "id": "S2_fastest_c1_l15_foot",
-   "target": "S2",
-   "mode": "fastest",
-   "crew": 1,
-   "load_kg": 15,
-   "rover": false,
-   "file": "plan/S2_fastest_c1_l15_foot.json"
-  },
-  {
-   "id": "S2_safest_c1_l15_foot",
-   "target": "S2",
-   "mode": "safest",
-   "crew": 1,
-   "load_kg": 15,
-   "rover": false,
-   "file": "plan/S2_safest_c1_l15_foot.json"
-  },
-  {
-   "id": "S3_fastest_c1_l15_foot",
-   "target": "S3",
-   "mode": "fastest",
-   "crew": 1,
-   "load_kg": 15,
-   "rover": false,
-   "file": "plan/S3_fastest_c1_l15_foot.json"
-  },
-  {
-   "id": "S3_safest_c1_l15_foot",
-   "target": "S3",
-   "mode": "safest",
-   "crew": 1,
-   "load_kg": 15,
-   "rover": false,
-   "file": "plan/S3_safest_c1_l15_foot.json"
-  },
   {
    "id": "D1_fastest_c1_l15_foot",
    "target": "D1",
@@ -63,88 +9,8 @@
    "crew": 1,
    "load_kg": 15,
    "rover": false,
-   "file": "plan/D1_fastest_c1_l15_foot.json"
-  },
-  {
-   "id": "D1_safest_c1_l15_foot",
-   "target": "D1",
-   "mode": "safest",
-   "crew": 1,
-   "load_kg": 15,
-   "rover": false,
-   "file": "plan/D1_safest_c1_l15_foot.json"
-  },
-  {
-   "id": "D2_fastest_c1_l15_foot",
-   "target": "D2",
-   "mode": "fastest",
-   "crew": 1,
-   "load_kg": 15,
-   "rover": false,
-   "file": "plan/D2_fastest_c1_l15_foot.json"
-  },
-  {
-   "id": "D2_safest_c1_l15_foot",
-   "target": "D2",
-   "mode": "safest",
-   "crew": 1,
-   "load_kg": 15,
-   "rover": false,
-   "file": "plan/D2_safest_c1_l15_foot.json"
-  },
-  {
-   "id": "S1_fastest_c1_l15_rover",
-   "target": "S1",
-   "mode": "fastest",
-   "crew": 1,
-   "load_kg": 15,
-   "rover": true,
-   "file": "plan/S1_fastest_c1_l15_rover.json"
-  },
-  {
-   "id": "S1_safest_c1_l15_rover",
-   "target": "S1",
-   "mode": "safest",
-   "crew": 1,
-   "load_kg": 15,
-   "rover": true,
-   "file": "plan/S1_safest_c1_l15_rover.json"
-  },
-  {
-   "id": "S2_fastest_c1_l15_rover",
-   "target": "S2",
-   "mode": "fastest",
-   "crew": 1,
-   "load_kg": 15,
-   "rover": true,
-   "file": "plan/S2_fastest_c1_l15_rover.json"
-  },
-  {
-   "id": "S2_safest_c1_l15_rover",
-   "target": "S2",
-   "mode": "safest",
-   "crew": 1,
-   "load_kg": 15,
-   "rover": true,
-   "file": "plan/S2_safest_c1_l15_rover.json"
-  },
-  {
-   "id": "S3_fastest_c1_l15_rover",
-   "target": "S3",
-   "mode": "fastest",
-   "crew": 1,
-   "load_kg": 15,
-   "rover": true,
-   "file": "plan/S3_fastest_c1_l15_rover.json"
-  },
-  {
-   "id": "S3_safest_c1_l15_rover",
-   "target": "S3",
-   "mode": "safest",
-   "crew": 1,
-   "load_kg": 15,
-   "rover": true,
-   "file": "plan/S3_safest_c1_l15_rover.json"
+   "file": "plan/D1_fastest_c1_l15_foot.json",
+   "_mock": true
   },
   {
    "id": "D1_fastest_c1_l15_rover",
@@ -153,88 +19,8 @@
    "crew": 1,
    "load_kg": 15,
    "rover": true,
-   "file": "plan/D1_fastest_c1_l15_rover.json"
-  },
-  {
-   "id": "D1_safest_c1_l15_rover",
-   "target": "D1",
-   "mode": "safest",
-   "crew": 1,
-   "load_kg": 15,
-   "rover": true,
-   "file": "plan/D1_safest_c1_l15_rover.json"
-  },
-  {
-   "id": "D2_fastest_c1_l15_rover",
-   "target": "D2",
-   "mode": "fastest",
-   "crew": 1,
-   "load_kg": 15,
-   "rover": true,
-   "file": "plan/D2_fastest_c1_l15_rover.json"
-  },
-  {
-   "id": "D2_safest_c1_l15_rover",
-   "target": "D2",
-   "mode": "safest",
-   "crew": 1,
-   "load_kg": 15,
-   "rover": true,
-   "file": "plan/D2_safest_c1_l15_rover.json"
-  },
-  {
-   "id": "S1_fastest_c2_l15_foot",
-   "target": "S1",
-   "mode": "fastest",
-   "crew": 2,
-   "load_kg": 15,
-   "rover": false,
-   "file": "plan/S1_fastest_c2_l15_foot.json"
-  },
-  {
-   "id": "S1_safest_c2_l15_foot",
-   "target": "S1",
-   "mode": "safest",
-   "crew": 2,
-   "load_kg": 15,
-   "rover": false,
-   "file": "plan/S1_safest_c2_l15_foot.json"
-  },
-  {
-   "id": "S2_fastest_c2_l15_foot",
-   "target": "S2",
-   "mode": "fastest",
-   "crew": 2,
-   "load_kg": 15,
-   "rover": false,
-   "file": "plan/S2_fastest_c2_l15_foot.json"
-  },
-  {
-   "id": "S2_safest_c2_l15_foot",
-   "target": "S2",
-   "mode": "safest",
-   "crew": 2,
-   "load_kg": 15,
-   "rover": false,
-   "file": "plan/S2_safest_c2_l15_foot.json"
-  },
-  {
-   "id": "S3_fastest_c2_l15_foot",
-   "target": "S3",
-   "mode": "fastest",
-   "crew": 2,
-   "load_kg": 15,
-   "rover": false,
-   "file": "plan/S3_fastest_c2_l15_foot.json"
-  },
-  {
-   "id": "S3_safest_c2_l15_foot",
-   "target": "S3",
-   "mode": "safest",
-   "crew": 2,
-   "load_kg": 15,
-   "rover": false,
-   "file": "plan/S3_safest_c2_l15_foot.json"
+   "file": "plan/D1_fastest_c1_l15_rover.json",
+   "_mock": true
   },
   {
    "id": "D1_fastest_c2_l15_foot",
@@ -246,6 +32,36 @@
    "file": "plan/D1_fastest_c2_l15_foot.json"
   },
   {
+   "id": "D1_fastest_c2_l15_rover",
+   "target": "D1",
+   "mode": "fastest",
+   "crew": 2,
+   "load_kg": 15,
+   "rover": true,
+   "file": "plan/D1_fastest_c2_l15_rover.json",
+   "_mock": true
+  },
+  {
+   "id": "D1_safest_c1_l15_foot",
+   "target": "D1",
+   "mode": "safest",
+   "crew": 1,
+   "load_kg": 15,
+   "rover": false,
+   "file": "plan/D1_safest_c1_l15_foot.json",
+   "_mock": true
+  },
+  {
+   "id": "D1_safest_c1_l15_rover",
+   "target": "D1",
+   "mode": "safest",
+   "crew": 1,
+   "load_kg": 15,
+   "rover": true,
+   "file": "plan/D1_safest_c1_l15_rover.json",
+   "_mock": true
+  },
+  {
    "id": "D1_safest_c2_l15_foot",
    "target": "D1",
    "mode": "safest",
@@ -253,6 +69,36 @@
    "load_kg": 15,
    "rover": false,
    "file": "plan/D1_safest_c2_l15_foot.json"
+  },
+  {
+   "id": "D1_safest_c2_l15_rover",
+   "target": "D1",
+   "mode": "safest",
+   "crew": 2,
+   "load_kg": 15,
+   "rover": true,
+   "file": "plan/D1_safest_c2_l15_rover.json",
+   "_mock": true
+  },
+  {
+   "id": "D2_fastest_c1_l15_foot",
+   "target": "D2",
+   "mode": "fastest",
+   "crew": 1,
+   "load_kg": 15,
+   "rover": false,
+   "file": "plan/D2_fastest_c1_l15_foot.json",
+   "_mock": true
+  },
+  {
+   "id": "D2_fastest_c1_l15_rover",
+   "target": "D2",
+   "mode": "fastest",
+   "crew": 1,
+   "load_kg": 15,
+   "rover": true,
+   "file": "plan/D2_fastest_c1_l15_rover.json",
+   "_mock": true
   },
   {
    "id": "D2_fastest_c2_l15_foot",
@@ -264,6 +110,36 @@
    "file": "plan/D2_fastest_c2_l15_foot.json"
   },
   {
+   "id": "D2_fastest_c2_l15_rover",
+   "target": "D2",
+   "mode": "fastest",
+   "crew": 2,
+   "load_kg": 15,
+   "rover": true,
+   "file": "plan/D2_fastest_c2_l15_rover.json",
+   "_mock": true
+  },
+  {
+   "id": "D2_safest_c1_l15_foot",
+   "target": "D2",
+   "mode": "safest",
+   "crew": 1,
+   "load_kg": 15,
+   "rover": false,
+   "file": "plan/D2_safest_c1_l15_foot.json",
+   "_mock": true
+  },
+  {
+   "id": "D2_safest_c1_l15_rover",
+   "target": "D2",
+   "mode": "safest",
+   "crew": 1,
+   "load_kg": 15,
+   "rover": true,
+   "file": "plan/D2_safest_c1_l15_rover.json",
+   "_mock": true
+  },
+  {
    "id": "D2_safest_c2_l15_foot",
    "target": "D2",
    "mode": "safest",
@@ -273,13 +149,82 @@
    "file": "plan/D2_safest_c2_l15_foot.json"
   },
   {
+   "id": "D2_safest_c2_l15_rover",
+   "target": "D2",
+   "mode": "safest",
+   "crew": 2,
+   "load_kg": 15,
+   "rover": true,
+   "file": "plan/D2_safest_c2_l15_rover.json",
+   "_mock": true
+  },
+  {
+   "id": "S1_fastest_c1_l15_foot",
+   "target": "S1",
+   "mode": "fastest",
+   "crew": 1,
+   "load_kg": 15,
+   "rover": false,
+   "file": "plan/S1_fastest_c1_l15_foot.json",
+   "_mock": true
+  },
+  {
+   "id": "S1_fastest_c1_l15_rover",
+   "target": "S1",
+   "mode": "fastest",
+   "crew": 1,
+   "load_kg": 15,
+   "rover": true,
+   "file": "plan/S1_fastest_c1_l15_rover.json",
+   "_mock": true
+  },
+  {
+   "id": "S1_fastest_c2_l15_foot",
+   "target": "S1",
+   "mode": "fastest",
+   "crew": 2,
+   "load_kg": 15,
+   "rover": false,
+   "file": "plan/S1_fastest_c2_l15_foot.json"
+  },
+  {
    "id": "S1_fastest_c2_l15_rover",
    "target": "S1",
    "mode": "fastest",
    "crew": 2,
    "load_kg": 15,
    "rover": true,
-   "file": "plan/S1_fastest_c2_l15_rover.json"
+   "file": "plan/S1_fastest_c2_l15_rover.json",
+   "_mock": true
+  },
+  {
+   "id": "S1_safest_c1_l15_foot",
+   "target": "S1",
+   "mode": "safest",
+   "crew": 1,
+   "load_kg": 15,
+   "rover": false,
+   "file": "plan/S1_safest_c1_l15_foot.json",
+   "_mock": true
+  },
+  {
+   "id": "S1_safest_c1_l15_rover",
+   "target": "S1",
+   "mode": "safest",
+   "crew": 1,
+   "load_kg": 15,
+   "rover": true,
+   "file": "plan/S1_safest_c1_l15_rover.json",
+   "_mock": true
+  },
+  {
+   "id": "S1_safest_c2_l15_foot",
+   "target": "S1",
+   "mode": "safest",
+   "crew": 2,
+   "load_kg": 15,
+   "rover": false,
+   "file": "plan/S1_safest_c2_l15_foot.json"
   },
   {
    "id": "S1_safest_c2_l15_rover",
@@ -288,7 +233,37 @@
    "crew": 2,
    "load_kg": 15,
    "rover": true,
-   "file": "plan/S1_safest_c2_l15_rover.json"
+   "file": "plan/S1_safest_c2_l15_rover.json",
+   "_mock": true
+  },
+  {
+   "id": "S2_fastest_c1_l15_foot",
+   "target": "S2",
+   "mode": "fastest",
+   "crew": 1,
+   "load_kg": 15,
+   "rover": false,
+   "file": "plan/S2_fastest_c1_l15_foot.json",
+   "_mock": true
+  },
+  {
+   "id": "S2_fastest_c1_l15_rover",
+   "target": "S2",
+   "mode": "fastest",
+   "crew": 1,
+   "load_kg": 15,
+   "rover": true,
+   "file": "plan/S2_fastest_c1_l15_rover.json",
+   "_mock": true
+  },
+  {
+   "id": "S2_fastest_c2_l15_foot",
+   "target": "S2",
+   "mode": "fastest",
+   "crew": 2,
+   "load_kg": 15,
+   "rover": false,
+   "file": "plan/S2_fastest_c2_l15_foot.json"
   },
   {
    "id": "S2_fastest_c2_l15_rover",
@@ -297,7 +272,37 @@
    "crew": 2,
    "load_kg": 15,
    "rover": true,
-   "file": "plan/S2_fastest_c2_l15_rover.json"
+   "file": "plan/S2_fastest_c2_l15_rover.json",
+   "_mock": true
+  },
+  {
+   "id": "S2_safest_c1_l15_foot",
+   "target": "S2",
+   "mode": "safest",
+   "crew": 1,
+   "load_kg": 15,
+   "rover": false,
+   "file": "plan/S2_safest_c1_l15_foot.json",
+   "_mock": true
+  },
+  {
+   "id": "S2_safest_c1_l15_rover",
+   "target": "S2",
+   "mode": "safest",
+   "crew": 1,
+   "load_kg": 15,
+   "rover": true,
+   "file": "plan/S2_safest_c1_l15_rover.json",
+   "_mock": true
+  },
+  {
+   "id": "S2_safest_c2_l15_foot",
+   "target": "S2",
+   "mode": "safest",
+   "crew": 2,
+   "load_kg": 15,
+   "rover": false,
+   "file": "plan/S2_safest_c2_l15_foot.json"
   },
   {
    "id": "S2_safest_c2_l15_rover",
@@ -306,7 +311,37 @@
    "crew": 2,
    "load_kg": 15,
    "rover": true,
-   "file": "plan/S2_safest_c2_l15_rover.json"
+   "file": "plan/S2_safest_c2_l15_rover.json",
+   "_mock": true
+  },
+  {
+   "id": "S3_fastest_c1_l15_foot",
+   "target": "S3",
+   "mode": "fastest",
+   "crew": 1,
+   "load_kg": 15,
+   "rover": false,
+   "file": "plan/S3_fastest_c1_l15_foot.json",
+   "_mock": true
+  },
+  {
+   "id": "S3_fastest_c1_l15_rover",
+   "target": "S3",
+   "mode": "fastest",
+   "crew": 1,
+   "load_kg": 15,
+   "rover": true,
+   "file": "plan/S3_fastest_c1_l15_rover.json",
+   "_mock": true
+  },
+  {
+   "id": "S3_fastest_c2_l15_foot",
+   "target": "S3",
+   "mode": "fastest",
+   "crew": 2,
+   "load_kg": 15,
+   "rover": false,
+   "file": "plan/S3_fastest_c2_l15_foot.json"
   },
   {
    "id": "S3_fastest_c2_l15_rover",
@@ -315,7 +350,37 @@
    "crew": 2,
    "load_kg": 15,
    "rover": true,
-   "file": "plan/S3_fastest_c2_l15_rover.json"
+   "file": "plan/S3_fastest_c2_l15_rover.json",
+   "_mock": true
+  },
+  {
+   "id": "S3_safest_c1_l15_foot",
+   "target": "S3",
+   "mode": "safest",
+   "crew": 1,
+   "load_kg": 15,
+   "rover": false,
+   "file": "plan/S3_safest_c1_l15_foot.json",
+   "_mock": true
+  },
+  {
+   "id": "S3_safest_c1_l15_rover",
+   "target": "S3",
+   "mode": "safest",
+   "crew": 1,
+   "load_kg": 15,
+   "rover": true,
+   "file": "plan/S3_safest_c1_l15_rover.json",
+   "_mock": true
+  },
+  {
+   "id": "S3_safest_c2_l15_foot",
+   "target": "S3",
+   "mode": "safest",
+   "crew": 2,
+   "load_kg": 15,
+   "rover": false,
+   "file": "plan/S3_safest_c2_l15_foot.json"
   },
   {
    "id": "S3_safest_c2_l15_rover",
@@ -324,43 +389,8 @@
    "crew": 2,
    "load_kg": 15,
    "rover": true,
-   "file": "plan/S3_safest_c2_l15_rover.json"
-  },
-  {
-   "id": "D1_fastest_c2_l15_rover",
-   "target": "D1",
-   "mode": "fastest",
-   "crew": 2,
-   "load_kg": 15,
-   "rover": true,
-   "file": "plan/D1_fastest_c2_l15_rover.json"
-  },
-  {
-   "id": "D1_safest_c2_l15_rover",
-   "target": "D1",
-   "mode": "safest",
-   "crew": 2,
-   "load_kg": 15,
-   "rover": true,
-   "file": "plan/D1_safest_c2_l15_rover.json"
-  },
-  {
-   "id": "D2_fastest_c2_l15_rover",
-   "target": "D2",
-   "mode": "fastest",
-   "crew": 2,
-   "load_kg": 15,
-   "rover": true,
-   "file": "plan/D2_fastest_c2_l15_rover.json"
-  },
-  {
-   "id": "D2_safest_c2_l15_rover",
-   "target": "D2",
-   "mode": "safest",
-   "crew": 2,
-   "load_kg": 15,
-   "rover": true,
-   "file": "plan/D2_safest_c2_l15_rover.json"
+   "file": "plan/S3_safest_c2_l15_rover.json",
+   "_mock": true
   }
  ]
 }

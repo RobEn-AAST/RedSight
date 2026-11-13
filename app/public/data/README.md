@@ -17,6 +17,8 @@ has landed; `_mock/make-mock.mjs` overwrites every data file.
 | `hazards.geojson` | Ali | primary-DTM nodata, unavailable native slope support and native Horn slope hard masks |
 | `engine-build-manifest.json` | Ali | input/output hashes, source/licence, seam/alignment evidence, G1–G4 status, timing, model and route outcomes |
 | `cards/rad.json`, `cards/rems.json` | Ayman | real (no `_mock`): RAD GCR baseline + Sept 2017 SEP (Si) + Scenario 4-h walk dose; REMS pressure, air/ground temp, Armstrong limit, PDS links |
+| `plan/{target}_{mode}_c2_l15_foot.json` (10) | built by `node app/scripts/build-plans.mjs` | real (no `_mock`): the route file copied unchanged (coords, seg, cum, back, back_fast, pnr_index); `derived_from` holds the route file + SHA-256; `split: null` because the separation limit has no primary source yet |
+| other `plan/*.json` (c1, rover), `plan/limits_*.geojson`, `targets.geojson` | `_mock/make-plan-mock.mjs` | still `_mock: true`: crew-1 factor 0.96, rover drive model, split limit, no-return lines and target extents have no source. `plan/index.json` keeps `_mock: true` while any listed plan is mock, which keeps the header "Mock data" badge on |
 | `fields/*.png`, `fields/coverage.png` | Ali / Youssef | not mocked yet (If-time features) |
 
 ## Check your files before a PR
@@ -24,7 +26,9 @@ has landed; `_mock/make-mock.mjs` overwrites every data file.
 `cd app && npm run check:data` checks every file here against this contract (shapes, lengths, routes start at
 the habitat, `cum` never decreasing, `budget_l` = C − R from `constants.json`, badges, sources, tiles present
 for `available` layers, banned wording). Errors fail the run. Before submission use
-`npm run check:data -- --final`, which also fails on any `"_mock": true` left.
+`npm run check:data -- --final`, which also fails on any `"_mock": true` left in any JSON/GeoJSON under
+`app/public/data/` (except `_mock/` and `tiles/`), including `plan/` and `targets.geojson`. Plan members are
+checked with the same route rules. After editing route files, run `node app/scripts/build-plans.mjs`.
 
 ## Note for Ali (engine) — O₂ numbers, read before writing routes (D27, demo-focus-plan §9c)
 
