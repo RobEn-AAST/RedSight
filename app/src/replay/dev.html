@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mission Replay dev</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="./replay.css">
+  <style>
+    html, body { margin: 0; height: 100%; background: #1a1210; }
+    #map { position: absolute; inset: 0; }
+    .dev-budget { position: absolute; top: 12px; left: 12px; z-index: 2; padding: 8px 10px; border-radius: 8px;
+      background: rgba(20,14,12,.86); color: #f4ece6; font: 13px system-ui, sans-serif; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <!-- Stand-in for Jana's turn-back slider: drives replay.setBudget() -->
+  <label class="dev-budget">MOCK budget: <input id="budget" type="range" min="10" max="110" value="90"> <span id="bv">90</span> L</label>
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script type="module">
+    import { createReplay } from "./replay.js";
+    const route = await (await fetch("./mock/route.json")).json();
+    const map = new maplibregl.Map({
+      container: "map",
+      style: { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": "#6b3f2a" } }] },
+      center: [137.393, -4.808], zoom: 14.2,
+    });
+    map.on("load", () => {
+      map.addSource("plan", { type: "geojson", data: { type: "Feature", geometry: { type: "LineString", coordinates: route.coords } } });
+      map.addLayer({ id: "plan", type: "line", source: "plan", paint: { "line-color": "#fff", "line-width": 2, "line-dasharray": [2, 2] } });
+      const replay = createReplay(map, { route, budgetL: 90, onEvent: (e) => console.log("[replay]", e.type, e.label) });
+      window.replay = replay;
+      const b = document.getElementById("budget"), bv = document.getElementById("bv");
+      b.oninput = () => { bv.textContent = b.value; replay.setBudget(+b.value); };
+    });
+  </script>
+</body>
+</html>

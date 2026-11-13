@@ -1,0 +1,21 @@
+.replay-panel {
+  position: absolute; left: 12px; bottom: 28px; z-index: 2;
+  width: min(420px, calc(100% - 24px)); box-sizing: border-box;
+  padding: 10px 12px; border-radius: 10px;
+  background: rgba(20, 14, 12, 0.86); color: #f4ece6;
+  font: 13px/1.35 system-ui, sans-serif; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+.replay-row { display: flex; gap: 8px; align-items: center; margin: 4px 0; }
+.replay-stats { justify-content: space-between; font-variant-numeric: tabular-nums; }
+.replay-play { width: 36px; height: 30px; border: 0; border-radius: 6px; background: #ffd166; color: #111; font-weight: 700; cursor: pointer; }
+.replay-scrub { flex: 1; }
+.replay-speed { background: #2b211d; color: inherit; border: 1px solid #5a4a42; border-radius: 6px; }
+.replay-gauge { height: 10px; border-radius: 5px; background: #3a2e29; overflow: hidden; margin: 6px 0; }
+.replay-bar { height: 100%; width: 100%; background: #06d6a0; transition: background 0.3s; }
+.replay-bar[data-level="mid"] { background: #ffd166; }
+.replay-bar[data-level="low"] { background: #ef476f; }
+.replay-phase { font-weight: 600; }
+.replay-event { margin-left: auto; text-align: right; }
+.replay-event[data-type="turnback"], .replay-event[data-type="low"], .replay-event[data-type="no-go"] { color: #ff8fa8; font-weight: 600; }
+.replay-foot { margin-top: 6px; font-size: 11px; opacity: 0.8; }
+.replay-badge { display: inline-block; padding: 0 6px; border-radius: 4px; background: #7b5ea7; color: #fff; font-weight: 600; }
