@@ -8,13 +8,13 @@ has landed; `_mock/make-mock.mjs` overwrites every data file.
 
 | File | Owner (real data) | What's real already |
 |---|---|---|
-| `meta.json` | Ali | real ops grid and CRS; habitat is a Scenario cell selected from the primary DEM |
-| `constants.json` | Ali | real file; stable keys and cited team defaults retained |
+| `meta.json` | Ali | real ops grid and CRS; habitat is a Scenario cell selected in the native-mask-reachable component |
+| `constants.json` | Ali | real file; stable keys and descriptive `source` retained with additive `source_url` for every constant |
 | `layers.json` | Youssef | layer list + sources; `available:false` until tiles exist |
 | `stops.json` | Ayman | positions (§6, §8); photos + science text TODO |
 | `routes/index.json`, `routes/{stop}_{mode}_{crew}_{load}.json` | Ali | fastest + lowest-modeled-hazard outcome for each of S1, S2, S3, D1 and D2 (crew 2, 15 kg); blocked targets have an explicit no-route status |
-| `hazards.geojson` | Ali | primary-DTM nodata and represented-grid slope hard masks |
-| `engine-build-manifest.json` | Ali | input hashes, source/licence data, seam statistics, model, runtime and route outcome record |
+| `hazards.geojson` | Ali | primary-DTM nodata, unavailable native slope support and native Horn slope hard masks |
+| `engine-build-manifest.json` | Ali | crop/cache hashes, source/licence data, seam, S1 alignment evidence, G1–G4 status, timing, model and route outcomes |
 | `cards/rad.json`, `cards/rems.json` | Ayman | RAD dose + source, REMS pressure range |
 | `fields/*.png`, `fields/coverage.png` | Ali / Youssef | not mocked yet (If-time features) |
 
@@ -49,17 +49,32 @@ arrays. Current replay invocation must pass capacity, reserve, margin and defaul
 `[1, 1]` from constants/settings. `total_s` remains outbound + return time. Return arrays describe the
 same route geometry walked in reverse, with index 0 at the habitat and the final index at the stop.
 
-**Terrain boundary:** the 600×600 DTM crop is average-resampled to ~9.88 m cells. The route hard mask
-must use the separate native Horn max/90th-percentile slope cache aligned to this grid; no gradient of
-the downsampled elevations may stand in for that hard mask. The cache manifest must include S1
-landmark-alignment evidence. The companion DTM has large scene-to-scene height differences on overlap,
-so complementary-only cells are marked unavailable and excluded from routes rather than vertically
-adjusted or blended. No THEMIS thermal raster was supplied; route terrain factor is 1.0 and the
-lowest-hazard cost currently represents modeled slope exposure only. Sample pickup mass is not
-included in the base 15 kg route bucket. **The committed route files predate the native-slope cache
-and are provisional; rerun the CLI with the updated `/tmp/redsight-engine-pilot-inputs.json` before treating them
-as the final pilot outputs.** See `engine-build-manifest.json`
-for the observed seam statistics, hashes and per-route outcomes.
+**Native terrain result:** the primary mean-elevation DEM is 600×600 at ~9.879 m/cell; its source is a
+1.0117468 m DTM. The separate Horn 3×3 maximum-slope grid is computed at native spacing and aggregated
+to each planning-cell center. Cache SHA-256:
+`0540b673cdeb5e297a6d712d1e94792bcc6d186820d1ae19e06b2f52d5b35f0e`; 281,227 cells have valid slope,
+and 191,612 valid cells exceed the 15° working mask. No slope values are filled. The companion DTM
+has a +52.64 m median offset on overlap, so complementary-only cells remain unavailable and are not
+blended into routes.
+
+**Stop outcome under the native mask:** the exact cells for S1/S2/D1/D2 have maximum native slopes of
+21.82°/31.89°/26.29°/29.22° and are unreachable under the configured 15° threshold. S3 is 9.59° and
+has both routes. All five IDs and all ten stop/mode outcomes remain in the index; the eight blocked
+outcomes state their reason. Nearest walkable cells are diagnostic only, never substituted as route
+goals. The Scenario habitat is row 422, col 312 (`137.3870833°E, −4.8204167°`), selected in the S3
+component after no original north/downslope candidate connected to any walkable stop.
+
+**Pilot evidence:** G1 pass; G2 partial visual alignment only (major ridge/trough patterns co-locate,
+but no metric tie point or sub-meter residual); G3 partial because four exact target cells are hard
+blocked; G4 pass on a 1 h 22 min 9.6 s lower-bound wall interval from the first recorded STAC response
+to final native-mask output, under the 3 h threshold. The route build itself took 23.09 s. The first
+request began slightly before the first recorded response. Full timing, S1 evidence files and their
+hashes are in `engine-build-manifest.json`.
+
+No THEMIS thermal raster was supplied; route terrain factor is 1.0, so lowest-hazard cost currently
+represents modeled slope exposure only. Sample pickup mass is not included in the base 15 kg route
+bucket. The full upstream COG SHA-256 was not computed; local crop/cache hashes and source ETag are
+distinguished in the manifest.
 
 Regenerate mocks: `node app/public/data/_mock/make-mock.mjs` (overwrites ALL files — don't run it after real
 data has landed).

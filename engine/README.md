@@ -46,9 +46,12 @@ No THEMIS thermal-inertia raster was supplied, so the terrain multiplier is 1.0 
 objective uses modeled slope exposure only. Collected sample mass is not included in the 2-crew,
 15 kg route bucket; a sample-carrying variant needs a separate load bucket and routes.
 
-The five stops are S1, S2, S3, D1 and D2 from the current `stops.json`; their existing names and
-coordinates are preserved. A new native-slope build reselects habitat from the connected stop
-component; it must report unreachable stops rather than weakening the slope or nodata mask.
+The five stops are S1, S2, S3, D1 and D2 from the current `stops.json`; their names and coordinates
+are preserved. The native-mask build routes only S3: S1/S2/D1/D2 land in cells whose native maximum
+slopes exceed 15°. They remain explicit no-route entries. The Scenario habitat is row 422, col 312,
+in the S3-connected component; the earlier north/downslope candidates were separated by the native
+mask. The output records each blocked stop's measured slope and a nearest-walkable-cell diagnostic,
+but never substitutes that cell for the specified stop.
 
 ## Model and route contract
 
