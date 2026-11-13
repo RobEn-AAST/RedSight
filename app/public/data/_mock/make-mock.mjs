@@ -3,13 +3,22 @@
 // Every generated file has "_mock": true. Engine/data owners REPLACE these files with real output
 // (same names, same shape) and delete the flag. Real values that are already sourced in the docs
 // (stop positions, constants, RAD) are copied as-is with their source.
-import { writeFileSync, mkdirSync } from "node:fs";
+import { writeFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const OUT = join(dirname(fileURLToPath(import.meta.url)), "..");
+const OUT = process.env.MOCK_OUT ?? join(dirname(fileURLToPath(import.meta.url)), "..");
 const R = 3396190;
-const write = (p, obj) => { mkdirSync(dirname(join(OUT, p)), { recursive: true }); writeFileSync(join(OUT, p), JSON.stringify(obj, null, 1) + "\n"); };
+// Never overwrite a real file: once an owner replaces a mock (no "_mock": true), it is skipped.
+const write = (p, obj) => {
+  const file = join(OUT, p);
+  if (existsSync(file)) {
+    let cur = null;
+    try { cur = JSON.parse(readFileSync(file, "utf8")); } catch { /* unreadable: treat as real */ }
+    if (cur?._mock !== true) { console.log("skip (real file):", p); return; }
+  }
+  mkdirSync(dirname(file), { recursive: true }); writeFileSync(file, JSON.stringify(obj, null, 1) + "\n");
+};
 const dist = (a, b) => { const r = (d) => (d * Math.PI) / 180; const h = Math.sin(r(b[1] - a[1]) / 2) ** 2 + Math.cos(r(a[1])) * Math.cos(r(b[1])) * Math.sin(r(b[0] - a[0]) / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
 const TEAM_MODEL_DOC = "https://github.com/RobEn-AAST/RedSight/blob/main/docs/demo-focus-plan.md";
 const SOURCE_URLS = {
@@ -89,11 +98,12 @@ write("stops.json", { type: "FeatureCollection", _mock: true, _note: "Positions 
   stop("D2", "Valle de la Luna drill site", [137.38104, -4.80784], [4687], "NASA Curiosity blog sols 4689–4694", "drill", { approx: true }),
 ] });
 
-// MOCK routes: wiggly line habitat → stop; safest = longer detour, gentler slopes.
+// MOCK routes: wiggly line habitat → stop. Fastest = short and steeper; safest (lowest-hazard) = longer
+// detour on gentler slopes, so it takes more time and, coming home, more O2 than the fastest way.
 const index = [];
 function route(sid, target, mode) {
   const n = 40, coords = [];
-  const detour = mode === "safest" ? 0.0025 : 0.001;
+  const detour = mode === "safest" ? 0.011 : 0.0006;
   for (let i = 0; i < n; i++) {
     const f = i / (n - 1), w = Math.sin(f * Math.PI) * (detour + 0.0008 * Math.sin(f * Math.PI * 4));
     coords.push([+(HABITAT[0] + (target[0] - HABITAT[0]) * f + w).toFixed(6), +(HABITAT[1] + (target[1] - HABITAT[1]) * f + w * 0.5).toFixed(6)]);
@@ -101,7 +111,7 @@ function route(sid, target, mode) {
   const t = [0], o2 = [0], bt = [0], bo = [0], seg = [];
   for (let i = 1; i < n; i++) {
     const d = dist(coords[i - 1], coords[i]);
-    const slope = (mode === "safest" ? 3 : 6) + 4 * Math.sin((i / n) * Math.PI * 2) ** 2;
+    const slope = (mode === "safest" ? 1.5 : 4) + 4 * Math.sin((i / n) * Math.PI * 2) ** 2;
     const v = 0.45 - slope * 0.01, vb = v + 0.05;
     const lpm = 0.9 + slope * 0.03, lpmB = 0.8 + slope * 0.01;
     t.push(t[i - 1] + d / v); o2.push(o2[i - 1] + (d / v / 60) * lpm);
@@ -111,12 +121,41 @@ function route(sid, target, mode) {
   const r2 = (a) => a.map((x) => +x.toFixed(2));
   const id = `${sid}_${mode}_2_15`;
   let pnr = -1; for (let i = 0; i < n; i++) if (o2[i] + bo[i] <= budget) pnr = i;
-  write(`routes/${id}.json`, { _mock: true, id, stop: sid, mode, crew: 2, load_kg: 15, badge: "Scenario", budget_l: budget,
-    constants_hash: "mock", coords, seg, cum: { t_s: r2(t), o2_l: r2(o2) }, back: { t_s: r2(bt), o2_l: r2(bo) }, pnr_index: pnr });
+  const file = { _mock: true, id, stop: sid, mode, crew: 2, load_kg: 15, badge: "Scenario", budget_l: budget,
+    constants_hash: "mock", coords, seg, cum: { t_s: r2(t), o2_l: r2(o2) }, back: { t_s: r2(bt), o2_l: r2(bo) }, pnr_index: pnr };
   index.push({ id, stop: sid, mode, crew: 2, load_kg: 15, file: `routes/${id}.json`, total_s: Math.round(t[n - 1] + bt[n - 1]) });
+  return file;
 }
-for (const [sid, ll] of [["S1", [137.38592, -4.79782]], ["S2", [137.381, -4.808]], ["S3", [137.38915, -4.82568]], ["D1", [137.3835, -4.79981]], ["D2", [137.38104, -4.80784]]])
-  for (const m of ["fastest", "safest"]) route(sid, ll, m);
+
+// Optional back_fast (demo-focus-plan §9 Back_fast sampled at each vertex): the fastest way home from
+// each point. MOCK geometry: straight to the nearest vertex of the fastest route, then along it home;
+// the connector is costed at the fastest route's average return rate per metre.
+function addBackFast(r, fast) {
+  const F = fast.coords, n = F.length;
+  let len = 0; for (let i = 1; i < n; i++) len += dist(F[i - 1], F[i]);
+  const tPerM = fast.back.t_s[n - 1] / len, oPerM = fast.back.o2_l[n - 1] / len;
+  const t = [], o = [], path = [];
+  for (const p of r.coords) {
+    let j = 0; for (let k = 1; k < n; k++) if (dist(p, F[k]) < dist(p, F[j])) j = k;
+    const d = dist(p, F[j]);
+    const i = t.length, ownT = r.back.t_s[i];
+    const viaT = fast.back.t_s[j] + d * tPerM;
+    if (ownT <= viaT) { // walking back along this route is already the fastest way home here
+      t.push(ownT); o.push(r.back.o2_l[i]); path.push(r.coords.slice(0, i + 1).reverse());
+      continue;
+    }
+    t.push(+viaT.toFixed(2));
+    o.push(+(fast.back.o2_l[j] + d * oPerM).toFixed(2));
+    path.push([p, ...F.slice(0, j + 1).reverse()].filter((q, k, a) => k === 0 || q !== a[k - 1]));
+  }
+  r.back_fast = { via: fast.id, t_s: t, o2_l: o, path };
+}
+
+for (const [sid, ll] of [["S1", [137.38592, -4.79782]], ["S2", [137.381, -4.808]], ["S3", [137.38915, -4.82568]], ["D1", [137.3835, -4.79981]], ["D2", [137.38104, -4.80784]]]) {
+  const fast = route(sid, ll, "fastest"), safe = route(sid, ll, "safest");
+  addBackFast(safe, fast);
+  for (const r of [fast, safe]) write(`routes/${r.id}.json`, r);
+}
 write("routes/index.json", { _mock: true, routes: index });
 
 write("hazards.geojson", { type: "FeatureCollection", _mock: true, features: [

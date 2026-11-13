@@ -1,0 +1,35 @@
+/* MapLibre's built-in controls, restyled to the console's dark panels. */
+.maplibregl-ctrl-group {
+  border: 1px solid var(--color-seam-lit);
+  border-radius: 0;
+  background: var(--color-hull);
+  box-shadow: none;
+}
+
+.maplibregl-ctrl-group button {
+  width: 40px;
+  height: 40px;
+  border-radius: 0;
+}
+
+.maplibregl-ctrl-group button + button {
+  border-top: 1px solid var(--color-seam-lit);
+}
+
+.maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+  filter: invert(1) brightness(0.8);
+}
+
+.maplibregl-ctrl-group button:not(:disabled):hover {
+  background: var(--color-panel-2);
+}
+
+.maplibregl-ctrl-group button:focus-visible {
+  outline: 2px solid var(--color-signal);
+  outline-offset: -2px;
+}
+
+.maplibregl-canvas:focus-visible {
+  outline: 2px solid var(--color-signal);
+  outline-offset: -2px;
+}

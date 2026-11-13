@@ -6,6 +6,27 @@ versus planned work. Companion: [`demo-focus-plan.md`](demo-focus-plan.md) (tier
 contract) · [`ai/voice-copilot-plan.md`](ai/voice-copilot-plan.md) (copilot) · surface brief:
 [`impeccable-brief-app-console.md`](impeccable-brief-app-console.md) + `PRODUCT.md` (root).
 
+> **Update 2 — 2026-11-13:** the app was redesigned around setup → routes. The current layout, the
+> map and the proposed plan files are in [`app-redesign.md`](app-redesign.md); where the note below
+> disagrees (stop picker, route cards, layer panel), that doc wins.
+>
+> **Update — 2026-11-13, branch `feat/yassin-app` (app shell owner: Yassin).** This file describes the
+> first scaffold; these parts have changed since:
+>
+> - **Data loader now follows the committed contract** (`app/public/data/README.md`): `meta.ops_box`,
+>   `{ "layers": [...] }`, GeoJSON `stops.json`, `constants.json`, `routes/index.json`, `hazards.geojson`,
+>   `cards/*.json`. Each file is shape-checked; a missing or malformed file shows as "not loaded".
+> - **MapLibre GL JS is installed and mounted** (`app/src/map/MapCanvas.tsx`): ops box, habitat, stop
+>   markers, blocked areas, both route lines, a Mars-metre scale bar. Raster layers are requested only
+>   when `layers.json` marks them `available: true`. **Tile paths resolve relative to
+>   `app/public/data/`** (so `tiles/hirise/{z}/{x}/{y}.png` means `app/public/data/tiles/hirise/…`).
+> - **Stop picker + route cards A/B** (fastest vs lowest hazard) live in the map workspace and read the
+>   route files. The separate Routes text page is no longer mounted.
+> - **Shared plan state** (`app/src/map/usePlan.ts`): `selectedStopId`, `mode`, `activeRoute` and the
+>   live `map` object. The replay and the turn-back slider plug in here.
+> - **HUD workspace and copilot dock are not mounted** (Tier 2 / out of scope per D12). Their files
+>   remain in the repo.
+
 ## 1. Implemented now (all visible in the running app; build/lint/typecheck verified green)
 
 - **Stack:** official `create-vite` react-ts template, restructured into feature folders; Tailwind
