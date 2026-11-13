@@ -75,6 +75,8 @@ after submission (team decision needed to go further).
   the contract; the engine replaces the mocks when ready. Changing the contract = tell everyone first,
   then Ali/Yassin agree and commit it in one PR.
 - `constants.json` is the only place numbers live. The UI never hardcodes a model number.
+- Changed anything in `app/public/data/`? Run `cd app && npm run check:data` before the PR (0 errors needed);
+  `-- --final` before submission also fails on leftover mock files.
 - `main` must always build and deploy.
 
 **Checkpoints (hours from kickoff):**
