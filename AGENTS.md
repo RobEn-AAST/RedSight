@@ -15,6 +15,19 @@ style rules come from the outer AGENTS files; this file adds only what is specif
   → **Tier 2** (360 at stops + HUD) → **Tier 3** (Vision Pro, 3D fly-along). Never start a higher tier
   while a lower one is incomplete. Ops box = boxwork site (decision D11), not the research-era box.
 
+## Team mode — "I am <name>" (6 people, branch per person)
+
+- When a teammate says **"I am <name>"** (Ali, Youssef, Ayman, Marwan, Yassin, Jana): read
+  [`docs/team-plan.md`](docs/team-plan.md), find their row, check out (or create) their branch
+  `feat/<name>-<area>` from the latest `main`, and work **only on their Must-ship items first**, inside
+  their folders. Move to their If-time items only after the Must-ship part is merged to `main`.
+- The team plan is direction, not a spec: search the web for the current best way to build the part,
+  then build it. Keep the data contract (`docs/demo-focus-plan.md` §15) and `constants.json` as the only
+  shared interfaces; contract changes are announced to the team first.
+- Commit and push to the person's own branch and open a PR. **Only Marwan (integration owner) merges to
+  `main`.** The scope guard above still applies: anything outside the person's row needs their explicit
+  direction.
+
 ## Source hierarchy (resolve conflicts by rank)
 
 1. Official 2026 challenge page + official global guides (Submission/Judging/FAQs/Terms).

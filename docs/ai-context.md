@@ -25,6 +25,7 @@ official "no pre-work" rule; build happens inside the event window).
 | 5 | [`competition-overview.md`](competition-overview.md) | Official requirements vs our proposal, mapping table, site choice, open decisions |
 | 6 | [`technical-approaches.md`](technical-approaches.md) | Verified data inventory, claim verdicts, model constants, architecture recommendation, honesty guardrails |
 | 7 | [`demo-focus-plan.md`](demo-focus-plan.md) | **Current focused plan** (2026-11-13): what we submit, narrowed scope, architecture diagram, corrected ops box + stops, data-type order, 360 + HUD, Vision Pro, first steps |
+| 7a | [`team-plan.md`](team-plan.md) | **Who builds what**: 6 owners, Must ship / If time per person, branches, checkpoints, Mission Replay hook. Teammates start a session with "I am <name>" |
 | 7b | [`24-48-hour-plan.md`](24-48-hour-plan.md) | Must/Should/Stretch scope, phase plan, acceptance evidence, risks (scope/ops area superseded by demo-focus-plan) |
 | 8 | [`research/mapping-options.md`](research/mapping-options.md), [`research/routing-options.md`](research/routing-options.md) | Deep evidence: datasets/live checks/CRS traps; graph/algorithms/PNR — keep as evidence, see their Errata headers |
 | 8b | [`research/external-sources-review.md`](research/external-sources-review.md) | Verdicts on the Kaggle notebook (game data, rejected), the NASA Life Sciences Portal (EVA/walkback citations), and how each of the 5 official resources is used, by tier |
