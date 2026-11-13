@@ -1,95 +1,134 @@
 {
- "_mock": true,
- "routes": [
-  {
-   "id": "S1_fastest_2_15",
-   "stop": "S1",
-   "mode": "fastest",
-   "crew": 2,
-   "load_kg": 15,
-   "file": "routes/S1_fastest_2_15.json",
-   "total_s": 7462
-  },
-  {
-   "id": "S1_safest_2_15",
-   "stop": "S1",
-   "mode": "safest",
-   "crew": 2,
-   "load_kg": 15,
-   "file": "routes/S1_safest_2_15.json",
-   "total_s": 9939
-  },
-  {
-   "id": "S2_fastest_2_15",
-   "stop": "S2",
-   "mode": "fastest",
-   "crew": 2,
-   "load_kg": 15,
-   "file": "routes/S2_fastest_2_15.json",
-   "total_s": 6533
-  },
-  {
-   "id": "S2_safest_2_15",
-   "stop": "S2",
-   "mode": "safest",
-   "crew": 2,
-   "load_kg": 15,
-   "file": "routes/S2_safest_2_15.json",
-   "total_s": 8945
-  },
-  {
-   "id": "S3_fastest_2_15",
-   "stop": "S3",
-   "mode": "fastest",
-   "crew": 2,
-   "load_kg": 15,
-   "file": "routes/S3_fastest_2_15.json",
-   "total_s": 3906
-  },
-  {
-   "id": "S3_safest_2_15",
-   "stop": "S3",
-   "mode": "safest",
-   "crew": 2,
-   "load_kg": 15,
-   "file": "routes/S3_safest_2_15.json",
-   "total_s": 6742
-  },
-  {
-   "id": "D1_fastest_2_15",
-   "stop": "D1",
-   "mode": "fastest",
-   "crew": 2,
-   "load_kg": 15,
-   "file": "routes/D1_fastest_2_15.json",
-   "total_s": 7446
-  },
-  {
-   "id": "D1_safest_2_15",
-   "stop": "D1",
-   "mode": "safest",
-   "crew": 2,
-   "load_kg": 15,
-   "file": "routes/D1_safest_2_15.json",
-   "total_s": 9859
-  },
-  {
-   "id": "D2_fastest_2_15",
-   "stop": "D2",
-   "mode": "fastest",
-   "crew": 2,
-   "load_kg": 15,
-   "file": "routes/D2_fastest_2_15.json",
-   "total_s": 6546
-  },
-  {
-   "id": "D2_safest_2_15",
-   "stop": "D2",
-   "mode": "safest",
-   "crew": 2,
-   "load_kg": 15,
-   "file": "routes/D2_safest_2_15.json",
-   "total_s": 8961
-  }
- ]
+  "routes": [
+    {
+      "crew": 2,
+      "file": "routes/S1_fastest_2_15.json",
+      "goal_access_offset_m": 0.33933565433526913,
+      "goal_access_status": "approach_only",
+      "id": "S1_fastest_2_15",
+      "load_kg": 15.0,
+      "mode": "fastest",
+      "pnr_index": 1338,
+      "status": "routed",
+      "stop": "S1",
+      "total_s": 6323.018407164472
+    },
+    {
+      "crew": 2,
+      "file": "routes/S1_safest_2_15.json",
+      "goal_access_offset_m": 0.33933565433526913,
+      "goal_access_status": "approach_only",
+      "id": "S1_safest_2_15",
+      "load_kg": 15.0,
+      "mode": "safest",
+      "pnr_index": 1340,
+      "status": "routed",
+      "stop": "S1",
+      "total_s": 6340.992576610222
+    },
+    {
+      "crew": 2,
+      "file": "routes/S2_fastest_2_15.json",
+      "goal_access_offset_m": 1.6583230485099973,
+      "goal_access_status": "approach_only",
+      "id": "S2_fastest_2_15",
+      "load_kg": 15.0,
+      "mode": "fastest",
+      "pnr_index": 760,
+      "status": "routed",
+      "stop": "S2",
+      "total_s": 4033.950129727609
+    },
+    {
+      "crew": 2,
+      "file": "routes/S2_safest_2_15.json",
+      "goal_access_offset_m": 1.6583230485099973,
+      "goal_access_status": "approach_only",
+      "id": "S2_safest_2_15",
+      "load_kg": 15.0,
+      "mode": "safest",
+      "pnr_index": 767,
+      "status": "routed",
+      "stop": "S2",
+      "total_s": 4052.248454939732
+    },
+    {
+      "crew": 2,
+      "file": "routes/S3_fastest_2_15.json",
+      "goal_access_offset_m": 0.47208919435159336,
+      "goal_access_status": "approach_only",
+      "id": "S3_fastest_2_15",
+      "load_kg": 15.0,
+      "mode": "fastest",
+      "pnr_index": 308,
+      "status": "routed",
+      "stop": "S3",
+      "total_s": 1584.7612430047348
+    },
+    {
+      "crew": 2,
+      "file": "routes/S3_safest_2_15.json",
+      "goal_access_offset_m": 0.47208919435159336,
+      "goal_access_status": "approach_only",
+      "id": "S3_safest_2_15",
+      "load_kg": 15.0,
+      "mode": "safest",
+      "pnr_index": 308,
+      "status": "routed",
+      "stop": "S3",
+      "total_s": 1583.9895599363686
+    },
+    {
+      "crew": 2,
+      "file": "routes/D1_fastest_2_15.json",
+      "goal_access_offset_m": 0.6492617184028309,
+      "goal_access_status": "approach_only",
+      "id": "D1_fastest_2_15",
+      "load_kg": 15.0,
+      "mode": "fastest",
+      "pnr_index": 1228,
+      "status": "routed",
+      "stop": "D1",
+      "total_s": 5904.335699436355
+    },
+    {
+      "crew": 2,
+      "file": "routes/D1_safest_2_15.json",
+      "goal_access_offset_m": 0.6492617184028309,
+      "goal_access_status": "approach_only",
+      "id": "D1_safest_2_15",
+      "load_kg": 15.0,
+      "mode": "safest",
+      "pnr_index": 1230,
+      "status": "routed",
+      "stop": "D1",
+      "total_s": 5921.036358753807
+    },
+    {
+      "crew": 2,
+      "file": "routes/D2_fastest_2_15.json",
+      "goal_access_offset_m": 8.258925128004222,
+      "goal_access_status": "approach_only",
+      "id": "D2_fastest_2_15",
+      "load_kg": 15.0,
+      "mode": "fastest",
+      "pnr_index": 760,
+      "status": "routed",
+      "stop": "D2",
+      "total_s": 4032.1803069093967
+    },
+    {
+      "crew": 2,
+      "file": "routes/D2_safest_2_15.json",
+      "goal_access_offset_m": 8.258925128004222,
+      "goal_access_status": "approach_only",
+      "id": "D2_safest_2_15",
+      "load_kg": 15.0,
+      "mode": "safest",
+      "pnr_index": 767,
+      "status": "routed",
+      "stop": "D2",
+      "total_s": 4050.42282921443
+    }
+  ]
 }
