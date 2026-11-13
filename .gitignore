@@ -1,0 +1,70 @@
+# RedSight .gitignore — documentation is the tracked product; large planetary data,
+# dependency caches, build outputs, and secrets stay out.
+# Layout reference: README.md "Repository layout" (planned dirs) · build plan task A4.
+
+# --- Secrets & credentials (never commit) ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.*
+credentials*
+token*.json
+service-account*.json
+
+# --- OS / editor junk ---
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# --- Python (engine/) ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+.coverage
+htmlcov/
+dist/
+build/
+
+# --- Node (app/) ---
+node_modules/
+.npm/
+.pnpm-store/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.tsbuildinfo
+
+# --- Large planetary data ---
+# Raw downloads are never committed (size; provenance recorded in data/PROVENANCE.md).
+data/raw/
+# Raw-format geodata anywhere in the repo:
+*.tif
+*.tiff
+*.img
+*.hgt
+*.nc
+*.h5
+# Rendered tile pyramids reach 100s of MB (independent review F1 budget):
+tiles/
+**/tiles/
+# Small processed artifacts (JSON/GeoJSON, small PNGs) are tracked by default — no rule ignores them.
+# Secrets and raw-format rasters above stay ignored even under data/processed/ (no blanket negation:
+# `!data/processed/**` would re-include e.g. data/processed/.env or a huge .tif).
+# Anything raw that must be committed despite the rules above: `git add -f` with a reason in PROVENANCE.md.
+
+# --- App build outputs (static site is deployed, not committed whole) ---
+app/dist/
