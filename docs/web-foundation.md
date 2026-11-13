@@ -6,6 +6,10 @@ versus planned work. Companion: [`demo-focus-plan.md`](demo-focus-plan.md) (tier
 contract) · [`ai/voice-copilot-plan.md`](ai/voice-copilot-plan.md) (copilot) · surface brief:
 [`impeccable-brief-app-console.md`](impeccable-brief-app-console.md) + `PRODUCT.md` (root).
 
+> **Update 2 — 2026-11-13:** the app was redesigned around setup → routes. The current layout, the
+> map and the proposed plan files are in [`app-redesign.md`](app-redesign.md); where the note below
+> disagrees (stop picker, route cards, layer panel), that doc wins.
+>
 > **Update — 2026-11-13, branch `feat/yassin-app` (app shell owner: Yassin).** This file describes the
 > first scaffold; these parts have changed since:
 >

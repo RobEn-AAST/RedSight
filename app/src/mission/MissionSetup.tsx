@@ -103,10 +103,10 @@ export function MissionSetup() {
               className="font-display text-lg font-semibold tracking-wide text-ink outline-none"
             >
               {step === 0 && 'How many astronauts walk?'}
-              {step === 1 && 'Carried package & equipment mass'}
-              {step === 2 && 'Rover available for this excursion?'}
-              {step === 3 && 'Science / material goal'}
-              {step === 4 && 'Mission review'}
+              {step === 1 && 'What are you carrying?'}
+              {step === 2 && 'Do you have a rover?'}
+              {step === 3 && 'What are you looking for?'}
+              {step === 4 && 'Check your plan'}
             </h3>
 
             {step === 0 && <CrewStep />}
@@ -156,7 +156,7 @@ export function MissionSetup() {
             disabled={!validation.isValid}
             data-testid="confirm-mission"
           >
-            <Check size={14} aria-hidden /> Confirm mission
+            Show routes <ChevronRight size={14} aria-hidden />
           </Button>
         )}
       </div>

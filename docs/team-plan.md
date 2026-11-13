@@ -129,10 +129,16 @@ page and UI audit in [`submission/`](submission/). **Routes are still mock; tile
 |---|---|---|---|
 | **Ali** | Nothing pushed yet: **critical path** | 1. Pilot gate: DEM opens, slope sane, one real route. 2. Real `constants.json`, `meta.json` (habitat), routes for all stops, both modes, in the contract shape. 3. `back_fast` on lowest-hazard routes (note above). 4. `npm run check:data` → PR | none (route format: `back_fast` added as optional) |
 | **Youssef** | Nothing pushed yet: **critical path** | 1. HiRISE ortho + DTM download. 2. Tiles into `app/public/data/tiles/<layer>/{z}/{x}/{y}.png` and set `"available": true` in `layers.json` (the checker fails if tiles are missing). 3. `data/PROVENANCE.md`. 4. If time: radio-coverage mask | none |
-| **Yassin** | Map, stop picker, route cards merged | 1. **Deploy** `main` to the public URL; test it logged out on phone + laptop (pool item 5). 2. If time: shareable plan link | `App.tsx` + `index.html` footer wording (banned "certified" removed); `lib/engineData.tsx` reads stop photos given as objects with `url`; `MapWorkspace.tsx` mounts `<MissionReplay />`; `planStore`/`planContext` hold the shared O₂ budget (`o2BudgetL`) |
+| **Yassin** | Map + **astronaut-first redesign** merged (setup → routes; sample areas, no-return line, rover legs, crew split on mock plan files) | 1. **Deploy** `main` to the public URL; test it logged out on phone + laptop (pool item 5). 2. If time: shareable plan link | `App.tsx` + `index.html` footer wording (banned "certified" removed); `lib/engineData.tsx` reads stop photos given as objects with `url`; `MapWorkspace.tsx` mounts `<MissionReplay />`; `planStore`/`planContext` hold the shared O₂ budget (`o2BudgetL`) |
 | **Ayman** | Stops, photos, cards merged | 1. Check your stop cards on `main` now show photos. 2. Judge extras (§17): Curiosity's real path overlay, EVA dose card | the app now reads your photo objects; `make-mock.mjs` never overwrites your files (they have no `_mock` flag) |
 | **Jana** | Turn-back slider + source cards merged | 1. Zones layer + "don't go beyond" line (§9). 2. Crew preset toggle (§8) | `turnback.ts`: the turn-back uses the cheaper of the route's own way home and `back_fast` (`wayHome()`), same rule as the replay; your slider's budget now lives in the plan store (`usePlan().o2BudgetL`), so the replay follows it. Tests 8/8 |
 | **Marwan** | Integration + replay + delivery drafts | Merge PRs as they come; rehearse the demo; retake screenshots on real data; re-run the UI audit on the deployed URL | — |
+
+**Yassin's proposed plan files** (`targets.geojson`, `plan/*.json`, `limits_*.geojson`, [`app-redesign.md`](app-redesign.md) §4)
+are **optional for Ali**: the app falls back to the §15 route files, which stay the must-ship engine output.
+Rover legs and crew split are Tier 2 features (D20) running on mock data; the demo leans on the Tier 1 parts
+until real routes exist. After any change to `routes/`, re-run `node app/public/data/_mock/make-plan-mock.mjs`
+(only while the plan files are still mock).
 
 **Still unowned:** delivery pool item 1 (ask the Local Lead: cutoff, who submits) and item 7 (demo
 GIF/recording). Item 8 (submit) after the Local Lead answers.
