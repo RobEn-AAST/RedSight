@@ -83,6 +83,24 @@ Swapping: change the names in this table (one commit), nothing else needs editin
 | +16 | Final deploy; logged-out test; slides with real screenshots |
 | +18 (Sat 09:00) | **Submit** |
 
+## 4b. Notes for owners (read yours before you start)
+
+**Ali (engine): O₂ numbers in the route files** (decision D27, [`demo-focus-plan.md`](demo-focus-plan.md) §9c)
+
+- Write **plain expected O₂ per crew member** at the planned walking rate (Pandolf + κ):
+  `cum.o2_l` (habitat → each point) and `back.o2_l` (each point → home, from your return field).
+- **Don't add** the reserve, the 20 % return margin, or pair/drill factors. The app applies them from
+  `constants.json` (`reserve_minutes`, `reserve_fraction`, `walkback_o2_lpm`, `return_cost_margin`); adding
+  them in the engine would count them twice.
+- Without `back.o2_l` the app assumes home costs the same as the way out and says so on screen.
+- `budget_l` = capacity − reserve = 385 − max(0.25 × 385, 30 × 1.22) ≈ **289 L**. To change capacity or
+  reserve, edit `constants.json`, not only the route files. Keep `constants.json` key names stable.
+- Exact file fields and the mock files to replace: [`app/public/data/README.md`](../app/public/data/README.md).
+
+**Everyone on the app side:** build against the mock files in `app/public/data/` (all `"_mock": true`)
+until the real ones land. Mission Replay is ready to plug in: `createReplay(map, { route })`, docs in
+[`app/src/replay/README.md`](../app/src/replay/README.md).
+
 ## 5. Recommendations from the web search (starting points, verify as you go)
 
 - **3D terrain (replay full):** MapLibre GL JS has a built-in `raster-dem` source + `setTerrain()`; the
