@@ -6,7 +6,7 @@ From the repository root, with Python 3 plus the already-installed NumPy, raster
 
 ```sh
 python3 -m engine build \
-  --input-manifest /tmp/redsight-engine-pilot-inputs.json \
+  --input-manifest data/raw/engine-pilot/input-manifest.json \
   --constants app/public/data/constants.json \
   --stops app/public/data/stops.json \
   --out app/public/data
@@ -18,6 +18,56 @@ Scenario in `meta.json`. The build writes only Ali-owned outputs: `constants.jso
 stop/mode. All ten supported stop/mode outcomes remain in the index. A nonzero exit or a `partial` summary means at least one outcome is explicitly
 no-route record; inspect the index and build manifest before using it. Input crops are checksum-checked
 against the handoff manifest. The command does not download data.
+
+## Durable local handoff (2026-11-13)
+
+`data/raw/engine-pilot/` is an ignored local bundle, not part of a Git clone. It contains the
+primary/complement/ortho crops, historical mosaic, native primary DEM window, maximum and p90 slope
+caches, STAC response, alignment evidence, original and relocated input/access manifests, and
+`SHA256.json`. Its `evidence/` folder preserves prior audit reports and acquisition/analysis scripts.
+The complementary crop and mosaic are provenance evidence only; routing still uses primary-only
+coverage. No source data were downloaded again for this handoff.
+
+To copy a supplied bundle to another checkout, run from that checkout (replace `/path/to/bundle`):
+
+```sh
+python3 engine/tools/preserve_pilot.py \
+  --manifest /path/to/bundle/input-manifest.json \
+  --access-review /path/to/bundle/access-review.json \
+  --out data/raw/engine-pilot
+```
+
+The source bundle must remain at its recorded absolute paths during this copy. The helper checks
+recorded asset hashes, refuses conflicting assets, and rewrites paths into the new bundle. Copy
+`evidence/` separately when transferring the historical reports/scripts; the helper only relocates
+manifest-referenced assets. Relocation changes manifest hashes and path-bearing output metadata;
+it does not change raster bytes or modeled route geometry/costs. The committed route artifacts retain
+the original historical producer/manifest provenance; a rebuild records the new source revision.
+
+For a non-destructive rebuild, use the build command above with `--out /tmp/redsight-rebuild`.
+Expected result: exit **1**, `status: partial`, seven files, two S3 routes and eight explicit no-route
+outcomes. Exit 2 means an actual input/build error. Do not treat exit 1 as five-stop completion.
+
+Cache reconstruction is distinct from this checked local replay. The archived `build_native_hazard.py`
+and `build_native_p90.py` are historical scripts with original `/tmp` paths and remote reads; do not
+run them as relocation tools. Their method is: query the recorded USGS STAC collection/products;
+use the manifest's Mars sphere/projected D11 bounds and exact 600×600 planning transform; average
+resample elevation crops; read the primary D11 native window; compute Horn 3×3 gradients at native
+pixel spacing with any nodata-touching neighborhood excluded; bin source pixel centers into planning
+cells and aggregate maximum (or linear p90 for the comparison). Copy the source Mars CRS WKT into
+outputs. Preserve primary nodata and never blend the complementary DTM across the measured seam.
+Exact upstream reacquisition/byte-for-byte cache reconstruction has **not** been rerun in this handoff.
+Full remote COG hashes remain unavailable; local hashes and recorded upstream ETags are retained.
+
+The engine implementation has tested routing/PNR/replay behavior, but the intended five-stop demo
+remains incomplete. The p90 comparison also fails one habitat with nearby access to all five targets;
+its best common component's offsets are about 764/197/688/647/203 m for S1/S2/S3/D1/D2. These are
+diagnostics, not approach routes or modeled last legs. G2 remains a broad visual alignment check with
+no uniquely identified common landmark. Historical G4 is only the 5,221.715 s first-recorded-STAC-
+response-to-output lower bound, not exact total acquisition wall time; a later replay is not that pilot.
+A team decision on the target/habitat/slope-policy configuration is still required for five-stop
+routing. Stop content and web integration remain other owners' work; no push, merge or deployment
+is included here.
 
 ## Current input and limits
 
