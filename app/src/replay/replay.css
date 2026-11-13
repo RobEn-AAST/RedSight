@@ -31,3 +31,5 @@
 .replay-foot { margin-top: 6px; font-size: 11px; opacity: 0.8; }
 .replay-badge { display: inline-block; padding: 0 6px; border-radius: 4px; background: #7b5ea7; color: #fff; font-weight: 600; }
 .replay-voice { width: 34px; height: 30px; border: 1px solid #5a4a42; border-radius: 6px; background: #2b211d; cursor: pointer; }
+.replay-legend { font-size: 11px; opacity: 0.85; margin: 2px 0; }
+.replay-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin: 0 3px 0 6px; vertical-align: -1px; border: 1px solid #111; }

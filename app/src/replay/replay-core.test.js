@@ -78,7 +78,7 @@ test("status callouts every 10 % of the tank, with home-needed and margin", () =
   const tl = buildTimeline(route, { ...base, statusStep: 0.1 });
   const st = tl.events.filter((e) => e.type === "status");
   assert.deepEqual(st.map((e) => e.pct), [90, 80, 70, 60, 50]);
-  assert.ok(st.every((e) => typeof e.homePct === "number" && e.label.includes("home needs")));
+  assert.ok(st.every((e) => typeof e.homePct === "number" && e.label.includes("home needs") && typeof e.sparePct === "number"));
   for (let i = 1; i < st.length; i++) assert.ok(st[i].t > st[i - 1].t);
 });
 
@@ -89,7 +89,8 @@ test("sampling: full-tank gauge, home needed, clamps", () => {
   assert.equal(s.homeL, 5);
   assert.equal(sampleAt(tl, -5).o2Left, 40);
   assert.equal(sampleAt(tl, 1e9).o2Left, 20);
-  assert.ok(trailAt(tl, 900).length >= 2);
+  assert.ok(trailAt(tl, 900).out.length >= 2)
+  assert.ok(trailAt(tl, 1800).back.length >= 2);
 });
 
 test("no-go and turn-back-ahead", () => {

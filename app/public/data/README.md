@@ -16,6 +16,18 @@ tell the team first, then update this README + the generator in the same PR.
 | `cards/rad.json`, `cards/rems.json` | Ayman | RAD dose + source, REMS pressure range |
 | `fields/*.png`, `fields/coverage.png` | Ali / Youssef | not mocked yet (If-time features) |
 
+## Note for Ali (engine) — O₂ numbers, read before writing routes (D27, demo-focus-plan §9c)
+
+- `cum.o2_l` and `back.o2_l` = **plain expected O₂ per crew member** at the planned walking rate (Pandolf + κ).
+  **Don't add** the reserve, the 20 % return margin, or pair/drill factors: the turn-back logic applies them
+  from `constants.json` (`reserve_minutes`, `reserve_fraction`, `walkback_o2_lpm`, `return_cost_margin`), so
+  they'd otherwise be counted twice.
+- `back.o2_l[i]` = O₂ to walk **home from point i** (your return field sampled along the route). Without it
+  the app assumes home costs the same as the way out and says so on screen.
+- `budget_l` = capacity − reserve = 385 − max(0.25 × 385, 30 × 1.22) ≈ **289 L**. If you change capacity or
+  reserve, change `constants.json`, not only the route files.
+- Keep `constants.json` keys stable; the app reads them by name.
+
 ## Route file fields
 
 | Field | Meaning |

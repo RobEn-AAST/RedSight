@@ -1,9 +1,9 @@
 // Mission Replay — MapLibre layer + player panel. Owner: Marwan.
 // Usage: const r = createReplay(map, { route }); r.play();
-import { buildTimeline, sampleAt, trailAt, formatClock } from "./replay-core.js";
+import { buildTimeline, sampleAt, trailAt, formatClock, formatDuration } from "./replay-core.js";
 import { createVoice, calloutFor } from "./voice.js";
 
-const SRC = { crew: "replay-crew", trail: "replay-trail", turn: "replay-turn" };
+const SRC = { ends: "replay-ends", trail: "replay-trail", turn: "replay-turn", crew: "replay-crew" };
 const DURATIONS = [30, 60, 120]; // seconds of screen time for the whole walk
 const DRILLS = [
   { id: "leak", label: "Suit leak", factor: 2 },
@@ -31,8 +31,11 @@ export function createReplay(map, opts) {
   function addLayers() {
     const empty = { type: "FeatureCollection", features: [] };
     for (const id of Object.values(SRC)) if (!map.getSource(id)) map.addSource(id, { type: "geojson", data: empty });
+    if (!map.getLayer(SRC.ends)) map.addLayer({ id: SRC.ends, type: "circle", source: SRC.ends,
+      paint: { "circle-radius": 8, "circle-color": ["get", "color"], "circle-stroke-color": "#111", "circle-stroke-width": 2 } });
     if (!map.getLayer(SRC.trail)) map.addLayer({ id: SRC.trail, type: "line", source: SRC.trail,
-      paint: { "line-color": "#ffd166", "line-width": 4, "line-opacity": 0.9 } });
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": ["get", "color"], "line-width": ["get", "width"], "line-opacity": 0.95 } });
     if (!map.getLayer(SRC.turn)) map.addLayer({ id: SRC.turn, type: "circle", source: SRC.turn,
       paint: { "circle-radius": 7, "circle-color": "#ef476f", "circle-stroke-color": "#fff", "circle-stroke-width": 2 } });
     if (!map.getLayer(SRC.crew)) map.addLayer({ id: SRC.crew, type: "circle", source: SRC.crew,
@@ -45,8 +48,15 @@ export function createReplay(map, opts) {
     const pts = [{ pt: s.pt, color: "#06d6a0" }];
     if (tl.members.length >= 2) pts.push({ pt: sampleAt(tl, Math.max(0, t - lagS)).pt, color: "#118ab2" });
     map.getSource(SRC.crew).setData(fc(pts.map((p) => pointF(p.pt, { color: p.color }))));
-    map.getSource(SRC.trail).setData(fc([{ type: "Feature", properties: {},
-      geometry: { type: "LineString", coordinates: trailAt(tl, t) } }]));
+    const tr = trailAt(tl, t);
+    map.getSource(SRC.trail).setData(fc([
+      ...(tr.out.length > 1 ? [lineF(tr.out, { color: "#ffd166", width: 4 })] : []),
+      ...(tr.back.length > 1 ? [lineF(tr.back, { color: "#4cc9f0", width: 6 })] : []),
+    ]));
+    map.getSource(SRC.ends).setData(fc([
+      pointF(route.coords[0], { color: "#ffffff" }), // habitat
+      pointF(route.coords[route.coords.length - 1], { color: "#9b5de5" }), // stop
+    ]));
     map.getSource(SRC.turn).setData(fc(tl.turnPoint ? [pointF(tl.turnPoint, {})] : []));
 
     // Tank gauge: [reserve | home needed | spare margin] … empty. Fill = O2 left (worst member).
@@ -57,7 +67,7 @@ export function createReplay(map, opts) {
     ui.reserve.style.width = `${(R / C) * 100}%`;
     ui.home.style.left = `${(R / C) * 100}%`;
     ui.home.style.width = `${(Math.min(home, Math.max(0, left - R)) / C) * 100}%`;
-    ui.o2.textContent = `O₂ ${pct(left, C)} · ${left.toFixed(0)} L · ≈${formatClock(s.minutesLeft * 60)} at walkback rate`;
+    ui.o2.textContent = `O₂ ${pct(left, C)} · ${left.toFixed(0)} L · ≈${formatDuration(s.minutesLeft * 60)} at walkback rate`;
     ui.need.textContent = `Home needs ${pct(home, C)} · reserve ${pct(R, C)} · spare ${pct(Math.max(0, margin), C)}`;
     ui.members.textContent = tl.members.length >= 2
       ? s.members.map((l, i) => `${"AB"[i] ?? i + 1} ${pct(Math.max(0, l), C)}`).join(" · ") + " (plan uses the lower)"
@@ -69,12 +79,12 @@ export function createReplay(map, opts) {
     ui.play.textContent = playing ? "❚❚" : "▶";
     ui.summary.textContent = t >= tl.totalS && tl.totalS > 0 ? arrivalText() : "";
     ui.note.textContent = tl.backAssumed ? " Return cost assumed equal to the way out (engine back data missing)." : "";
-    fireEvents();
+    if (playing) fireEvents();
   }
 
   function arrivalText() {
     const C = tl.capacityL;
-    const base = `Home with ${pct(tl.arrivalL, C)} (${tl.arrivalL.toFixed(0)} L ≈ ${formatClock(tl.arrivalMin * 60)} at walkback rate)`;
+    const base = `Home with ${pct(tl.arrivalL, C)} (${tl.arrivalL.toFixed(0)} L ≈ ${formatDuration(tl.arrivalMin * 60)} at walkback rate)`;
     if (tl.arrivalL < 0) return `${base}: primary O₂ ran out; emergency supply needed.`;
     if (tl.reserveUsedL > 0.05) return `${base}: used ${tl.reserveUsedL.toFixed(0)} L of the reserve.`;
     return `${base}: reserve intact.`;
@@ -148,6 +158,8 @@ export function createReplay(map, opts) {
       <div class="replay-o2"></div>
       <div class="replay-need"></div>
       <div class="replay-members"></div>
+      <div class="replay-legend"><i style="background:#fff"></i>habitat <i style="background:#9b5de5"></i>stop
+        <i style="background:#ef476f"></i>turn-back <i style="background:#ffd166"></i>walked out <i style="background:#4cc9f0"></i>walked home</div>
       <div class="replay-row replay-stats"><span class="replay-phase"></span><span class="replay-clock"></span><span class="replay-dist"></span></div>
       <ul class="replay-log" aria-live="polite"></ul>
       <div class="replay-summary"></div>
@@ -204,4 +216,5 @@ export function createReplay(map, opts) {
 }
 
 const fc = (features) => ({ type: "FeatureCollection", features });
+const lineF = (coordinates, properties) => ({ type: "Feature", properties, geometry: { type: "LineString", coordinates } });
 const pointF = (pt, properties) => ({ type: "Feature", properties, geometry: { type: "Point", coordinates: pt } });

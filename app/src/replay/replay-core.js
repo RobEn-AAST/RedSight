@@ -200,10 +200,12 @@ export function buildTimeline(route, opts = {}) {
           const a0 = frames[i - 1], b0 = frames[i];
           if (a0.o2 < lim && b0.o2 >= lim) {
             const w = b0.o2 === a0.o2 ? 1 : (lim - a0.o2) / (b0.o2 - a0.o2);
-            const homePct = Math.round(((f * lerp(a0.home, b0.home, w)) / C) * 100);
-            const marginPct = pct - homePct - Math.round((R / C) * 100);
-            events.push({ t: lerp(a0.t, b0.t, w), type: "status", pct, homePct, marginPct,
-              label: `O₂ ${pct}% · home needs ~${homePct}% · reserve ${Math.round((R / C) * 100)}% · margin ${marginPct}%` });
+            const homeFrac = (f * lerp(a0.home, b0.home, w)) / C;
+            const homePct = Math.round(homeFrac * 100);
+            const reservePct = Math.round((R / C) * 100);
+            const sparePct = Math.max(0, Math.round((p - homeFrac - R / C) * 100));
+            events.push({ t: lerp(a0.t, b0.t, w), type: "status", pct, homePct, sparePct,
+              label: `O₂ ${pct}% · home needs ${homePct}% · reserve ${reservePct}% · spare ${sparePct}%` });
             break;
           }
         }
@@ -262,12 +264,23 @@ export function sampleAt(tl, t) {
   };
 }
 
-/** Walked trail up to time t (for the line behind the crew). */
+/** Walked trail up to time t, split into the way out and the way home (so progress home is visible). */
 export function trailAt(tl, t) {
   const s = sampleAt(tl, t);
-  const pts = tl.frames.slice(0, s.index + 1).filter((fr) => fr.t <= t).map((fr) => fr.pt);
-  pts.push(s.pt);
-  return pts;
+  const done = tl.frames.slice(0, s.index + 1).filter((fr) => fr.t <= t);
+  const out = done.filter((fr) => fr.phase !== "back").map((fr) => fr.pt);
+  const back = done.filter((fr) => fr.phase === "back").map((fr) => fr.pt);
+  if (s.phase === "back") {
+    if (!back.length && out.length) back.push(out[out.length - 1]);
+    back.push(s.pt);
+  } else out.push(s.pt);
+  if (back.length && out.length && back[0] !== out[out.length - 1]) back.unshift(out[out.length - 1]);
+  return { out, back };
+}
+
+export function formatDuration(s) {
+  const mm = Math.max(0, Math.round(s / 60));
+  return mm >= 60 ? `${Math.floor(mm / 60)} h ${String(mm % 60).padStart(2, "0")} min` : `${mm} min`;
 }
 
 export function formatClock(s) {
