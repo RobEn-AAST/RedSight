@@ -12,15 +12,18 @@
 //
 // Run from the repo root:  node app/public/data/_mock/make-plan-mock.mjs
 // It reads routes/*.json and stops.json, so run it after make-mock.mjs.
-// It only overwrites files it creates; don't run it after real plan files land.
+// It skips files without `_mock` (real plans). Afterwards run app/scripts/build-plans.mjs, which
+// rebuilds plan/index.json from the files on disk.
 
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const DATA = join(dirname(fileURLToPath(import.meta.url)), '..')
 const read = (p) => JSON.parse(readFileSync(join(DATA, p), 'utf8'))
 const write = (p, obj) => {
+  // Never overwrite a real file (no `_mock` flag), e.g. plans from app/scripts/build-plans.mjs.
+  if (existsSync(join(DATA, p)) && JSON.parse(readFileSync(join(DATA, p), 'utf8'))._mock !== true) return
   mkdirSync(dirname(join(DATA, p)), { recursive: true })
   writeFileSync(join(DATA, p), JSON.stringify(obj, null, 1) + '\n')
 }

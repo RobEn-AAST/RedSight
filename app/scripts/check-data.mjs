@@ -27,7 +27,9 @@ const distM = (a, b) => {
   return 2 * MARS_R * Math.asin(Math.min(1, Math.sqrt(h)));
 };
 
+const loaded = new Set();
 function load(rel, { optional = false } = {}) {
+  loaded.add(rel);
   const file = join(DATA, rel);
   if (!existsSync(file)) { (optional ? warn : err)(rel, "missing"); return null; }
   const text = readFileSync(file, "utf8");
@@ -189,12 +191,49 @@ for (const c of ["cards/rad.json", "cards/rems.json"]) {
   if (JSON.stringify(card).includes("TODO")) warn(c, "contains TODO");
 }
 
-// Stray files: anything in data/ not covered above is fine, but flag huge files that slow the deploy.
+// Plan files (docs/app-redesign.md §4): targets, plan index, every plan's members in the route shape.
+const targets = load("targets.geojson", { optional: true });
+const targetIds = new Set();
+if (targets) for (const f of targets.features ?? []) {
+  const p = f?.properties ?? {};
+  if (typeof p.id !== "string" || f.geometry?.type !== "Polygon") { err("targets.geojson", `target ${p.id ?? "?"}: id and Polygon geometry required`); continue; }
+  targetIds.add(p.id);
+  checkBadge("targets.geojson", `target ${p.id}`, p.badge);
+}
+const planIndex = load("plan/index.json", { optional: true });
+if (planIndex) {
+  if (!Array.isArray(planIndex.plans) || planIndex.plans.length === 0) err("plan/index.json", "plans[] empty");
+  for (const e of planIndex.plans ?? []) {
+    const w = `entry ${e?.id ?? e?.file ?? "?"}`;
+    if (typeof e?.file !== "string" || typeof e?.target !== "string" || typeof e?.rover !== "boolean") { err("plan/index.json", `${w}: file, target, rover required`); continue; }
+    if (targets && !targetIds.has(e.target)) err("plan/index.json", `${w}: target ${e.target} not in targets.geojson`);
+    const plan = load(e.file);
+    if (!plan) continue;
+    if ((plan._mock === true) !== (e._mock === true)) err("plan/index.json", `${w}: _mock flag differs from ${e.file} (run node app/scripts/build-plans.mjs)`);
+    if (plan._mock === true && planIndex._mock !== true) err("plan/index.json", `lists mock plan ${e.file} but is not marked _mock (header badge would hide it)`);
+    for (const k of ["target", "mode", "crew", "load_kg", "rover"]) if (plan[k] !== e[k]) err(e.file, `${k} ${JSON.stringify(plan[k])} differs from plan/index.json (${JSON.stringify(e[k])})`);
+    checkBadge(e.file, "plan", plan.badge);
+    if (!Array.isArray(plan.together) || plan.together.length === 0) { err(e.file, "together[] empty"); continue; }
+    const members = [...plan.together.map((m) => ["together", m]), ...(plan.split?.members ?? []).map((m) => ["split", m])];
+    for (const [group, m] of members) {
+      const where = `${e.file} (${group} ${m?.member ?? "?"})`;
+      // Plan members store distance_m on the segment; checkRoute reads it from cost_terms.
+      const seg = Array.isArray(m?.seg) ? m.seg.map((s) => ({ ...s, cost_terms: { distance_m: s.distance_m, ...s.cost_terms } })) : m?.seg;
+      checkRoute(where, { ...m, seg, stop: m?.targets?.at(-1), mode: plan.mode, crew: plan.crew, load_kg: plan.load_kg, badge: plan.badge, budget_l: plan.budget_l }, {});
+      if (!Array.isArray(m?.legs) || m.legs.length === 0) err(where, "legs[] empty");
+      if (plan.rover === false && m?.park_index != null) err(where, "park_index must be null on foot");
+    }
+  }
+}
+
+// Every other JSON/GeoJSON under data/ (except _mock/ generators and tiles/): parse it, so a leftover
+// "_mock": true or banned wording anywhere fails --final. Also flag huge files that slow the deploy.
 (function walk(dir) {
   for (const name of readdirSync(dir)) {
-    const p = join(dir, name), s = statSync(p);
-    if (s.isDirectory()) { if (name !== "tiles") walk(p); }
-    else if (s.size > 5e6) warn(relative(DATA, p), `${(s.size / 1e6).toFixed(1)} MB (large for a static deploy)`);
+    const p = join(dir, name), s = statSync(p), rel = relative(DATA, p);
+    if (s.isDirectory()) { if (name !== "tiles" && name !== "_mock") walk(p); continue; }
+    if (s.size > 5e6) warn(rel, `${(s.size / 1e6).toFixed(1)} MB (large for a static deploy)`);
+    if (/\.(geo)?json$/.test(name) && !loaded.has(rel)) load(rel);
   }
 })(DATA);
 
