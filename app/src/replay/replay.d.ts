@@ -35,6 +35,8 @@ export interface Replay {
   setRoute(route: unknown): void
   drill(factor: number, label?: string): void
   clearDrill(): void
+  /** Move the replay layers back on top of the host map's layers. */
+  raise(): void
   destroy(): void
 }
 

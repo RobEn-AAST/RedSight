@@ -32,6 +32,12 @@ export interface PlanStore {
   /** The route for the selected stop and mode, if loaded. */
   activeRoute: EngineRoute | null
   preset: PlanPreset | null
+  /**
+   * Usable O₂ budget per crew member set by the turn-back slider (L), shared so
+   * the slider and Mission Replay use the same number. null = full budget C − R.
+   */
+  o2BudgetL: number | null
+  setO2BudgetL: (l: number | null) => void
   /** The MapLibre map once it has loaded; null before that and off the map workspace. */
   map: MapLibreMap | null
   setMap: (map: MapLibreMap | null) => void

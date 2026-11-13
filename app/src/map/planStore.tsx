@@ -60,6 +60,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
   const [selectedStopId, selectStop] = useState<string | null>(null)
   const [mode, setMode] = useState<EngineRouteMode>('fastest')
   const [map, setMap] = useState<MapLibreMap | null>(null)
+  const [o2BudgetL, setO2BudgetL] = useState<number | null>(null)
   const [loaded, setLoaded] = useState<Loaded | null>(null)
 
   const crew = state.config.crewCount
@@ -112,10 +113,12 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       // If only one mode's file exists, show that one instead of nothing.
       activeRoute: routes[mode] ?? routes.fastest ?? routes.safest ?? null,
       preset: pick?.preset ?? null,
+      o2BudgetL,
+      setO2BudgetL,
       map,
       setMap,
     }
-  }, [selectedStopId, mode, loaded, key, pick, map])
+  }, [selectedStopId, mode, loaded, key, pick, map, o2BudgetL])
 
   return <PlanContext.Provider value={store}>{children}</PlanContext.Provider>
 }

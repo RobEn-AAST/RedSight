@@ -28,32 +28,53 @@ function modelFromConstants(c: EngineConstants | null): Omit<ReplayOptions, 'rou
 
 export function MissionReplay() {
   const engine = useEngineData()
-  const { map, activeRoute, routesStatus } = usePlan()
+  const { map, activeRoute, routesStatus, o2BudgetL, mode } = usePlan()
   const hostRef = useRef<HTMLDivElement>(null)
   const replayRef = useRef<Replay | null>(null)
+  const routeRef = useRef(activeRoute)
+  // Runs before the creation effect below (effects run in order).
+  useEffect(() => {
+    routeRef.current = activeRoute
+  }, [activeRoute])
+  const hasRoute = !!activeRoute
 
   // One replay per map + constants; the route is swapped in place.
   useEffect(() => {
     const host = hostRef.current
-    if (!map || !host || !activeRoute) return
+    const route = routeRef.current
+    if (!map || !host || !route) return
     const replay = createReplay(map, {
       ...modelFromConstants(engine.constants),
-      route: activeRoute,
+      route,
       panelContainer: host,
       showEnds: false,
     })
     replayRef.current = replay
+    if (import.meta.env.DEV) (window as unknown as { __replay?: Replay }).__replay = replay // for headless checks
     return () => {
       replay.destroy()
       replayRef.current = null
     }
-    // activeRoute is handled by the effect below; only a first route is needed here.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, engine.constants, !!activeRoute])
+    // Route changes are handled by setRoute below; only the first route is needed here.
+  }, [map, engine.constants, hasRoute])
 
   useEffect(() => {
     if (activeRoute) replayRef.current?.setRoute(activeRoute)
   }, [activeRoute])
+
+  // The map redraws the chosen route on top when the mode changes; keep the replay above it.
+  useEffect(() => {
+    replayRef.current?.raise()
+  }, [mode, activeRoute, hasRoute])
+
+  // Follow the turn-back slider so both show the same turn-back point.
+  const capacityL = engine.constants?.o2_usable_primary_l?.value
+  useEffect(() => {
+    const replay = replayRef.current
+    if (!replay) return
+    if (o2BudgetL != null) replay.setBudget(o2BudgetL)
+    else if (capacityL != null) replay.setCapacity(capacityL)
+  }, [o2BudgetL, capacityL, map, hasRoute])
 
   return (
     <Panel
