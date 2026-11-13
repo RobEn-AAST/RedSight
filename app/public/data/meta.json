@@ -1,7 +1,7 @@
 {
   "analysis_crs": "PROJCS[\"Mars (2015) - Sphere / Ocentric / Equirectangular, clon = 0\",GEOGCS[\"Mars (2015) - Sphere / Ocentric\",DATUM[\"Mars (2015) - Sphere\",SPHEROID[\"Mars (2015) - Sphere\",3396190,0,AUTHORITY[\"IAU\",\"49900\"]],AUTHORITY[\"IAU\",\"49900\"]],PRIMEM[\"Reference Meridian\",0,AUTHORITY[\"IAU\",\"49900\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"IAU\",\"49900\"]],PROJECTION[\"Equirectangular\"],PARAMETER[\"standard_parallel_1\",0],PARAMETER[\"central_meridian\",0],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH],AUTHORITY[\"IAU\",\"49910\"]]",
   "build_date": "2026-11-13",
-  "constants_hash": "e61ace2f4e1707344bc6880f3b63d5709be299bb709a9fe660723f31c0504455",
+  "constants_hash": "87b14a922e6427720cba0365b4f66719c50b0a9519101af8b0448354256155df",
   "crs": "+proj=longlat +R=3396190 +no_defs",
   "grid": {
     "cell_value": "mean elevation from ~1.01 m HiRISE DTM average-resampled to ~9.88 m planning cells",
@@ -20,16 +20,16 @@
   "habitat": {
     "badge": "Scenario",
     "lonlat": [
-      137.37991666666665,
-      -4.79575
+      137.38708333333332,
+      -4.820416666666666
     ],
-    "note": "Lowest neighborhood-slope candidate 150–600 m north and downslope of S1 within the component containing all five supported stops.",
+    "note": "Native hard mask separated all 150–600 m north/downslope habitat candidates from stop-accessible cells; selected the nearest walkable cell to S1 in the component containing 1 walkable supported stop(s) (1345.3 m from S1, 14.76° native aggregated slope). Other stop cells remain explicit no-route outcomes.",
     "row_col": [
-      274,
-      269
+      422,
+      312
     ]
   },
-  "input_hash": "60a84ed4f14f19e32ef7e414fbc4d8cb5aac73385bdf57a2ec8f02286d3f3c43",
+  "input_hash": "74a4927c263094fd84960d8280c25ddc84b85035a7db779fc72b9af7f25bbe1e",
   "nodata": -3.4028226550889045e+38,
   "ops_box": {
     "east": 137.435,
@@ -38,11 +38,13 @@
     "west": 137.335
   },
   "routing_coverage": {
+    "native_slope_valid_cells": 281227,
+    "native_slope_valid_fraction": 0.7811861111111111,
     "primary_dtm_valid_cells": 281563,
     "primary_dtm_valid_fraction": 0.7821194444444445,
-    "slope_aggregation": "8-neighbor maximum over average-resampled planning-cell mean heights",
+    "slope_aggregation": "Horn 3x3 Horn 3x3 dz/dx,dz/dy using true native 1.0117468 m pixel spacing; slope in degrees; for each 600x600 planning cell, maximum valid native Horn slope by source-pixel center; pixels whose Horn neighborhood touches source nodata are excluded; no complementary DTM fill or seam blending slope aggregated from 1.01175 m source cells to 9.87912 m planning cells",
     "slope_limit_deg": 15.0,
-    "walkable_cells_after_slope_mask": 173960,
-    "walkable_fraction_of_ops_grid": 0.4832222222222222
+    "walkable_cells_after_slope_mask": 89615,
+    "walkable_fraction_of_ops_grid": 0.24893055555555554
   }
 }

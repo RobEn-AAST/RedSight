@@ -2,47 +2,43 @@
   "routes": [
     {
       "crew": 2,
-      "file": "routes/S1_fastest_2_15.json",
+      "file": null,
       "id": "S1_fastest_2_15",
       "load_kg": 15.0,
       "mode": "fastest",
-      "pnr_index": 36,
-      "status": "routed",
-      "stop": "S1",
-      "total_s": 1752.057653015173
+      "reason": "stop cell blocked: native Horn max slope 21.82° exceeds 15°; endpoint kept at the declared stop, no adjacent-cell substitution",
+      "status": "unreachable",
+      "stop": "S1"
     },
     {
       "crew": 2,
-      "file": "routes/S1_safest_2_15.json",
+      "file": null,
       "id": "S1_safest_2_15",
       "load_kg": 15.0,
       "mode": "safest",
-      "pnr_index": 36,
-      "status": "routed",
-      "stop": "S1",
-      "total_s": 1746.798164948437
+      "reason": "stop cell blocked: native Horn max slope 21.82° exceeds 15°; endpoint kept at the declared stop, no adjacent-cell substitution",
+      "status": "unreachable",
+      "stop": "S1"
     },
     {
       "crew": 2,
-      "file": "routes/S2_fastest_2_15.json",
+      "file": null,
       "id": "S2_fastest_2_15",
       "load_kg": 15.0,
       "mode": "fastest",
-      "pnr_index": 74,
-      "status": "routed",
-      "stop": "S2",
-      "total_s": 3366.0101781918875
+      "reason": "stop cell blocked: native Horn max slope 31.89° exceeds 15°; endpoint kept at the declared stop, no adjacent-cell substitution",
+      "status": "unreachable",
+      "stop": "S2"
     },
     {
       "crew": 2,
-      "file": "routes/S2_safest_2_15.json",
+      "file": null,
       "id": "S2_safest_2_15",
       "load_kg": 15.0,
       "mode": "safest",
-      "pnr_index": 74,
-      "status": "routed",
-      "stop": "S2",
-      "total_s": 3380.0764349178853
+      "reason": "stop cell blocked: native Horn max slope 31.89° exceeds 15°; endpoint kept at the declared stop, no adjacent-cell substitution",
+      "status": "unreachable",
+      "stop": "S2"
     },
     {
       "crew": 2,
@@ -50,10 +46,10 @@
       "id": "S3_fastest_2_15",
       "load_kg": 15.0,
       "mode": "fastest",
-      "pnr_index": 180,
+      "pnr_index": 32,
       "status": "routed",
       "stop": "S3",
-      "total_s": 8713.740696711586
+      "total_s": 1594.7662764717184
     },
     {
       "crew": 2,
@@ -61,54 +57,50 @@
       "id": "S3_safest_2_15",
       "load_kg": 15.0,
       "mode": "safest",
-      "pnr_index": 180,
+      "pnr_index": 32,
       "status": "routed",
       "stop": "S3",
-      "total_s": 8700.95950820114
+      "total_s": 1594.7662764717184
     },
     {
       "crew": 2,
-      "file": "routes/D1_fastest_2_15.json",
+      "file": null,
       "id": "D1_fastest_2_15",
       "load_kg": 15.0,
       "mode": "fastest",
-      "pnr_index": 27,
-      "status": "routed",
-      "stop": "D1",
-      "total_s": 1474.6257244329668
+      "reason": "stop cell blocked: native Horn max slope 26.29° exceeds 15°; endpoint kept at the declared stop, no adjacent-cell substitution",
+      "status": "unreachable",
+      "stop": "D1"
     },
     {
       "crew": 2,
-      "file": "routes/D1_safest_2_15.json",
+      "file": null,
       "id": "D1_safest_2_15",
       "load_kg": 15.0,
       "mode": "safest",
-      "pnr_index": 27,
-      "status": "routed",
-      "stop": "D1",
-      "total_s": 1473.5538434245714
+      "reason": "stop cell blocked: native Horn max slope 26.29° exceeds 15°; endpoint kept at the declared stop, no adjacent-cell substitution",
+      "status": "unreachable",
+      "stop": "D1"
     },
     {
       "crew": 2,
-      "file": "routes/D2_fastest_2_15.json",
+      "file": null,
       "id": "D2_fastest_2_15",
       "load_kg": 15.0,
       "mode": "fastest",
-      "pnr_index": 73,
-      "status": "routed",
-      "stop": "D2",
-      "total_s": 3322.7404034682368
+      "reason": "stop cell blocked: native Horn max slope 29.22° exceeds 15°; endpoint kept at the declared stop, no adjacent-cell substitution",
+      "status": "unreachable",
+      "stop": "D2"
     },
     {
       "crew": 2,
-      "file": "routes/D2_safest_2_15.json",
+      "file": null,
       "id": "D2_safest_2_15",
       "load_kg": 15.0,
       "mode": "safest",
-      "pnr_index": 73,
-      "status": "routed",
-      "stop": "D2",
-      "total_s": 3322.582634094913
+      "reason": "stop cell blocked: native Horn max slope 29.22° exceeds 15°; endpoint kept at the declared stop, no adjacent-cell substitution",
+      "status": "unreachable",
+      "stop": "D2"
     }
   ]
 }

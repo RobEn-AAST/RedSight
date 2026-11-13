@@ -1,17 +1,18 @@
 {
   "analysis_grid": {
     "cell_size_m": 9.879116253884082,
-    "cell_source": "average-resampled 1.01m DTM; 8-neighbor max slope derived at planning-cell scale",
+    "cell_source": "average-resampled DTM mean elevations for directional energy; separate checked Horn slope aggregate for hard mask",
     "columns": 600,
     "rows": 600
   },
   "build_date": "2026-11-13",
-  "command": "python3 -m engine build --input-manifest <manifest> --constants <constants.json> --stops <stops.json> --out <app/public/data>",
+  "command": "python3 -m engine build --input-manifest <manifest-with-native-hazard> --constants <constants.json> --stops <stops.json> --out <app/public/data>",
   "constants": {
     "blackout_warn_min": {
       "badge": "Scenario",
       "range": null,
       "source": "Team assumption",
+      "source_url": "https://github.com/RobEn-AAST/RedSight/blob/main/docs/demo-focus-plan.md",
       "unit": "min",
       "value": 10
     },
@@ -22,6 +23,7 @@
         110
       ],
       "source": "NASA ICES-2026-127 example (180 lbm)",
+      "source_url": "https://ntrs.nasa.gov/citations/20260003038",
       "unit": "kg",
       "value": 82
     },
@@ -32,6 +34,7 @@
         40
       ],
       "source": "Team default",
+      "source_url": "https://github.com/RobEn-AAST/RedSight/blob/main/docs/demo-focus-plan.md",
       "unit": "kg",
       "value": 15
     },
@@ -42,6 +45,7 @@
         2
       ],
       "source": "NASA DRA 5.0 buddy rule",
+      "source_url": "https://www.nasa.gov/pdf/373665main_NASA-SP-2009-566.pdf",
       "unit": "people",
       "value": 2
     },
@@ -49,6 +53,7 @@
       "badge": "Observed",
       "range": null,
       "source": "EMU secondary oxygen pack (backup, never planned)",
+      "source_url": "https://www.nasa.gov/wp-content/uploads/2009/07/188963main_extravehicular_mobility_unit.pdf",
       "unit": "min",
       "value": 30
     },
@@ -56,6 +61,7 @@
       "badge": "Observed",
       "range": null,
       "source": "NSSDC Mars Fact Sheet",
+      "source_url": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html",
       "unit": "m/s²",
       "value": 3.71
     },
@@ -66,6 +72,7 @@
         0.1
       ],
       "source": "Team choice: status callout every 10 % (5 % option)",
+      "source_url": "https://github.com/RobEn-AAST/RedSight/blob/main/docs/demo-focus-plan.md",
       "unit": "fraction of tank",
       "value": 0.1
     },
@@ -73,6 +80,7 @@
       "badge": "Derived",
       "range": null,
       "source": "EMU Data Book: 0.55 kg usable primary O₂ ÷ 1.429 g/L",
+      "source_url": "https://nlsp.nasa.gov/search/data/details/IDP-LSDA_HARDWARE-0000000000000562?dataType=HARDWARE",
       "unit": "L",
       "value": 385
     },
@@ -80,6 +88,7 @@
       "badge": "Scenario",
       "range": null,
       "source": "Team assumption",
+      "source_url": "https://github.com/RobEn-AAST/RedSight/blob/main/docs/demo-focus-plan.md",
       "unit": "m",
       "value": 10
     },
@@ -87,6 +96,7 @@
       "badge": "Scenario",
       "range": null,
       "source": "Team assumption (no official Mars figure)",
+      "source_url": "https://github.com/RobEn-AAST/RedSight/blob/main/docs/demo-focus-plan.md",
       "unit": "fraction",
       "value": 0.25
     },
@@ -94,6 +104,7 @@
       "badge": "Scenario",
       "range": null,
       "source": "Apollo traverse planning: walkback capacities after a 30-minute consumables reserve",
+      "source_url": "https://www.nasa.gov/wp-content/uploads/static/history/alsj/19790073512_1979073512.pdf",
       "unit": "min",
       "value": 30
     },
@@ -104,6 +115,7 @@
         1.5
       ],
       "source": "Team choice: plan the way home 20 % more expensive than expected",
+      "source_url": "https://github.com/RobEn-AAST/RedSight/blob/main/docs/demo-focus-plan.md",
       "unit": "×",
       "value": 1.2
     },
@@ -114,6 +126,7 @@
         10
       ],
       "source": "Team default",
+      "source_url": "https://github.com/RobEn-AAST/RedSight/blob/main/docs/demo-focus-plan.md",
       "unit": "kg",
       "value": 2
     },
@@ -121,6 +134,7 @@
       "badge": "Scenario",
       "range": null,
       "source": "Team assumption",
+      "source_url": "https://github.com/RobEn-AAST/RedSight/blob/main/docs/demo-focus-plan.md",
       "unit": "deg",
       "value": 15
     },
@@ -128,6 +142,7 @@
       "badge": "Scenario",
       "range": null,
       "source": "Within Apollo LRV 20–23° favorable / 25° max (NTRS 20250011301)",
+      "source_url": "https://ntrs.nasa.gov/citations/20250011301",
       "unit": "deg",
       "value": 20
     },
@@ -138,6 +153,7 @@
         1.5
       ],
       "source": "Norcross et al. NASA/TP-2010-216115",
+      "source_url": "https://www.lpi.usra.edu/lunar/artemis/NorcrossEtAl_NASA-TP-2010-216115_PlanetarySuitMetabolicCosts.pdf",
       "unit": "×",
       "value": 1.3
     },
@@ -148,6 +164,7 @@
         2.2
       ],
       "source": "ALSJ Lunar Gaits: 1.1–2.2 km/h working",
+      "source_url": "https://www.nasa.gov/wp-content/uploads/static/history/alsj/a11/a11.gaits.html",
       "unit": "km/h",
       "value": 1.6
     },
@@ -155,6 +172,7 @@
       "badge": "Derived",
       "range": null,
       "source": "Apollo walkback planning rate 1440 BTU/h ≈ 422 W × 2.9 mL/min/W",
+      "source_url": "https://www.nasa.gov/wp-content/uploads/static/history/alsj/19790073512_1979073512.pdf",
       "unit": "L/min",
       "value": 1.22
     },
@@ -162,28 +180,29 @@
       "badge": "Derived",
       "range": null,
       "source": "Scott 2005; Weir 1949",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2129144/",
       "unit": "mL/min per W",
       "value": 2.9
     }
   },
-  "constants_sha256": "e61ace2f4e1707344bc6880f3b63d5709be299bb709a9fe660723f31c0504455",
+  "constants_sha256": "87b14a922e6427720cba0365b4f66719c50b0a9519101af8b0448354256155df",
   "engine": "RedSight Python NumPy rasterio SciPy sparse Dijkstra",
-  "engine_commit": "047a3941692526b986f14849af03581fdab31e8f",
+  "engine_commit": "e89351be33a8525a1ee4a4fa0dcd8e4eca7c7ef5",
   "habitat": {
     "badge": "Scenario",
     "lonlat": [
-      137.37991666666665,
-      -4.79575
+      137.38708333333332,
+      -4.820416666666666
     ],
     "row_col": [
-      274,
-      269
+      422,
+      312
     ],
-    "selection_note": "Lowest neighborhood-slope candidate 150–600 m north and downslope of S1 within the component containing all five supported stops."
+    "selection_note": "Native hard mask separated all 150–600 m north/downslope habitat candidates from stop-accessible cells; selected the nearest walkable cell to S1 in the component containing 1 walkable supported stop(s) (1345.3 m from S1, 14.76° native aggregated slope). Other stop cells remain explicit no-route outcomes."
   },
   "hard_slope_limit_deg": 15.0,
   "inputs": {
-    "manifest_sha256": "60a84ed4f14f19e32ef7e414fbc4d8cb5aac73385bdf57a2ec8f02286d3f3c43",
+    "manifest_sha256": "74a4927c263094fd84960d8280c25ddc84b85035a7db779fc72b9af7f25bbe1e",
     "mosaic_reference": {
       "local_path": "/tmp/redsight-pilot-inputs/raw/D11_mosaic_10m.tif",
       "local_sha256": "07fbcfbff4741ba43d8450bd56f436e00e2d28e326fa84f1155dfb389c50c79c",
@@ -193,6 +212,62 @@
       ],
       "used_for_routing": false,
       "valid_percent": 100.0
+    },
+    "native_hard_slope": {
+      "aggregation": "Horn 3x3 dz/dx,dz/dy using true native 1.0117468 m pixel spacing; slope in degrees; for each 600x600 planning cell, maximum valid native Horn slope by source-pixel center; pixels whose Horn neighborhood touches source nodata are excluded; no complementary DTM fill or seam blending",
+      "algorithm": "Horn 3x3 dz/dx,dz/dy using true native 1.0117468 m pixel spacing; slope in degrees; for each 600x600 planning cell, maximum valid native Horn slope by source-pixel center; pixels whose Horn neighborhood touches source nodata are excluded; no complementary DTM fill or seam blending",
+      "handoff_record": {
+        "artifact": "/tmp/redsight-pilot-inputs/raw/native_max_slope_10m_IAU49910.tif",
+        "bytes": 1008373,
+        "habitat_status": "TBD; no source change or habitat assumption introduced",
+        "invalid_cells_are_primary_source_nodata_or_no_valid_3x3_horn_neighborhood": true,
+        "maximum_slope_deg": 83.0621,
+        "method": "Horn 3x3 dz/dx,dz/dy using true native 1.0117468 m pixel spacing; slope in degrees; for each 600x600 planning cell, maximum valid native Horn slope by source-pixel center; pixels whose Horn neighborhood touches source nodata are excluded; no complementary DTM fill or seam blending",
+        "nodata_cells": 78773,
+        "output_crs": "Mars 2015 Sphere/Ocentric Equirectangular, central meridian 0, radius 3396190m, IAU:49910 (WKT copied from source)",
+        "output_nodata": -9999.0,
+        "planning_cell_size_m": [
+          9.8791162539,
+          9.8791162539
+        ],
+        "planning_extent_m": [
+          8140490.58436326,
+          -287482.2829880351,
+          8146418.054115591,
+          -281554.81323570455
+        ],
+        "planning_grid_shape_hw": [
+          600,
+          600
+        ],
+        "sha256": "0540b673cdeb5e297a6d712d1e94792bcc6d186820d1ae19e06b2f52d5b35f0e",
+        "source_etag": "d36cca32e3457b61a9db2c44a5cf3a70-32",
+        "source_item": "DTEEC_019698_1750_019988_1750_U01",
+        "source_license": "CC0-1.0",
+        "source_native_nodata": -3.4028226550889045e+38,
+        "source_native_resolution_m": [
+          1.0117467946,
+          1.0117467946
+        ],
+        "source_native_sha256": "not computed; remote COG range accessed",
+        "source_native_shape_hw": [
+          18270,
+          7426
+        ],
+        "source_url": "https://astrogeo-ard.s3-us-west-2.amazonaws.com/mars/mro/hirise/controlled/dtm/ESP_019698_1750_ESP_019988_1750/DTEEC_019698_1750_019988_1750_U01.tif",
+        "valid_cells": 281227,
+        "valid_cells_over_15deg": 191612,
+        "valid_percent": 78.1186
+      },
+      "license": "CC0-1.0",
+      "local_cache_sha256": "0540b673cdeb5e297a6d712d1e94792bcc6d186820d1ae19e06b2f52d5b35f0e",
+      "local_path": "/tmp/redsight-pilot-inputs/raw/native_max_slope_10m_IAU49910.tif",
+      "manifest_sha256": "74a4927c263094fd84960d8280c25ddc84b85035a7db779fc72b9af7f25bbe1e",
+      "planning_resolution_m": 9.8791162539,
+      "source_resolution_m": 1.0117467946,
+      "source_url": "https://astrogeo-ard.s3-us-west-2.amazonaws.com/mars/mro/hirise/controlled/dtm/ESP_019698_1750_ESP_019988_1750/DTEEC_019698_1750_019988_1750_U01.tif",
+      "total_cells": 360000,
+      "valid_cells": 281227
     },
     "ortho_context": {
       "extent": "512m square centered at S1",
@@ -236,61 +311,160 @@
   "limitations": [
     "The primary crop covers 78.2% of the 600x600 planning grid; complementary-only cells remain blocked.",
     "The overlapping companion DTM differs substantially from the primary scene; its cells are excluded instead of applying an unsupported vertical correction.",
-    "Slope hard masks are 8-neighbor maxima over average-resampled approximately 9.88m elevations, not native 1m maximum slopes; smaller scarps are unresolved.",
+    "Native Horn slope is aggregated to approximately 9.88m planning cells; features below the source resolution and cells with unavailable native slope support remain unavailable.",
     "No THEMIS thermal-inertia raster was supplied; the sand/terrain multiplier remains 1.0 and the lowest-hazard objective reflects slope only.",
     "Collected sample mass is not included in the base 2-crew, 15kg route bucket; it must be modeled in a separately agreed sample/load variant.",
     "Pandolf and the piecewise walking-speed function are Scenario transfers to Mars; values are estimates, not physiological measurements."
   ],
+  "output_sha256": {
+    "constants.json": "87b14a922e6427720cba0365b4f66719c50b0a9519101af8b0448354256155df",
+    "hazards.geojson": "39ae698cca31d3c4337fa8058bd91b44f273865dcd1e0e12a784db9913b72665",
+    "meta.json": "784ce9989b7e86a6d615926209054dc9d1515ceb90132e8e321f9072502785cb",
+    "routes/S3_fastest_2_15.json": "52e0cd064d8de4a09c935440c5a7e6146937712be56328f865580820ecfe107a",
+    "routes/S3_safest_2_15.json": "0cbbc790d066c543ba7911150110c386a0b5be8ad72dc3df7fc1bd6bcdafffa2",
+    "routes/index.json": "cac44e3eff62293cf60e82a57255a5ca4997dd824c0ab7b71e9595f0b0205000"
+  },
+  "pilot_gates": {
+    "G1": {
+      "native_slope_cache_sha256_verified": true,
+      "native_slope_license": "CC0-1.0",
+      "primary_crop_sha256_verified": true,
+      "primary_dtm_license": "CC0-1.0",
+      "status": "pass"
+    },
+    "G2": {
+      "evidence": {
+        "evidence_image": "/tmp/redsight-pilot-inputs/S1_alignment_side_by_side.png",
+        "finding": "visual broad alignment sanity check passed: major ridge/trough boundaries and rough central terrain co-located; no obvious displacement or nodata gap; no metric offset or sub-meter tie point established",
+        "native_primary_dtm_hillshade": "/tmp/redsight-pilot-inputs/S1_native_hillshade.png",
+        "ortho_crop": "/tmp/redsight-pilot-inputs/raw/ESP_019698_RED_A_01_ORTHO_S1_512m.tif",
+        "review_report": "/tmp/redsight-pilot-inputs/S1-alignment-evidence.md",
+        "verified_files": [
+          {
+            "path": "/tmp/redsight-pilot-inputs/S1_alignment_side_by_side.png",
+            "role": "evidence_image",
+            "sha256": "34fac887e274e88569879008f89a0b64f7e90792ea1222f8f6d4c880ea702467"
+          },
+          {
+            "path": "/tmp/redsight-pilot-inputs/S1-alignment-evidence.md",
+            "role": "review_report",
+            "sha256": "6cc88cb3e6118e54afeda5d54e9c1c5576656a90d991e1604c2c5a7d7ebf62ab"
+          },
+          {
+            "path": "/tmp/redsight-pilot-inputs/raw/ESP_019698_RED_A_01_ORTHO_S1_512m.tif",
+            "role": "ortho_crop",
+            "sha256": "a3f2e3d7f6f12299306cf61c753db808dc461ab4577b1eb10db769186615f794"
+          },
+          {
+            "path": "/tmp/redsight-pilot-inputs/S1_native_hillshade.png",
+            "role": "native_primary_dtm_hillshade",
+            "sha256": "efb20a087cd7f9c4f6f7c33a36c2b60ffee055fd93966661700487ea1ef99b9d"
+          }
+        ]
+      },
+      "quantitative_tiepoint_residual": "unavailable",
+      "status": "partial_visual_only"
+    },
+    "G3": {
+      "native_slope_mask_enforced": true,
+      "pnr_arrays_checked": true,
+      "routed_stop_modes": 2,
+      "status": "partial",
+      "unreachable_stop_modes": [
+        "S1_fastest_2_15",
+        "S1_safest_2_15",
+        "S2_fastest_2_15",
+        "S2_safest_2_15",
+        "D1_fastest_2_15",
+        "D1_safest_2_15",
+        "D2_fastest_2_15",
+        "D2_safest_2_15"
+      ]
+    },
+    "G4": {
+      "status": "pass",
+      "timing": {
+        "acquisition_timing": {
+          "elapsed_from_first_recorded_query_to_ready": "65 minutes 4 seconds from first recorded response timestamp; API request began shortly before response",
+          "first_recorded_primary_STAC_response": "2026-11-13T19:14:31+02:00",
+          "input_cache_ready": "2026-11-13T20:19:35+02:00",
+          "scope": "data request through native hazard and alignment evidence; this is not the full end-to-end engine pilot timer",
+          "workspace_head_at_delivery": "4133ed0248b96d57dd9b6f589c9a69235f366372"
+        },
+        "build_completed_at": "2026-11-13T20:41:32+02:00",
+        "build_runtime_seconds": 22.554,
+        "build_started_at": "2026-11-13T20:41:10+02:00",
+        "elapsed_seconds": 5221.715,
+        "g4_status": "pass",
+        "g4_threshold_seconds": 10800,
+        "input_cache_ready_at": "2026-11-13T20:19:35+02:00",
+        "interval_scope": "first recorded STAC response through native-slope engine outputs; request began shortly before the recorded response, so this is a lower-bound wall interval",
+        "pilot_completed_at": "2026-11-13T20:41:32+02:00",
+        "pilot_started_at": "2026-11-13T19:14:31+02:00"
+      }
+    }
+  },
+  "pilot_timing": {
+    "acquisition_timing": {
+      "elapsed_from_first_recorded_query_to_ready": "65 minutes 4 seconds from first recorded response timestamp; API request began shortly before response",
+      "first_recorded_primary_STAC_response": "2026-11-13T19:14:31+02:00",
+      "input_cache_ready": "2026-11-13T20:19:35+02:00",
+      "scope": "data request through native hazard and alignment evidence; this is not the full end-to-end engine pilot timer",
+      "workspace_head_at_delivery": "4133ed0248b96d57dd9b6f589c9a69235f366372"
+    },
+    "build_completed_at": "2026-11-13T20:41:32+02:00",
+    "build_runtime_seconds": 22.554,
+    "build_started_at": "2026-11-13T20:41:10+02:00",
+    "elapsed_seconds": 5221.715,
+    "g4_status": "pass",
+    "g4_threshold_seconds": 10800,
+    "input_cache_ready_at": "2026-11-13T20:19:35+02:00",
+    "interval_scope": "first recorded STAC response through native-slope engine outputs; request began shortly before the recorded response, so this is a lower-bound wall interval",
+    "pilot_completed_at": "2026-11-13T20:41:32+02:00",
+    "pilot_started_at": "2026-11-13T19:14:31+02:00"
+  },
   "route_status": {
     "D1_fastest_2_15": {
-      "objective_cost": 748.8707653944999,
-      "status": "routed",
-      "time_s": 748.8707653944999
+      "reason": "stop cell blocked: native Horn max slope 26.29° exceeds 15°; endpoint kept at the declared stop, no adjacent-cell substitution",
+      "status": "unreachable"
     },
     "D1_safest_2_15": {
-      "objective_cost": 376.2636759044053,
-      "status": "routed",
-      "time_s": 752.34668331588
+      "reason": "stop cell blocked: native Horn max slope 26.29° exceeds 15°; endpoint kept at the declared stop, no adjacent-cell substitution",
+      "status": "unreachable"
     },
     "D2_fastest_2_15": {
-      "objective_cost": 1699.2360690151986,
-      "status": "routed",
-      "time_s": 1699.2360690151986
+      "reason": "stop cell blocked: native Horn max slope 29.22° exceeds 15°; endpoint kept at the declared stop, no adjacent-cell substitution",
+      "status": "unreachable"
     },
     "D2_safest_2_15": {
-      "objective_cost": 855.4577975744315,
-      "status": "routed",
-      "time_s": 1726.4432014280499
+      "reason": "stop cell blocked: native Horn max slope 29.22° exceeds 15°; endpoint kept at the declared stop, no adjacent-cell substitution",
+      "status": "unreachable"
     },
     "S1_fastest_2_15": {
-      "objective_cost": 873.6807572386547,
-      "status": "routed",
-      "time_s": 873.6807572386547
+      "reason": "stop cell blocked: native Horn max slope 21.82° exceeds 15°; endpoint kept at the declared stop, no adjacent-cell substitution",
+      "status": "unreachable"
     },
     "S1_safest_2_15": {
-      "objective_cost": 430.97209780202377,
-      "status": "routed",
-      "time_s": 880.942820704957
+      "reason": "stop cell blocked: native Horn max slope 21.82° exceeds 15°; endpoint kept at the declared stop, no adjacent-cell substitution",
+      "status": "unreachable"
     },
     "S2_fastest_2_15": {
-      "objective_cost": 1715.897630424966,
-      "status": "routed",
-      "time_s": 1715.897630424966
+      "reason": "stop cell blocked: native Horn max slope 31.89° exceeds 15°; endpoint kept at the declared stop, no adjacent-cell substitution",
+      "status": "unreachable"
     },
     "S2_safest_2_15": {
-      "objective_cost": 871.0221578805961,
-      "status": "routed",
-      "time_s": 1740.1968348323667
+      "reason": "stop cell blocked: native Horn max slope 31.89° exceeds 15°; endpoint kept at the declared stop, no adjacent-cell substitution",
+      "status": "unreachable"
     },
     "S3_fastest_2_15": {
-      "objective_cost": 4536.021308239515,
+      "objective_cost": 847.6916432277421,
       "status": "routed",
-      "time_s": 4536.021308239515
+      "time_s": 847.6916432277421
     },
     "S3_safest_2_15": {
-      "objective_cost": 2299.588053412522,
+      "objective_cost": 446.9475534863434,
       "status": "routed",
-      "time_s": 4575.28773663834
+      "time_s": 847.6916432277421
     }
   },
   "runtime": {
@@ -298,6 +472,145 @@
     "python": "3.14.4",
     "rasterio": "1.5.2",
     "scipy": "1.16.3"
+  },
+  "s1_landmark_alignment": {
+    "evidence_image": "/tmp/redsight-pilot-inputs/S1_alignment_side_by_side.png",
+    "finding": "visual broad alignment sanity check passed: major ridge/trough boundaries and rough central terrain co-located; no obvious displacement or nodata gap; no metric offset or sub-meter tie point established",
+    "native_primary_dtm_hillshade": "/tmp/redsight-pilot-inputs/S1_native_hillshade.png",
+    "ortho_crop": "/tmp/redsight-pilot-inputs/raw/ESP_019698_RED_A_01_ORTHO_S1_512m.tif",
+    "review_report": "/tmp/redsight-pilot-inputs/S1-alignment-evidence.md",
+    "verified_files": [
+      {
+        "path": "/tmp/redsight-pilot-inputs/S1_alignment_side_by_side.png",
+        "role": "evidence_image",
+        "sha256": "34fac887e274e88569879008f89a0b64f7e90792ea1222f8f6d4c880ea702467"
+      },
+      {
+        "path": "/tmp/redsight-pilot-inputs/S1-alignment-evidence.md",
+        "role": "review_report",
+        "sha256": "6cc88cb3e6118e54afeda5d54e9c1c5576656a90d991e1604c2c5a7d7ebf62ab"
+      },
+      {
+        "path": "/tmp/redsight-pilot-inputs/raw/ESP_019698_RED_A_01_ORTHO_S1_512m.tif",
+        "role": "ortho_crop",
+        "sha256": "a3f2e3d7f6f12299306cf61c753db808dc461ab4577b1eb10db769186615f794"
+      },
+      {
+        "path": "/tmp/redsight-pilot-inputs/S1_native_hillshade.png",
+        "role": "native_primary_dtm_hillshade",
+        "sha256": "efb20a087cd7f9c4f6f7c33a36c2b60ffee055fd93966661700487ea1ef99b9d"
+      }
+    ]
+  },
+  "slope_hard_mask_method": "Horn 3x3 Horn 3x3 dz/dx,dz/dy using true native 1.0117468 m pixel spacing; slope in degrees; for each 600x600 planning cell, maximum valid native Horn slope by source-pixel center; pixels whose Horn neighborhood touches source nodata are excluded; no complementary DTM fill or seam blending slope aggregated from 1.01175 m source cells to 9.87912 m planning cells",
+  "stale_route_files_removed": [],
+  "stop_target_cells": {
+    "D1": {
+      "block_reason": "native_slope_above_limit",
+      "lonlat": [
+        137.3835,
+        -4.79981
+      ],
+      "native_horn_slope_deg": 26.292566299438477,
+      "nearest_walkable_cell_diagnostic": {
+        "native_horn_slope_deg": 14.21292495727539,
+        "row_col": [
+          298,
+          292
+        ],
+        "straight_line_offset_m": 19.758232507768163,
+        "used_as_route_goal": false
+      },
+      "primary_dem_valid": true,
+      "row_col": [
+        298,
+        290
+      ],
+      "walkable": false
+    },
+    "D2": {
+      "block_reason": "native_slope_above_limit",
+      "lonlat": [
+        137.38104,
+        -4.80784
+      ],
+      "native_horn_slope_deg": 29.221176147460938,
+      "nearest_walkable_cell_diagnostic": {
+        "native_horn_slope_deg": 6.658670902252197,
+        "row_col": [
+          349,
+          285
+        ],
+        "straight_line_offset_m": 91.08095150144905,
+        "used_as_route_goal": false
+      },
+      "primary_dem_valid": true,
+      "row_col": [
+        347,
+        276
+      ],
+      "walkable": false
+    },
+    "S1": {
+      "block_reason": "native_slope_above_limit",
+      "lonlat": [
+        137.38592,
+        -4.79782
+      ],
+      "native_horn_slope_deg": 21.81548500061035,
+      "nearest_walkable_cell_diagnostic": {
+        "native_horn_slope_deg": 14.800098419189453,
+        "row_col": [
+          286,
+          304
+        ],
+        "straight_line_offset_m": 9.879116253884082,
+        "used_as_route_goal": false
+      },
+      "primary_dem_valid": true,
+      "row_col": [
+        286,
+        305
+      ],
+      "walkable": false
+    },
+    "S2": {
+      "block_reason": "native_slope_above_limit",
+      "lonlat": [
+        137.381,
+        -4.808
+      ],
+      "native_horn_slope_deg": 31.893232345581055,
+      "nearest_walkable_cell_diagnostic": {
+        "native_horn_slope_deg": 12.891458511352539,
+        "row_col": [
+          357,
+          277
+        ],
+        "straight_line_offset_m": 91.08095150144905,
+        "used_as_route_goal": false
+      },
+      "primary_dem_valid": true,
+      "row_col": [
+        348,
+        275
+      ],
+      "walkable": false
+    },
+    "S3": {
+      "block_reason": null,
+      "lonlat": [
+        137.38915,
+        -4.82568
+      ],
+      "native_horn_slope_deg": 9.588693618774414,
+      "primary_dem_valid": true,
+      "row_col": [
+        454,
+        324
+      ],
+      "walkable": true
+    }
   },
   "stops_sha256": "99cfaa9f7fd4ec6a5868d0ce6a485edb336a9648ea50140c68aa691c46ffec7d"
 }
