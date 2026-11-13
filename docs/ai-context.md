@@ -37,6 +37,7 @@ pending (see [`web-foundation.md`](web-foundation.md) §1–§2, §6).
 | 8b | [`research/external-sources-review.md`](research/external-sources-review.md) | Verdicts on the Kaggle notebook (game data, rejected), the NASA Life Sciences Portal (EVA/walkback citations), and how each of the 5 official resources is used, by tier |
 | 9 | [`research/independent-architecture-review.md`](research/independent-architecture-review.md) | Adversarial review of the two research docs: verdicts V1–V13, findings F1–F8, pilot + gate |
 | 10 | [`documentation-review.md`](documentation-review.md) | Pre-publication audit (2026-11-13): links, consistency, F1–F8 integration, .gitignore — verdict PASS |
+| 11 | [`engine-implementation-plan.md`](engine-implementation-plan.md) | Ali's ordered engine gates, synthetic core model, stable route/O₂ semantics, real-data pilot and evidence requirements |
 | — | [`../requirements/decision-log.md`](../requirements/decision-log.md), [`../requirements/open-questions.md`](../requirements/open-questions.md), [`../requirements/quick-requirements.md`](../requirements/quick-requirements.md) | Decision history, unresolved claims (Cairo-local rules), superseded initial checklist |
 
 ## 3. Current decisions (all marked, none are challenge rules)
