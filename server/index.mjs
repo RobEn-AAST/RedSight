@@ -117,8 +117,16 @@ function corsHeaders(req) {
 
 function originAllowed(req) {
   const origin = req.headers.origin
-  if (!origin) return true // same-origin / non-browser client
-  return config.allowedOrigins.has(origin.replace(/\/$/, ''))
+  if (!origin) return true // same-origin navigation / non-browser client
+  if (config.allowedOrigins.has(origin.replace(/\/$/, ''))) return true
+  // Same-origin fetches (module scripts carry `crossorigin`, so they send an
+  // Origin header even same-origin): allow when Origin host === Host header.
+  try {
+    const host = req.headers.host
+    return Boolean(host) && new URL(origin).host === host
+  } catch {
+    return false
+  }
 }
 
 /* ------------------------------------------------------------- endpoints -- */
