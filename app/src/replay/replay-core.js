@@ -101,7 +101,10 @@ function insertAtTime(a, t) {
 export function buildTimeline(route, opts = {}) {
   validate(route);
   const plan = o2Plan({ ...opts, capacityL: opts.capacityL ?? route.capacity_l });
-  if (opts.budgetL != null) { plan.budgetL = opts.budgetL; plan.capacityL = opts.budgetL + plan.reserveL; }
+  // tankL = full tank (the gauge scale); capacityL = O2 at the start. A lower budget (turn-back slider)
+  // means starting with less O2 in the same tank, so percentages stay of the full tank.
+  plan.tankL = plan.capacityL;
+  if (opts.budgetL != null) { plan.budgetL = opts.budgetL; plan.capacityL = opts.budgetL + plan.reserveL; plan.tankL = Math.max(plan.tankL, plan.capacityL); }
   const B = plan.budgetL;
   const m = plan.returnMargin;
   const members = opts.memberFactors ?? [1, 1].slice(0, route.crew ?? 2);
@@ -186,7 +189,7 @@ export function buildTimeline(route, opts = {}) {
     }
     const lastO2 = frames[frames.length - 1].o2;
     for (const fr of frames) if (fr.home == null || fr.phase !== "out") fr.home = lastO2 - fr.o2;
-    const C = plan.capacityL, R = plan.reserveL;
+    const C = plan.capacityL, R = plan.reserveL, T = plan.tankL;
     const left = (o) => C - f * o; // worst member
     crossing(B * (1 - (opts.lowFraction ?? 0.25)) / f, "low", `Usable O₂ below ${Math.round((opts.lowFraction ?? 0.25) * 100)}%`);
     crossing((C - R) / f, "reserve", "Into the reserve: no longer on plan");
@@ -194,16 +197,17 @@ export function buildTimeline(route, opts = {}) {
     const step = opts.statusStep ?? 0.1;
     if (step > 0) {
       for (let p = 1 - step; p > 1e-9; p -= step) {
+        if (p * T >= C - 1e-9) continue; // started below this level
         const pct = Math.round(p * 100);
-        const lim = (C * (1 - p)) / f;
+        const lim = (C - T * p) / f;
         for (let i = 1; i < frames.length; i++) {
           const a0 = frames[i - 1], b0 = frames[i];
           if (a0.o2 < lim && b0.o2 >= lim) {
             const w = b0.o2 === a0.o2 ? 1 : (lim - a0.o2) / (b0.o2 - a0.o2);
-            const homeFrac = (f * lerp(a0.home, b0.home, w)) / C;
+            const homeFrac = (f * lerp(a0.home, b0.home, w)) / T;
             const homePct = Math.round(homeFrac * 100);
-            const reservePct = Math.round((R / C) * 100);
-            const sparePct = Math.max(0, Math.round((p - homeFrac - R / C) * 100));
+            const reservePct = Math.round((R / T) * 100);
+            const sparePct = Math.max(0, Math.round((p - homeFrac - R / T) * 100));
             events.push({ t: lerp(a0.t, b0.t, w), type: "status", pct, homePct, sparePct,
               label: `O₂ ${pct}% · home needs ${homePct}% · reserve ${reservePct}% · spare ${sparePct}%` });
             break;

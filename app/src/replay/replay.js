@@ -47,7 +47,7 @@ export function createReplay(map, opts) {
 
   function render() {
     const s = sampleAt(tl, t);
-    const C = tl.capacityL, R = tl.reserveL;
+    const C = tl.tankL ?? tl.capacityL, R = tl.reserveL; // percentages of the full tank
     const pts = [{ pt: s.pt, color: CREW_A }];
     if (tl.members.length >= 2) pts.push({ pt: sampleAt(tl, Math.max(0, t - lagS)).pt, color: CREW_B });
     map.getSource(SRC.crew).setData(fc(pts.map((p) => pointF(p.pt, { color: p.color }))));
@@ -86,7 +86,7 @@ export function createReplay(map, opts) {
   }
 
   function arrivalText() {
-    const C = tl.capacityL;
+    const C = tl.tankL ?? tl.capacityL;
     const base = `Home with ${pct(tl.arrivalL, C)} (${tl.arrivalL.toFixed(0)} L ≈ ${formatDuration(tl.arrivalMin * 60)} at walkback rate)`;
     if (tl.arrivalL < 0) return `${base}: primary O₂ ran out; emergency supply needed.`;
     if (tl.reserveUsedL > 0.05) return `${base}: used ${tl.reserveUsedL.toFixed(0)} L of the reserve.`;

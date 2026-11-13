@@ -99,3 +99,13 @@ test("no-go and turn-back-ahead", () => {
   const ahead = tl.events.find((e) => e.type === "turnback-ahead");
   assert.equal(ahead.t, tl.events.find((e) => e.type === "turnback").t - 300);
 });
+
+test("lower budget (turn-back slider) = less O2 at the start of the same tank", () => {
+  // tank 40, reserve 10, budget 10 → start with 20 L = 50 % of the tank.
+  const tl = buildTimeline(route, { ...base, budgetL: 10, statusStep: 0.1 });
+  assert.equal(tl.tankL, 40);
+  assert.equal(tl.capacityL, 20);
+  const pcts = tl.events.filter((e) => e.type === "status").map((e) => e.pct);
+  assert.ok(pcts.length > 0 && pcts.every((p) => p < 50), `status calls below the start level: ${pcts}`);
+  assert.equal(pcts[0], 40);
+});

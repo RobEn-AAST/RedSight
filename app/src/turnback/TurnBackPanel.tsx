@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Marker } from 'maplibre-gl'
 import { Undo2, RotateCcw } from 'lucide-react'
 
@@ -47,9 +47,9 @@ function useTurnBackMarker(result: TurnBackResult | null) {
 
 export function TurnBackPanel() {
   const engine = useEngineData()
-  const { activeRoute, routesStatus } = usePlan()
+  // The budget lives in the plan store so Mission Replay plays the same budget.
+  const { activeRoute, routesStatus, o2BudgetL: budget, setO2BudgetL: setBudget } = usePlan()
   const { plan, missing } = useMemo(() => o2PlanFromConstants(engine.constants), [engine.constants])
-  const [budget, setBudget] = useState<number | null>(null)
 
   // Default = the full plan budget C − R; clamp if the constants change underneath.
   const maxB = plan?.maxBudgetL ?? 0
