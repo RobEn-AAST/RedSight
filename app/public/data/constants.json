@@ -103,6 +103,47 @@
   "source": "Team default",
   "badge": "Scenario"
  },
+ "reserve_minutes": {
+  "value": 30,
+  "unit": "min",
+  "range": null,
+  "source": "Apollo traverse planning: walkback capacities after a 30-minute consumables reserve",
+  "badge": "Scenario"
+ },
+ "walkback_o2_lpm": {
+  "value": 1.22,
+  "unit": "L/min",
+  "range": null,
+  "source": "Apollo walkback planning rate 1440 BTU/h ≈ 422 W × 2.9 mL/min/W",
+  "badge": "Derived"
+ },
+ "return_cost_margin": {
+  "value": 1.2,
+  "unit": "×",
+  "range": [
+   1,
+   1.5
+  ],
+  "source": "Team choice: plan the way home 20 % more expensive than expected",
+  "badge": "Scenario"
+ },
+ "emergency_supply_min": {
+  "value": 30,
+  "unit": "min",
+  "range": null,
+  "source": "EMU secondary oxygen pack (backup, never planned)",
+  "badge": "Observed"
+ },
+ "o2_status_step": {
+  "value": 0.1,
+  "unit": "fraction of tank",
+  "range": [
+   0.05,
+   0.1
+  ],
+  "source": "Team choice: status callout every 10 % (5 % option)",
+  "badge": "Scenario"
+ },
  "radio_mast_height_m": {
   "value": 10,
   "unit": "m",

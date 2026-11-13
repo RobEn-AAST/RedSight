@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mission Replay dev</title>
+  <!-- Serve from app/: python3 -m http.server 8765 → http://localhost:8765/src/replay/dev.html -->
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="./replay.css">
+  <style>
+    html, body { margin: 0; height: 100%; background: #1a1210; }
+    #map { position: absolute; inset: 0; }
+    .dev-budget { position: absolute; top: 12px; left: 12px; z-index: 2; padding: 8px 10px; border-radius: 8px;
+      background: rgba(20,14,12,.86); color: #f4ece6; font: 13px system-ui, sans-serif; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <!-- Stand-in for Jana's slider. MOCK: member B uses 8 % more O2 (heavier load) -->
+  <label class="dev-budget">MOCK suit capacity: <input id="budget" type="range" min="60" max="400" value="385"> <span id="bv">385</span> L</label>
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script type="module">
+    import { createReplay } from "./replay.js";
+    const route = await (await fetch(new URLSearchParams(location.search).get("route") ?? "../../public/data/routes/S1_fastest_2_15.json")).json();
+    const map = new maplibregl.Map({
+      container: "map",
+      style: { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": "#6b3f2a" } }] },
+      center: [137.393, -4.808], zoom: 14.2, preserveDrawingBuffer: true, // dev: lets headless screenshots capture the canvas
+    });
+    map.on("load", () => {
+      map.addSource("plan", { type: "geojson", data: { type: "Feature", geometry: { type: "LineString", coordinates: route.coords } } });
+      map.addLayer({ id: "plan", type: "line", source: "plan", paint: { "line-color": "#fff", "line-width": 2, "line-dasharray": [2, 2] } });
+      const replay = createReplay(map, { route, capacityL: 385, memberFactors: [1, 1.08], voice: false, onEvent: (e) => console.log("[replay]", e.type, e.label) });
+      window.replay = replay;
+      const b = document.getElementById("budget"), bv = document.getElementById("bv");
+      // Dev/test hooks: ?seek=0.6 jumps to 60 % of the walk; ?drill=2 starts a suit-leak drill there; ?cap=200
+      const q = new URLSearchParams(location.search);
+      if (q.has("cap")) { replay.setCapacity(+q.get("cap")); b.value = bv.textContent = q.get("cap"); }
+      if (q.has("seek")) replay.seek(+q.get("seek") * replay.timeline.totalS);
+      if (q.has("drill")) replay.drill(+q.get("drill"), "Suit leak");
+      if (q.has("debug")) setTimeout(() => console.log("[dev] webgl", !!map.painter?.context?.gl, "features", map.queryRenderedFeatures().length, "layers", map.getStyle().layers.map((l) => l.id).join(","), "center", map.getCenter().toArray().join(","), "size", map.getCanvas().width, map.getCanvas().height, "pixels", (() => { const gl = map.getCanvas().getContext("webgl2") || map.getCanvas().getContext("webgl"); const px = (ll) => { const p = map.project(ll); const d = devicePixelRatio; const b = new Uint8Array(4); gl.readPixels(Math.round(p.x * d), Math.round(gl.drawingBufferHeight - p.y * d), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, b); return [Math.round(p.x), Math.round(p.y), ...b].join("/"); }; return [px(route.coords[0]), px(route.coords[20]), px(replay.timeline.turnPoint ?? route.coords[39])].join(" "); })()), 8000);
+      if (q.has("seek2")) replay.seek(+q.get("seek2") * replay.timeline.totalS);
+      b.oninput = () => { bv.textContent = b.value; replay.setCapacity(+b.value); };
+    });
+  </script>
+</body>
+</html>

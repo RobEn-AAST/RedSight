@@ -391,6 +391,55 @@ blackout minutes = **Scenario** (they inherit the walking-speed model). Orbiter 
 (MRO, Odyssey, TGO) also give contact windows, but no future pass schedule for a crewed site exists, so
 they're **Unavailable** and not drawn.
 
+## 9c. O₂ model: spare oxygen, not "arrive at zero" (Mission Replay + turn-back; 2026-11-13, D27)
+
+**Problem found:** the first replay showed only the plan's budget, so a turn-back plan looked like the crew
+gets home on an empty tank. Real EVA planning never does that.
+
+**How it works for real (searched 2026-11-13; re-check exact wording before quoting on slides):**
+
+| Practice | What NASA did | Source |
+|---|---|---|
+| Reserve is never planned | Apollo traverse capacities were set **after a 30-minute consumables reserve** | Apollo traverse-planning memo (NASA ALSJ archive) |
+| Red line | Apollo 11: PLSS "red line" = 30 min of O₂ or feedwater left | Apollo 11 Lunar Surface Operations Plan (ALSJ) |
+| Walkback limit | Max distance from the LM was set by the **walkback** constraint (rover failure), at **3.3 km/h and 1440 BTU/h**, a pessimistic rate | Apollo 15 traverse planning (ALSJ) |
+| Separate emergency supply | Apollo OPS (~30–90 min depending on flow) and the ISS EMU **secondary oxygen pack (30 min)**, used only in emergencies | ALSJ OPS page; NASA EMU overview |
+| Buddy help | Apollo 14–17 BSLSS hose let a crewmember share the buddy's **cooling water** (not O₂); OPS + BSLSS gave ~75 min to reach the LM | ALSJ BSLSS page |
+| Planning tools | NASA PersEIDS tracks and projects consumables over the EVA timeline and **recommends alternative timelines** when the plan won't fit | NASA NTRS (PersEIDS; exact record to confirm) |
+| Apollo 17's walkback limit proved conservative; newer work adds projected metabolic rate | 2018 ICES paper (Texas Tech) | TTU repository |
+
+**Our model (Team choice, Scenario-labeled, constants in `constants.json`):**
+
+- **Tank = capacity C** (EMU-class usable primary O₂, 385 L).
+- **Reserve R = max(25 % × C, 30 min × walkback rate)**: never spent by the plan. The walkback rate is
+  1.22 L/min ≈ 422 W (Apollo's 1440 BTU/h) × 2.9 mL/min/W.
+- **Plan budget B = C − R.** Turn rule: keep walking while `f × (used + m × home) ≤ B`, where
+  **m = 1.2** plans the way home 20 % more expensive than expected and **f** = the hungrier suit in a pair
+  (a pair is limited by its weaker member).
+- **Emergency supply (30 min)** is shown separately and never used in a plan.
+- **Result:** a normal plan gets home with **R plus the margin** still in the tank (on the mock route:
+  ≈ 61 L left from a 200 L tank, reserve 50 L). The replay says "reserve intact", or honestly how much
+  reserve a drill used.
+
+**Replay notifications (what the crew hears/sees):**
+
+| Event | When |
+|---|---|
+| **O₂ status** "O₂ 70 % · home needs ~20 % · reserve 25 % · spare 25 %" | every **10 %** of the tank (5 % option) |
+| Turn-back point ahead | 10 min of walking before it |
+| Turn-back point: heading home | at the modeled point |
+| Usable O₂ below 25 % | crossing |
+| Into the reserve / primary empty: emergency supply | only possible after a drill |
+| Drill: "Suit leak ×2" / "Hard work ×1.5" | button, from the current moment; the plan recomputes, and turns on the spot if home no longer fits |
+| Back at the habitat + arrival summary | end |
+
+Gauge: one bar for the full tank: striped **reserve** zone, amber **"needed to get home"** zone, the rest is
+spare. Pair: both members' O₂ shown, the plan follows the lower one. Voice callouts are optional (🔊).
+
+**For the engine (Ali):** compute `back.o2_l` at the planned walking rate; the margin m and reserve are
+applied by the turn-back logic from `constants.json`, so they're never baked in twice. `budget_l` in route
+files = C − R.
+
 ## 10. Tier 2 — 360° view at stops + HUD (Optional per the challenge; Team choice; after Tier 1)
 
 The challenge itself suggests both a helmet HUD and point-of-view images "so the astronaut knows what to
@@ -575,6 +624,13 @@ and watch the zones shrink → walk-along until the switch to the fastest return
 - NASA Mars Relay Network: https://science.nasa.gov/mars/mars-relay-network/
 - GDAL `gdal_viewshed` (observer/target height, curvature coefficient, projected CRS required):
   https://gdal.org/en/stable/programs/gdal_viewshed.html
+- Apollo walkback/reserve/red-line practice (ALSJ): Apollo 11 Lunar Surface Operations Plan,
+  https://www.nasa.gov/history/alsj/a11/AP11_LSOPsPlan.pdf · traverse-planning memo,
+  https://www.nasa.gov/wp-content/uploads/static/history/alsj/19790073512_1979073512.pdf
+- Apollo OPS: https://www.nasa.gov/history/alsj/WOTM/WOTM-OPS.html · BSLSS: https://www.nasa.gov/history/alsj/WOTM/WOTM-BSLSS.html
+- EMU overview (secondary oxygen pack, 30 min): https://www.nasa.gov/wp-content/uploads/2009/07/188963main_extravehicular_mobility_unit.pdf
+- NASA PersEIDS consumables tool (search hit; confirm the record): https://ntrs.nasa.gov/citations/20230007488
+- EVA walk-back limit calculation (ICES 2018): https://ttu-ir.tdl.org/handle/2346/74208
 - WebXR on visionOS. Apple Developer Forums (WebKit supports `immersive-vr`; AR module unsupported):
   https://developer.apple.com/forums/thread/743655 · https://developer.apple.com/forums/thread/756850 ·
   default-on in visionOS 2 (secondary report): https://roadtovr.com/visionos-2-webxr-support-vision-pro/
