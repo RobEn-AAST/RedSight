@@ -23,7 +23,8 @@ export function createPanoViewer(
 
   const scene = new THREE.Scene()
   scene.background = new THREE.Color('#120c0a')
-  const camera = new THREE.PerspectiveCamera(70, 1, 0.1, 100)
+  // Start a little zoomed in: the NASA mosaic has black, non-rectangular edges top and bottom.
+  const camera = new THREE.PerspectiveCamera(58, 1, 0.1, 100)
 
   let yaw = 0 // radians
   let pitch = 0
