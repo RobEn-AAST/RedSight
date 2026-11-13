@@ -47,14 +47,16 @@ are pending: decision D28). Design source: [`demo-focus-plan.md`](demo-focus-pla
   imagery exists only at stops: moving between stops is a jump" (§10).
 
 Files: `app/src/hud/panoViewer.ts` (three.js viewer), `app/src/hud/StopHud.tsx` + `hud.css` (HUD),
-`app/src/hud/panoramas.ts` (which stops have a photo), `app/public/pano/PIA26559.jpg` (2.1 MB).
+`app/src/hud/panoramas.ts` (which stops have a photo), `app/public/pano/PIA26559.jpg` (2.1 MB, S1),
+`app/public/pano/PIA26696.jpg` (2.7 MB, S2, added 2026-11-14).
 Dependency added: `three` 0.170 (MIT) + `@types/three`.
 
 ## 2. Known limits
 
 | Limit | Effect | Fix |
 |---|---|---|
-| Only S1 has a panorama | Button shows only at S1 | PIA26696 (S2) isn't in the NASA Image Library; get it from JPL Photojournal (**ask before downloading: size first**). Other stops: a strip of that sol's raw images (already in `stops.json`) |
+| S1 and S2 have panoramas; S3/D1/D2 don't | Button shows only at S1 and S2 | S2 added 2026-11-14: PIA26696 "Nevado Sajama" (Observed; 1,031 Mastcam-right frames, sols 4714–4741), 6144 × 1263 px web resize (2.7 MB) of NASA's 8192 × 1685 browse JPEG from the [Photojournal page](https://science.nasa.gov/photojournal/curiosity-captures-a-360-degree-view-at-nevado-sajama/) (caption read 2026-11-14). Other stops: a strip of that sol's raw images (already in `stops.json`) |
+| S2 heading and horizon are estimates | Route lines/home beacon at S2 may be rotated by tens of degrees | The S2 caption names no directions: centre ≈ 155° is read from the image (the one long crater-floor view, ~146° left of centre, taken as ≈ north-northeast toward Bradbury Landing), horizon 15° by eye. Estimate (±~30°); `[` `]` adjust; replace with Mastcam pointing data if found |
 | Photo not north-aligned | HUD gives the habitat bearing as text only, no arrow on the photo | Find the mosaic's azimuth (caption or Mastcam pointing for the sols), set `northCalibrated` + an offset, then draw the arrow |
 | Mosaic edges are black and curved | Black areas at the top/bottom when zoomed out | Starts zoomed in (58° view); could crop the texture |
 | Numbers are mock until Ali's routes land | HUD shows mock values (same as the rest of the app) | Nothing to do here: it reads the same timeline |
