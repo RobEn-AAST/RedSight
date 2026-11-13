@@ -1,0 +1,302 @@
+{
+  "analysis_grid": {
+    "cell_size_m": 9.879116253884082,
+    "cell_source": "average-resampled 1.01m DTM; 8-neighbor max slope derived at planning-cell scale",
+    "columns": 600,
+    "rows": 600
+  },
+  "build_date": "2026-11-13",
+  "command": "python3 -m engine build --input-manifest <manifest> --constants <constants.json> --stops <stops.json> --out <app/public/data>",
+  "constants": {
+    "blackout_warn_min": {
+      "badge": "Scenario",
+      "range": null,
+      "source": "Team assumption",
+      "unit": "min",
+      "value": 10
+    },
+    "body_mass_kg": {
+      "badge": "Scenario",
+      "range": [
+        43,
+        110
+      ],
+      "source": "NASA ICES-2026-127 example (180 lbm)",
+      "unit": "kg",
+      "value": 82
+    },
+    "carried_load_kg": {
+      "badge": "Scenario",
+      "range": [
+        0,
+        40
+      ],
+      "source": "Team default",
+      "unit": "kg",
+      "value": 15
+    },
+    "crew_size_default": {
+      "badge": "Scenario",
+      "range": [
+        1,
+        2
+      ],
+      "source": "NASA DRA 5.0 buddy rule",
+      "unit": "people",
+      "value": 2
+    },
+    "emergency_supply_min": {
+      "badge": "Observed",
+      "range": null,
+      "source": "EMU secondary oxygen pack (backup, never planned)",
+      "unit": "min",
+      "value": 30
+    },
+    "gravity_mars": {
+      "badge": "Observed",
+      "range": null,
+      "source": "NSSDC Mars Fact Sheet",
+      "unit": "m/s²",
+      "value": 3.71
+    },
+    "o2_status_step": {
+      "badge": "Scenario",
+      "range": [
+        0.05,
+        0.1
+      ],
+      "source": "Team choice: status callout every 10 % (5 % option)",
+      "unit": "fraction of tank",
+      "value": 0.1
+    },
+    "o2_usable_primary_l": {
+      "badge": "Derived",
+      "range": null,
+      "source": "EMU Data Book: 0.55 kg usable primary O₂ ÷ 1.429 g/L",
+      "unit": "L",
+      "value": 385
+    },
+    "radio_mast_height_m": {
+      "badge": "Scenario",
+      "range": null,
+      "source": "Team assumption",
+      "unit": "m",
+      "value": 10
+    },
+    "reserve_fraction": {
+      "badge": "Scenario",
+      "range": null,
+      "source": "Team assumption (no official Mars figure)",
+      "unit": "fraction",
+      "value": 0.25
+    },
+    "reserve_minutes": {
+      "badge": "Scenario",
+      "range": null,
+      "source": "Apollo traverse planning: walkback capacities after a 30-minute consumables reserve",
+      "unit": "min",
+      "value": 30
+    },
+    "return_cost_margin": {
+      "badge": "Scenario",
+      "range": [
+        1,
+        1.5
+      ],
+      "source": "Team choice: plan the way home 20 % more expensive than expected",
+      "unit": "×",
+      "value": 1.2
+    },
+    "sample_mass_per_stop_kg": {
+      "badge": "Scenario",
+      "range": [
+        0,
+        10
+      ],
+      "source": "Team default",
+      "unit": "kg",
+      "value": 2
+    },
+    "slope_limit_foot_deg": {
+      "badge": "Scenario",
+      "range": null,
+      "source": "Team assumption",
+      "unit": "deg",
+      "value": 15
+    },
+    "slope_limit_rover_deg": {
+      "badge": "Scenario",
+      "range": null,
+      "source": "Within Apollo LRV 20–23° favorable / 25° max (NTRS 20250011301)",
+      "unit": "deg",
+      "value": 20
+    },
+    "suit_factor_kappa": {
+      "badge": "Scenario",
+      "range": [
+        1.2,
+        1.5
+      ],
+      "source": "Norcross et al. NASA/TP-2010-216115",
+      "unit": "×",
+      "value": 1.3
+    },
+    "walk_speed_kmh": {
+      "badge": "Scenario",
+      "range": [
+        1.1,
+        2.2
+      ],
+      "source": "ALSJ Lunar Gaits: 1.1–2.2 km/h working",
+      "unit": "km/h",
+      "value": 1.6
+    },
+    "walkback_o2_lpm": {
+      "badge": "Derived",
+      "range": null,
+      "source": "Apollo walkback planning rate 1440 BTU/h ≈ 422 W × 2.9 mL/min/W",
+      "unit": "L/min",
+      "value": 1.22
+    },
+    "watts_to_o2_ml_per_min": {
+      "badge": "Derived",
+      "range": null,
+      "source": "Scott 2005; Weir 1949",
+      "unit": "mL/min per W",
+      "value": 2.9
+    }
+  },
+  "constants_sha256": "e61ace2f4e1707344bc6880f3b63d5709be299bb709a9fe660723f31c0504455",
+  "engine": "RedSight Python NumPy rasterio SciPy sparse Dijkstra",
+  "engine_commit": "12e08257b8e895a4fb3f98f5e30a35997e20b53b",
+  "habitat": {
+    "badge": "Scenario",
+    "lonlat": [
+      137.37991666666665,
+      -4.79575
+    ],
+    "row_col": [
+      274,
+      269
+    ],
+    "selection_note": "Lowest neighborhood-slope candidate 150–600 m north and downslope of S1 within the component containing all five supported stops."
+  },
+  "hard_slope_limit_deg": 15.0,
+  "inputs": {
+    "manifest_sha256": "60a84ed4f14f19e32ef7e414fbc4d8cb5aac73385bdf57a2ec8f02286d3f3c43",
+    "mosaic_reference": {
+      "local_path": "/tmp/redsight-pilot-inputs/raw/D11_mosaic_10m.tif",
+      "sha256": "07fbcfbff4741ba43d8450bd56f436e00e2d28e326fa84f1155dfb389c50c79c",
+      "shape_hw": [
+        600,
+        600
+      ],
+      "used_for_routing": false,
+      "valid_percent": 100.0
+    },
+    "ortho_context": {
+      "extent": "512m square centered at S1",
+      "license": "CC0-1.0",
+      "local_path": "/tmp/redsight-pilot-inputs/raw/ESP_019698_RED_A_01_ORTHO_S1_512m.tif",
+      "sha256": "a3f2e3d7f6f12299306cf61c753db808dc461ab4577b1eb10db769186615f794",
+      "source_url": "https://astrogeo-ard.s3-us-west-2.amazonaws.com/mars/mro/hirise/controlled/dtm/ESP_019698_1750_ESP_019988_1750/ESP_019698_1750_RED_A_01_ORTHO.tif",
+      "used_for_routing": false,
+      "valid_pixel_percent": 100.0
+    },
+    "route_dem": {
+      "license": "CC0-1.0",
+      "local_path": "/tmp/redsight-pilot-inputs/raw/DTEEC_019698_1750_D11_10m.tif",
+      "resolution_m": [
+        9.879116253883888,
+        9.879116253884277
+      ],
+      "role": "primary DTM only; retained native coverage mask",
+      "sha256": "0ac559b00024056c70532096dee86c4a9a5bf6202e5bb2d37ed07543d317c963",
+      "source_url": "https://astrogeo-ard.s3-us-west-2.amazonaws.com/mars/mro/hirise/controlled/dtm/ESP_019698_1750_ESP_019988_1750/DTEEC_019698_1750_019988_1750_U01.tif",
+      "total_cells": 360000,
+      "valid_cells": 281563,
+      "valid_fraction": 0.7821194444444445
+    },
+    "seam_check": {
+      "complement_minus_primary_m": {
+        "absolute_max": 213.834716796875,
+        "absolute_p90": 131.6058349609375,
+        "median": 52.644287109375,
+        "p10": -18.971386718749986,
+        "p90": 130.198486328125
+      },
+      "complementary_crop_sha256": "cdadab11f702b576597701b5184b9da918d1cfd56f554f44a7bbfabc50cb9911",
+      "complementary_license": "CC0-1.0",
+      "complementary_source_url": "https://astrogeo-ard.s3-us-west-2.amazonaws.com/mars/mro/hirise/controlled/dtm/PSP_009149_1750_PSP_009294_1750/DTEEC_009149_1750_009294_1750_U01.tif",
+      "overlap_cells": 224180,
+      "route_policy": "exclude complementary-only pixels; do not blend the detected scene offset into slope or route costs"
+    }
+  },
+  "limitations": [
+    "The primary crop covers 78.2% of the 600x600 planning grid; complementary-only cells remain blocked.",
+    "The overlapping companion DTM differs substantially from the primary scene; its cells are excluded instead of applying an unsupported vertical correction.",
+    "Slope hard masks are 8-neighbor maxima over average-resampled approximately 9.88m elevations, not native 1m maximum slopes; smaller scarps are unresolved.",
+    "No THEMIS thermal-inertia raster was supplied; the sand/terrain multiplier remains 1.0 and the lowest-hazard objective reflects slope only.",
+    "Collected sample mass is not included in the base 2-crew, 15kg route bucket; it must be modeled in a separately agreed sample/load variant.",
+    "Pandolf and the piecewise walking-speed function are Scenario transfers to Mars; values are estimates, not physiological measurements."
+  ],
+  "route_status": {
+    "D1_fastest_2_15": {
+      "objective_cost": 748.8707653944999,
+      "status": "routed",
+      "time_s": 748.8707653944999
+    },
+    "D1_safest_2_15": {
+      "objective_cost": 376.2636759044053,
+      "status": "routed",
+      "time_s": 752.34668331588
+    },
+    "D2_fastest_2_15": {
+      "objective_cost": 1699.2360690151986,
+      "status": "routed",
+      "time_s": 1699.2360690151986
+    },
+    "D2_safest_2_15": {
+      "objective_cost": 855.4577975744315,
+      "status": "routed",
+      "time_s": 1726.4432014280499
+    },
+    "S1_fastest_2_15": {
+      "objective_cost": 873.6807572386547,
+      "status": "routed",
+      "time_s": 873.6807572386547
+    },
+    "S1_safest_2_15": {
+      "objective_cost": 430.97209780202377,
+      "status": "routed",
+      "time_s": 880.942820704957
+    },
+    "S2_fastest_2_15": {
+      "objective_cost": 1715.897630424966,
+      "status": "routed",
+      "time_s": 1715.897630424966
+    },
+    "S2_safest_2_15": {
+      "objective_cost": 871.0221578805961,
+      "status": "routed",
+      "time_s": 1740.1968348323667
+    },
+    "S3_fastest_2_15": {
+      "objective_cost": 4536.021308239515,
+      "status": "routed",
+      "time_s": 4536.021308239515
+    },
+    "S3_safest_2_15": {
+      "objective_cost": 2299.588053412522,
+      "status": "routed",
+      "time_s": 4575.28773663834
+    }
+  },
+  "runtime": {
+    "numpy": "2.3.5",
+    "python": "3.14.4",
+    "rasterio": "1.5.2",
+    "scipy": "1.16.3"
+  },
+  "stops_sha256": "99cfaa9f7fd4ec6a5868d0ce6a485edb336a9648ea50140c68aa691c46ffec7d"
+}

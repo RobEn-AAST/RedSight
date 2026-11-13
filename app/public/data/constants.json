@@ -1,161 +1,159 @@
 {
- "_mock": true,
- "_note": "Values are the team's cited defaults (technical-approaches §3); Ali's engine owns this file.",
- "suit_factor_kappa": {
-  "value": 1.3,
-  "unit": "×",
-  "range": [
-   1.2,
-   1.5
-  ],
-  "source": "Norcross et al. NASA/TP-2010-216115",
-  "badge": "Scenario"
- },
- "reserve_fraction": {
-  "value": 0.25,
-  "unit": "fraction",
-  "range": null,
-  "source": "Team assumption (no official Mars figure)",
-  "badge": "Scenario"
- },
- "slope_limit_foot_deg": {
-  "value": 15,
-  "unit": "deg",
-  "range": null,
-  "source": "Team assumption",
-  "badge": "Scenario"
- },
- "slope_limit_rover_deg": {
-  "value": 20,
-  "unit": "deg",
-  "range": null,
-  "source": "Within Apollo LRV 20–23° favorable / 25° max (NTRS 20250011301)",
-  "badge": "Scenario"
- },
- "watts_to_o2_ml_per_min": {
-  "value": 2.9,
-  "unit": "mL/min per W",
-  "range": null,
-  "source": "Scott 2005; Weir 1949",
-  "badge": "Derived"
- },
- "o2_usable_primary_l": {
-  "value": 385,
-  "unit": "L",
-  "range": null,
-  "source": "EMU Data Book: 0.55 kg usable primary O₂ ÷ 1.429 g/L",
-  "badge": "Derived"
- },
- "gravity_mars": {
-  "value": 3.71,
-  "unit": "m/s²",
-  "range": null,
-  "source": "NSSDC Mars Fact Sheet",
-  "badge": "Observed"
- },
- "walk_speed_kmh": {
-  "value": 1.6,
-  "unit": "km/h",
-  "range": [
-   1.1,
-   2.2
-  ],
-  "source": "ALSJ Lunar Gaits: 1.1–2.2 km/h working",
-  "badge": "Scenario"
- },
- "crew_size_default": {
-  "value": 2,
-  "unit": "people",
-  "range": [
-   1,
-   2
-  ],
-  "source": "NASA DRA 5.0 buddy rule",
-  "badge": "Scenario"
- },
- "body_mass_kg": {
-  "value": 82,
-  "unit": "kg",
-  "range": [
-   43,
-   110
-  ],
-  "source": "NASA ICES-2026-127 example (180 lbm)",
-  "badge": "Scenario"
- },
- "carried_load_kg": {
-  "value": 15,
-  "unit": "kg",
-  "range": [
-   0,
-   40
-  ],
-  "source": "Team default",
-  "badge": "Scenario"
- },
- "sample_mass_per_stop_kg": {
-  "value": 2,
-  "unit": "kg",
-  "range": [
-   0,
-   10
-  ],
-  "source": "Team default",
-  "badge": "Scenario"
- },
- "reserve_minutes": {
-  "value": 30,
-  "unit": "min",
-  "range": null,
-  "source": "Apollo traverse planning: walkback capacities after a 30-minute consumables reserve",
-  "badge": "Scenario"
- },
- "walkback_o2_lpm": {
-  "value": 1.22,
-  "unit": "L/min",
-  "range": null,
-  "source": "Apollo walkback planning rate 1440 BTU/h ≈ 422 W × 2.9 mL/min/W",
-  "badge": "Derived"
- },
- "return_cost_margin": {
-  "value": 1.2,
-  "unit": "×",
-  "range": [
-   1,
-   1.5
-  ],
-  "source": "Team choice: plan the way home 20 % more expensive than expected",
-  "badge": "Scenario"
- },
- "emergency_supply_min": {
-  "value": 30,
-  "unit": "min",
-  "range": null,
-  "source": "EMU secondary oxygen pack (backup, never planned)",
-  "badge": "Observed"
- },
- "o2_status_step": {
-  "value": 0.1,
-  "unit": "fraction of tank",
-  "range": [
-   0.05,
-   0.1
-  ],
-  "source": "Team choice: status callout every 10 % (5 % option)",
-  "badge": "Scenario"
- },
- "radio_mast_height_m": {
-  "value": 10,
-  "unit": "m",
-  "range": null,
-  "source": "Team assumption",
-  "badge": "Scenario"
- },
- "blackout_warn_min": {
-  "value": 10,
-  "unit": "min",
-  "range": null,
-  "source": "Team assumption",
-  "badge": "Scenario"
- }
+  "blackout_warn_min": {
+    "badge": "Scenario",
+    "range": null,
+    "source": "Team assumption",
+    "unit": "min",
+    "value": 10
+  },
+  "body_mass_kg": {
+    "badge": "Scenario",
+    "range": [
+      43,
+      110
+    ],
+    "source": "NASA ICES-2026-127 example (180 lbm)",
+    "unit": "kg",
+    "value": 82
+  },
+  "carried_load_kg": {
+    "badge": "Scenario",
+    "range": [
+      0,
+      40
+    ],
+    "source": "Team default",
+    "unit": "kg",
+    "value": 15
+  },
+  "crew_size_default": {
+    "badge": "Scenario",
+    "range": [
+      1,
+      2
+    ],
+    "source": "NASA DRA 5.0 buddy rule",
+    "unit": "people",
+    "value": 2
+  },
+  "emergency_supply_min": {
+    "badge": "Observed",
+    "range": null,
+    "source": "EMU secondary oxygen pack (backup, never planned)",
+    "unit": "min",
+    "value": 30
+  },
+  "gravity_mars": {
+    "badge": "Observed",
+    "range": null,
+    "source": "NSSDC Mars Fact Sheet",
+    "unit": "m/s²",
+    "value": 3.71
+  },
+  "o2_status_step": {
+    "badge": "Scenario",
+    "range": [
+      0.05,
+      0.1
+    ],
+    "source": "Team choice: status callout every 10 % (5 % option)",
+    "unit": "fraction of tank",
+    "value": 0.1
+  },
+  "o2_usable_primary_l": {
+    "badge": "Derived",
+    "range": null,
+    "source": "EMU Data Book: 0.55 kg usable primary O₂ ÷ 1.429 g/L",
+    "unit": "L",
+    "value": 385
+  },
+  "radio_mast_height_m": {
+    "badge": "Scenario",
+    "range": null,
+    "source": "Team assumption",
+    "unit": "m",
+    "value": 10
+  },
+  "reserve_fraction": {
+    "badge": "Scenario",
+    "range": null,
+    "source": "Team assumption (no official Mars figure)",
+    "unit": "fraction",
+    "value": 0.25
+  },
+  "reserve_minutes": {
+    "badge": "Scenario",
+    "range": null,
+    "source": "Apollo traverse planning: walkback capacities after a 30-minute consumables reserve",
+    "unit": "min",
+    "value": 30
+  },
+  "return_cost_margin": {
+    "badge": "Scenario",
+    "range": [
+      1,
+      1.5
+    ],
+    "source": "Team choice: plan the way home 20 % more expensive than expected",
+    "unit": "×",
+    "value": 1.2
+  },
+  "sample_mass_per_stop_kg": {
+    "badge": "Scenario",
+    "range": [
+      0,
+      10
+    ],
+    "source": "Team default",
+    "unit": "kg",
+    "value": 2
+  },
+  "slope_limit_foot_deg": {
+    "badge": "Scenario",
+    "range": null,
+    "source": "Team assumption",
+    "unit": "deg",
+    "value": 15
+  },
+  "slope_limit_rover_deg": {
+    "badge": "Scenario",
+    "range": null,
+    "source": "Within Apollo LRV 20–23° favorable / 25° max (NTRS 20250011301)",
+    "unit": "deg",
+    "value": 20
+  },
+  "suit_factor_kappa": {
+    "badge": "Scenario",
+    "range": [
+      1.2,
+      1.5
+    ],
+    "source": "Norcross et al. NASA/TP-2010-216115",
+    "unit": "×",
+    "value": 1.3
+  },
+  "walk_speed_kmh": {
+    "badge": "Scenario",
+    "range": [
+      1.1,
+      2.2
+    ],
+    "source": "ALSJ Lunar Gaits: 1.1–2.2 km/h working",
+    "unit": "km/h",
+    "value": 1.6
+  },
+  "walkback_o2_lpm": {
+    "badge": "Derived",
+    "range": null,
+    "source": "Apollo walkback planning rate 1440 BTU/h ≈ 422 W × 2.9 mL/min/W",
+    "unit": "L/min",
+    "value": 1.22
+  },
+  "watts_to_o2_ml_per_min": {
+    "badge": "Derived",
+    "range": null,
+    "source": "Scott 2005; Weir 1949",
+    "unit": "mL/min per W",
+    "value": 2.9
+  }
 }
