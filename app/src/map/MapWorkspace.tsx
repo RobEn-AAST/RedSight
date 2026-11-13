@@ -33,8 +33,9 @@ export function MapWorkspace() {
 
   return (
     <div className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_auto] gap-0 lg:grid-cols-[1fr_20rem] lg:grid-rows-1">
-      {/* Map frame */}
-      <div className="relative min-h-72 border border-seam bg-inset lg:border-r-0">
+      {/* Map frame — flex column so the ops-box caption is in-flow below the
+          viewport copy: they can never overlap, at any frame height. */}
+      <div className="relative flex min-h-[26rem] flex-col border border-seam bg-inset lg:min-h-0 lg:border-r-0">
         <div className="instrument-grid absolute inset-0" aria-hidden />
         {/* Corner brackets: reticle framing */}
         <div aria-hidden className="absolute left-3 top-3 h-5 w-5 border-l-2 border-t-2 border-observed/40" />
@@ -43,17 +44,19 @@ export function MapWorkspace() {
         <div aria-hidden className="absolute bottom-3 right-3 h-5 w-5 border-b-2 border-r-2 border-observed/40" />
 
         <div className="absolute inset-x-0 top-0 z-10 flex items-center gap-2 border-b border-seam/60 bg-void/70 px-4 py-2 backdrop-blur-sm">
-          <Radar size={13} aria-hidden className="text-observed" />
-          <span className="label-console text-ink-dim">Ops area — Mount Sharp boxwork, Gale</span>
-          <span className="ml-auto flex items-center gap-2">
+          <Radar size={13} aria-hidden className="flex-none text-observed" />
+          <span className="label-console min-w-0 flex-1 truncate text-ink-dim">
+            Ops area — Mount Sharp boxwork, Gale
+          </span>
+          <span className="flex flex-none items-center gap-2">
             <LedDot tone={engine.probed && usingEngineLayers ? 'green' : 'off'} />
-            <span className="label-console text-ink-faint">
+            <span className="label-console whitespace-nowrap text-ink-faint">
               {usingEngineLayers ? 'engine layers.json' : 'no feed'}
             </span>
           </span>
         </div>
 
-        <div className="absolute inset-0 flex items-center justify-center p-6 pt-14">
+        <div className="relative z-[1] flex min-h-0 flex-1 items-center justify-center p-6 pt-14">
           <EmptyState
             className="border-none bg-transparent"
             icon={<MapPin size={28} strokeWidth={1.5} />}
@@ -69,7 +72,7 @@ export function MapWorkspace() {
           />
         </div>
 
-        <p className="data-readout absolute bottom-3 left-1/2 w-max max-w-[92%] -translate-x-1/2 text-center text-[10px] leading-relaxed text-ink-faint">
+        <p className="data-readout relative z-[1] border-t border-seam/50 bg-void/60 px-3 py-2 text-center text-[10px] leading-relaxed text-ink-faint">
           ops box {opsBox.west}–{opsBox.east}°E / {opsBox.south}…{opsBox.north}° · ≈5.9×5.9 km ·
           proposed (D11), confirmed at the pilot gate
         </p>
@@ -107,7 +110,7 @@ export function MapWorkspace() {
                         className="ml-auto"
                       />
                     </span>
-                    <span className="data-readout text-[11px] text-ink-faint">
+                    <span className="data-readout whitespace-nowrap text-[11px] text-ink-faint">
                       sol {stop.sol} · {stop.lon.toFixed(5)}°E {stop.lat.toFixed(5)}°
                     </span>
                   </button>
