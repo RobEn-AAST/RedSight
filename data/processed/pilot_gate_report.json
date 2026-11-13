@@ -1,0 +1,119 @@
+{
+  "ops_box": {
+    "west": 137.335,
+    "south": -4.85,
+    "east": 137.435,
+    "north": -4.75
+  },
+  "crs": "+proj=longlat +R=3396190 +no_defs",
+  "dem_2p5m_nodata_filled": 0,
+  "dem_10m_nodata_filled": 0,
+  "themis_nodata_filled": 0,
+  "dem_10m_stats_m": {
+    "min": -4202.75,
+    "max": -3003.87,
+    "mean": -3640.34,
+    "max_diff_vs_direct_10m_export_m": 14.47
+  },
+  "slope_10m_stats_deg": {
+    "passable_pct_le_15deg": 52.36,
+    "max_slope_p95": 40.55,
+    "mean_slope_avg": 13.85
+  },
+  "stops": [
+    {
+      "id": "S1",
+      "name": "First boxwork 360",
+      "lon": 137.38592,
+      "lat": -4.79782,
+      "grid_row_col": [
+        286,
+        305
+      ],
+      "elev_m": -3640.93,
+      "slope_max_deg": 7.27,
+      "slope_mean_deg": 6.05,
+      "themis_ti_tiu": 424.3
+    },
+    {
+      "id": "S2",
+      "name": "Nevado Sajama 360",
+      "lon": 137.381,
+      "lat": -4.808,
+      "grid_row_col": [
+        348,
+        275
+      ],
+      "elev_m": -3589.74,
+      "slope_max_deg": 13.96,
+      "slope_mean_deg": 10.04,
+      "themis_ti_tiu": 397.1
+    },
+    {
+      "id": "S3",
+      "name": "Curiosity current position",
+      "lon": 137.38915,
+      "lat": -4.82568,
+      "grid_row_col": [
+        454,
+        324
+      ],
+      "elev_m": -3452.31,
+      "slope_max_deg": 15.01,
+      "slope_mean_deg": 13.09,
+      "themis_ti_tiu": 403.7
+    },
+    {
+      "id": "D1",
+      "name": "Altadena drill site",
+      "lon": 137.3835,
+      "lat": -4.79981,
+      "grid_row_col": [
+        298,
+        290
+      ],
+      "elev_m": -3629.98,
+      "slope_max_deg": 7.14,
+      "slope_mean_deg": 5.01,
+      "themis_ti_tiu": 395.3
+    },
+    {
+      "id": "D2",
+      "name": "Valle de la Luna drill site",
+      "lon": 137.38104,
+      "lat": -4.80784,
+      "grid_row_col": [
+        347,
+        276
+      ],
+      "elev_m": -3592.36,
+      "slope_max_deg": 15.47,
+      "slope_mean_deg": 11.58,
+      "themis_ti_tiu": 397.1
+    }
+  ],
+  "current_mock_habitat": {
+    "lonlat": [
+      137.4005,
+      -4.8185
+    ],
+    "grid_row_col": [
+      411,
+      392
+    ],
+    "elev_m": -3361.27,
+    "slope_max_deg": 23.7
+  },
+  "flat_habitat_candidate_north_of_S1": {
+    "lonlat": [
+      137.396917,
+      -4.782083
+    ],
+    "grid_row_col": [
+      192,
+      371
+    ],
+    "elev_m": -3722.44,
+    "slope_max_deg": 0.83
+  }
+}

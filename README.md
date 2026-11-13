@@ -6,9 +6,10 @@
 
 **NASA Space Apps Challenge 2026 — Cairo · Challenge: Interplanetary Survival Guide: Martian Map (Intermediate)**
 
-> ⚠️ **Draft prepared during strategy phase (2026-11-13).** Project name decided: **RedSight** (was "Marswalk
-> Planner, working title"). Links, badges and license are placeholders pending team decisions (see docs). No code
-> exists yet — sections marked *(planned)* describe the 24–48 h build.
+> **Status (2026-11-13, evening):** the web app runs on `main`: map of the boxwork area, science stops with
+> sources, route cards A/B, turn-back slider, source cards and Mission Replay. **Routes are still mock data**
+> (marked "Mock data" in the app) until the engine's real routes land; map tiles are a single preview image
+> until the tile build lands. Links and license are placeholders pending team decisions.
 
 **Start here:** [docs/challenge-in-plain-language.md](docs/challenge-in-plain-language.md) (the challenge, the
 glossary, and the corrections behind our framing) · [docs/ai-context.md](docs/ai-context.md) (workspace state &
@@ -42,6 +43,9 @@ simulated.
   *scenario estimates*, never a safety guarantee.
 - **Radio coverage** — where ridges block line of sight to the habitat (radio shadow), with the longest
   blackout per route; relays via rover/buddy come in Tier 2.
+- **Mission Replay** *(built)* — press ▶ and two astronauts walk the plan: O₂ gauge with a reserve that is
+  never planned, status callouts every 10 %, the turn-back moment, an automatic switch to the fastest way home
+  when O₂ gets low, and drills (suit leak, hard work). Optional spoken callouts.
 - **Provenance inspector** — every layer and model constant shows its NASA source, resolution, date, and an
   **Observed / Derived / Scenario** badge. RAD radiation and REMS weather appear as rover-local context cards.
 
@@ -65,7 +69,7 @@ check) · real NASA 360° panoramas at stops with a helmet-style HUD.
 
 **Honesty statement.** This is a *decision-support prototype*. Radiation is a single-point measurement at the
 Curiosity rover (no spatial map exists); weather is rover-local climatology + global-model scenarios; time/O2
-figures are model estimates from published physiology, not certified life-support numbers. The UI labels all of
+figures are model estimates from published physiology, not life-support measurements or guarantees. The UI labels all of
 this explicitly. See the provenance inspector in the app.
 
 ## Repository layout *(planned)*
@@ -106,14 +110,18 @@ this explicitly. See the provenance inspector in the app.
   NASA under Apache 2.0. We therefore propose an explicit **Apache-2.0 LICENSE** — team sign-off pending.
 - No NASA logos/branding in any AI-generated content (Space Apps SI rule).
 
-## Super Intelligence (AI) disclosure *(placeholder — complete before submit)*
+## Super Intelligence (AI) disclosure *(draft — team to confirm before submit)*
 
-AI tools were used for: research summarization, boilerplate code, copy editing. The core idea, architecture and
-data selection are the team's. AI-generated imagery (if any) will be watermarked. Details on the project page.
+The team chose the problem framing, site, features and data sources. AI coding assistants (Claude Code) helped
+write and test code, summarize research and edit text; team members reviewed and tested the results. No
+AI-generated images, video or audio are used; no NASA branding in AI-generated content. Full draft for the
+project page: [docs/submission/project-page.md](docs/submission/project-page.md).
 
 ## Demo & links *(fill at submission)*
 
 - Live app: `<public-URL>` · Demo (≤30 s video or 7 slides): `<link>` · Project page: `<link>`
+- Drafts: [demo script + slide outline](docs/submission/demo-script.md) ·
+  [project page fields incl. NASA Data](docs/submission/project-page.md)
 
 ## Team
 

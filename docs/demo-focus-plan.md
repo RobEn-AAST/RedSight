@@ -101,7 +101,7 @@ Owners and branches: [`team-plan.md`](team-plan.md).
 | E2 | HUD overlay on the 360 view | §10 |
 | E3 | Resubmit with E0–E2 + updated slides | Only if the Lead confirms post-judging edits count |
 | E5 | **Relays:** rover or buddy as a radio relay (amber "contact via relay" zone); suggested drop point for a portable relay beacon that covers the most of the route | §9b |
-| E4 | Printable **cuff card** (Apollo-style wrist checklist) + shareable plan link; daylight window; uncertainty bands | §17 |
+| E4 | Printable **cuff card** (Apollo-style wrist checklist) + shareable plan link; daylight window (✅ done by Yassin, 2026-11-13); uncertainty bands | §17 |
 
 ### Tier 3 — Bonus (only after Tier 2 works on a normal browser)
 
@@ -528,11 +528,28 @@ these files.
 | `constants.json` | every model constant: `{value, range, unit, source_url, badge}` (κ, reserve, slope limits, speeds, O₂ conversion, crew defaults, rover rules) | engine ↔ app (UI reads, never hardcodes) |
 | `layers.json` | per layer: tile URL template, zoom range, legend, provenance card fields, badge | engine → app |
 | `stops.json` | GeoJSON points: name, evidence, sol(s), waypoint lon/lat, approx flag, photos[], panorama?, science text, badge | data owner → app |
-| `routes/{stop}_{mode}_{crew}_{load}.json` + `routes/index.json` | `coords`, `seg[]` `{t_s, o2_l, slope_deg, cost_terms}`, `cum` + `back` tables (`t_s`, `o2_l` per point), `pnr_index`, `budget_l`, mode, constants hash. Exact fields: [`app/public/data/README.md`](../app/public/data/README.md) | engine → app |
+| `routes/{stop}_{mode}_{crew}_{load}.json` + `routes/index.json` | `coords`, `seg[]` `{t_s, o2_l, slope_deg, cost_terms}`, `cum` + `back` tables (`t_s`, `o2_l` per point), `pnr_index`, `budget_l`, mode, constants hash, plus additive `goal_access` endpoint metadata. Exact fields: [`app/public/data/README.md`](../app/public/data/README.md) | engine → app |
 | `fields/{crew}_{load}_{field}.png` | `Out_fast`, `Back_fast`, `Back_safest` as 16-bit PNG (O₂ in 0.1 L units) on the planning grid | engine → app (zones = threshold only) |
 | `fields/coverage.png` + `coverage.json` | 8-bit mask (0 shadow / 1 habitat LOS / 2 relay LOS in Tier 2) on the planning grid; mast height, target height, CRS used | engine → app |
 | `hazards.geojson` | hard-blocked areas with reason codes (`slope`, `nodata`, `edge`; Tier 2 adds `rover_step`, `rover_sand`, `rover_width`) | engine → app |
 | `cards/rad.json`, `cards/rems.json` | context-card values + source + date range | data owner → app |
+
+**Native route endpoint semantics (2026-11-13):** `stops.json` retains the Observed waypoint and its original
+coordinates. Native route `coords` start at the existing Scenario habitat's source-pixel center and end at a
+walkable Derived source-pixel center within a **10 m Scenario access bound** of the stop, selected only if it
+shares the habitat's connected component under the unchanged 15° Horn maximum, nodata, no-corner-cut, and
+edge-grade rules. The additive `goal_access` object carries `badge: Derived`, `status: approach_only`, the
+Observed and endpoint coordinates, `offset_m`, the access bound, source row/column diagnostics, a reason, and
+`last_leg_modeled: false`. Never append the Observed stop coordinate to the route or draw an implied last leg;
+the route endpoint is not an exact-arrival claim. Consumers must keep the Observed stop marker separate from the
+Derived route endpoint and label the endpoint as an approach point.
+
+The engine minimizes fastest and lowest-modeled-hazard costs inside a bounded rectangle: the existing habitat
+and all five Observed stop coordinates expanded by 250 m and clipped to the cached native DTM window. Report
+these as corridor-limited optima, not global terrain optima. The route arrays, directed O₂/time segments,
+reverse-path `back` arrays, and D27 PNR all describe the same native source-pixel path. The 9.88 m maximum-slope
+aggregate remains a conservative context/hazard layer; a legal native path can pass through a planning cell
+whose neighboring source pixels exceed 15°.
 
 Buckets: crew ∈ {1, 2} × carried load ∈ {5, 15, 30} kg (+ sample mass rounded to the next load bucket for
 legs after a stop). That's 6 field sets ≈ 6 × 3 × ~0.7 MB. If the size or time budget is tight, ship only
@@ -563,7 +580,7 @@ hits a named criterion.
 | **Earth can't help in time** | One line on the turn-back card and slide 5: a one-way signal to Earth takes up to ≈22 min (15–21 min during a long surface stay), with relay gaps and blackouts, so the crew decides on site. This is why the plan is precomputed and switches to the fastest return on its own | Impact | 10 min | 1 (B6c) | NASA Langley, McBrayer et al., ASCEND 2022 (NTRS 20220013418) · published analysis |
 | **Cuff card** | Printable/phone card per route: legs as heading + distance + time + O₂ at each stop + turn-back point, like the Apollo 17 wrist checklists | Creativity, Presentation | 1–2 h | 2 (E4) | Apollo Lunar Surface Journal cuff checklists · format idea |
 | **Shareable plan link** | Crew/load/stop/budget stored in the URL so a judge can open the exact plan shown on the slide | Presentation | 30 min | 2 (E4) | — |
-| **Daylight window** | Local sunrise/sunset for the planned sol at Gale, and a warning if the plan runs past sunset | Validity | 1–2 h | 2 (E4) | NASA GISS Mars24 algorithm (**to verify** before use) · Derived |
+| **Daylight window** ✅ **Done by Yassin (2026-11-13)** | Local sunrise/sunset for the planned sol at Gale, and a warning if the plan runs past sunset. Built: "Daylight" card under *Your plan* (Earth date + leave time in Mars local solar time → sunrise, back-home time, sunset, latest start, warning after sunset); `app/src/lib/mars24.ts`, `app/src/map/DaylightNote.tsx` | Validity | 1–2 h | 2 (E4) | NASA GISS Mars24 algorithm, **verified 2026-11-13**: the code reproduces both worked examples on the GISS algorithm page (`app/src/lib/mars24.test.mjs`, 5/5) · Derived (flat horizon; crater walls and dust not modeled) |
 | **Uncertainty bands** | O₂ and turn-back drawn as a range (κ 1.2–1.5, sand cost low/high), not one line | Validity | 1 h | 2 (E4) | constants.json ranges · Scenario |
 | **Bilingual labels (EN/AR)** | Toggle for Arabic UI labels for the Cairo audience; judging copy stays English | Presentation (local) | 1 h | 2 (E4) | Team choice |
 

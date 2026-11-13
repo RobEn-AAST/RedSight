@@ -1,0 +1,68 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { buildTimeline } from '../../app/src/replay/replay-core.js';
+
+const dataDir = path.resolve(process.argv[2] ?? 'app/public/data');
+const constants = JSON.parse(fs.readFileSync(path.join(dataDir, 'constants.json'), 'utf8'));
+const value = (key) => constants[key].value;
+const index = JSON.parse(fs.readFileSync(path.join(dataDir, 'routes/index.json'), 'utf8'));
+const stopsPath = fs.existsSync(path.join(dataDir, 'stops.json'))
+  ? path.join(dataDir, 'stops.json')
+  : path.resolve('app/public/data/stops.json');
+const stops = JSON.parse(fs.readFileSync(stopsPath, 'utf8'));
+const stopCoordinates = new Map(stops.features.map((feature) => [feature.properties.id, feature.geometry.coordinates.slice(0, 2)]));
+const capacityL = value('o2_usable_primary_l');
+let checked = 0;
+let unreachable = 0;
+
+for (const entry of index.routes) {
+  if (entry.status === 'unreachable') {
+    assert.equal(entry.file, null, `${entry.id} should not point at a nonexistent route file`);
+    assert.ok(entry.reason, `${entry.id} should state why the route is unavailable`);
+    assert.equal(fs.existsSync(path.join(dataDir, 'routes', `${entry.id}.json`)), false,
+      `${entry.id} stale route payload must be removed`);
+    unreachable += 1;
+    continue;
+  }
+  assert.equal(entry.status, 'routed', `${entry.id} must be routed or explicitly unreachable`);
+  const route = JSON.parse(fs.readFileSync(path.join(dataDir, entry.file), 'utf8'));
+  const n = route.coords.length;
+  assert.equal(route.cum.t_s.length, n, `${entry.id} outbound times`);
+  assert.equal(route.cum.o2_l.length, n, `${entry.id} outbound O₂`);
+  assert.equal(route.back.t_s.length, n, `${entry.id} return times`);
+  assert.equal(route.back.o2_l.length, n, `${entry.id} return O₂`);
+  assert.equal(route.goal_access.status, 'approach_only', `${entry.id} endpoint status`);
+  assert.equal(route.goal_access.badge, 'Derived', `${entry.id} endpoint badge`);
+  assert.equal(route.goal_access.last_leg_modeled, false, `${entry.id} must not invent a last leg`);
+  assert.ok(route.goal_access.offset_m <= route.goal_access.access_bound_m, `${entry.id} access offset bound`);
+  assert.deepEqual(route.observed_stop_lonlat, stopCoordinates.get(route.stop), `${entry.id} Observed stop coordinate`);
+  assert.deepEqual(route.goal_access.observed_stop_lonlat, route.observed_stop_lonlat, `${entry.id} access metadata stop coordinate`);
+  assert.deepEqual(route.goal_access.endpoint_lonlat, route.coords[n - 1], `${entry.id} endpoint matches route geometry`);
+  assert.equal(entry.goal_access_status, route.goal_access.status, `${entry.id} index endpoint status`);
+  assert.ok(Math.abs(entry.goal_access_offset_m - route.goal_access.offset_m) < 1e-9,
+    `${entry.id} index endpoint offset`);
+  assert.ok(route.pnr_index >= -1 && route.pnr_index < n, `${entry.id} PNR index must be in range`);
+  const timeline = buildTimeline(route, {
+    capacityL,
+    reserveFraction: value('reserve_fraction'),
+    reserveMin: value('reserve_minutes'),
+    walkbackLpm: value('walkback_o2_lpm'),
+    returnMargin: value('return_cost_margin'),
+    memberFactors: [1, 1],
+    budgetL: route.budget_l,
+  });
+  assert.equal(timeline.backAssumed, false, `${entry.id} must use engine return arrays`);
+  assert.equal(timeline.reachStop, route.pnr_index === n - 1, `${entry.id} stop reachability matches D27 PNR`);
+  if (timeline.reachStop) {
+    assert.ok(Math.abs(timeline.totalS - route.total_s) < 1e-6, `${entry.id} round-trip time`);
+  } else if (route.pnr_index >= 0) {
+    assert.ok(timeline.turnPoint, `${entry.id} should expose the modeled turn-back point`);
+    assert.ok(timeline.totalS < route.total_s, `${entry.id} should turn back before the destination`);
+  }
+  checked += 1;
+}
+
+assert.equal(checked + unreachable, 10, 'five supported stops in two modes are accounted for');
+assert.ok(checked > 0, 'at least one route should be available to exercise the consumer');
+console.log(`Mission Replay checked ${checked} routes and ${unreachable} explicit no-route outcomes; it used directed same-path returns and matching D27 turn-back behavior.`);

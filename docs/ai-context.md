@@ -15,8 +15,14 @@ verified green** (2026-11-13, web-foundation worker + resumed web-copilot worker
 React+Vite+TS mission console (mission setup per plan §8, map/stops/routes/provenance/HUD workspaces
 with honest engine-data-absent states, copilot panel in not-configured state) — build/lint/typecheck
 pass and the full flow was browser-tested with zero console errors (verification record:
-[`web-foundation.md`](web-foundation.md) §7). Engine data, MapLibre tiles and route math are still
-pending (see [`web-foundation.md`](web-foundation.md) §1–§2, §6).
+[`web-foundation.md`](web-foundation.md) §7). **Update 2026-11-13 night:** `main` has the MapLibre map,
+stop picker, route cards, turn-back slider, source cards, real stops/photos/RAD/REMS cards and Mission Replay
+(slider-linked, automatic switch to the fastest way home). **Routes are real** (Ali's offline engine: all ten
+fastest/lowest-modeled-hazard files over the primary native DTM at the unchanged 15° limit; endpoints are Derived
+approach pixels within a 10 m bound, no final leg modeled, G3 partial/approach-only; see
+[`../engine/README.md`](../engine/README.md)). **Tiles:** Youssef's scripts build z10–16 XYZ tiles locally
+(76.6 MB, git-ignored; [`../data/README.md`](../data/README.md)); hosting them for the deploy is still open.
+Per-person status and next steps: [`team-plan.md`](team-plan.md) §4c. Data checker: `cd app && npm run check:data`.
 
 ## 2. Document map (read order for a new agent)
 
@@ -32,13 +38,16 @@ pending (see [`web-foundation.md`](web-foundation.md) §1–§2, §6).
 | 7a | [`team-plan.md`](team-plan.md) | **Who builds what**: 6 owners, Must ship / If time per person, branches, checkpoints, Mission Replay hook, **§4b notes for owners (Ali: O₂ numbers)**. Teammates start a session with "I am <name>" |
 | 7b | [`web-foundation.md`](web-foundation.md) | **App status** (2026-11-13, verified): implemented vs planned, exact installed versions + Node needs, commands, folder boundaries, engine→app integration steps, verification record §7 (build/lint/typecheck green, browser-tested, zero console errors) |
 | 7e | [`app-redesign.md`](app-redesign.md) | **App redesign** (2026-11-13, Yassin): astronaut-first flow (setup → routes), two routes, sample areas, no-return line, rover drive/walk legs, crew split; **proposed plan-file contract** (§4) for Ali/Marwan; finding: Trek mineral layers don't cover Gale |
-| 7c | [`ai/voice-copilot-plan.md`](ai/voice-copilot-plan.md), [`ai/assistant-system-prompt.md`](ai/assistant-system-prompt.md), [`../server/README.md`](../server/README.md) | Voice/chat copilot — **plan + wiring** (WIRED 2026-11-13): pipeline, local-vs-Groq STT tradeoffs, Gemini/Groq model IDs verified 2026-11-13, server-side-key backend (`server/`, zero-dep Node: SSE chat, Groq STT, session memory, mission-knowledge search tool, Kokoro in-browser TTS + Whisper local fallback). Keys still absent — user supplies later; §7 tool contracts stay UNCONNECTED; live AI at judging still gated on U4 |
+| 7c | [`ai/voice-copilot-plan.md`](ai/voice-copilot-plan.md), [`ai/assistant-system-prompt.md`](ai/assistant-system-prompt.md), [`../server/README.md`](../server/README.md) | Voice/chat copilot — **plan + wiring** (WIRED 2026-11-13): pipeline, local-vs-Groq STT tradeoffs, Gemini/Groq model IDs verified 2026-11-13, server-side-key backend (`server/`, zero-dep Node: SSE chat, Groq STT, session memory, mission-knowledge search tool, Groq cloud TTS + browser voice + Whisper local fallback, speech-to-speech call mode, measured latency architecture). §7 tool contracts stay UNCONNECTED; live AI at judging still gated on U4 |
+| 7f | [`submission/project-page.md`](submission/project-page.md) | **Project page draft** (2026-11-13): every required field (summary, description, SI answer to confirm, NASA Data with built/planned status, references) |
 | 7e | [`submission/demo-script.md`](submission/demo-script.md) | **Demo draft** (2026-11-13): live 60-second walkthrough, ≤ 30 s video cut, 7-slide outline with speaker notes, screenshots to retake with real data |
 | 7d | [`24-48-hour-plan.md`](24-48-hour-plan.md) | Must/Should/Stretch scope, phase plan, acceptance evidence, risks (scope/ops area superseded by demo-focus-plan) |
+| 7e | [`../engine/README.md`](../engine/README.md) | **Offline engine status and handoff**: native-slope real-data build, local ignored pilot bundle, explicit partial route outcomes, model and reproducibility limits |
 | 8 | [`research/mapping-options.md`](research/mapping-options.md), [`research/routing-options.md`](research/routing-options.md) | Deep evidence: datasets/live checks/CRS traps; graph/algorithms/PNR — keep as evidence, see their Errata headers |
 | 8b | [`research/external-sources-review.md`](research/external-sources-review.md) | Verdicts on the Kaggle notebook (game data, rejected), the NASA Life Sciences Portal (EVA/walkback citations), and how each of the 5 official resources is used, by tier |
 | 9 | [`research/independent-architecture-review.md`](research/independent-architecture-review.md) | Adversarial review of the two research docs: verdicts V1–V13, findings F1–F8, pilot + gate |
 | 10 | [`documentation-review.md`](documentation-review.md) | Pre-publication audit (2026-11-13): links, consistency, F1–F8 integration, .gitignore — verdict PASS |
+| 11 | [`engine-implementation-plan.md`](engine-implementation-plan.md) | Ali's native Horn slope engine, DTM seam decision, final stop accessibility outcomes, S1 visual alignment bounds and G1–G4 timing record |
 | — | [`../requirements/decision-log.md`](../requirements/decision-log.md), [`../requirements/open-questions.md`](../requirements/open-questions.md), [`../requirements/quick-requirements.md`](../requirements/quick-requirements.md) | Decision history, unresolved claims (Cairo-local rules), superseded initial checklist |
 
 ## 3. Current decisions (all marked, none are challenge rules)

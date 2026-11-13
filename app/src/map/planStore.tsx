@@ -35,6 +35,7 @@ function memberAsRoute(plan: PlanFile, m: PlanMember): EngineRoute {
     seg: m.seg.map(({ distance_m, ...s }) => ({ ...s, cost_terms: { distance_m } })),
     cum: m.cum,
     back: m.back,
+    ...(m.back_fast ? { back_fast: m.back_fast } : {}),
     pnr_index: m.pnr_index,
   }
 }

@@ -8,6 +8,7 @@
     "dev:copilot": "node ../server/index.mjs",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "check:data": "node scripts/check-data.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

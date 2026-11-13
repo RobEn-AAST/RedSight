@@ -1,8 +1,10 @@
-"""Build Ayman's must-ship data files: stops.json and context cards (RAD, REMS, stop cards).
+"""Build Ayman's must-ship data files: stops.json, cards/rad.json, and cards/rems.json.
 
 Fetches live NASA MMGIS Curiosity waypoints and Curiosity Raw Images API items
-for each stop's sols, cross-checks coordinates/elevations, and writes the
-§15 contract files into app/public/data/.
+(one sol and instrument at a time to ensure instrument and sol diversity),
+verifies every historical waypoint by exact (sol, drive) and Mars haversine
+cross-check (< 1 m), builds S3 dynamically from MSL_waypoints_current.json, and
+writes the §15 contract files into app/public/data/.
 
 Run from repo root:
     python engine/content/build_stops_and_cards.py
@@ -10,7 +12,9 @@ Run from repo root:
 
 from __future__ import annotations
 
+import argparse
 import json
+import math
 import time
 import urllib.error
 import urllib.request
@@ -25,242 +29,189 @@ USER_AGENT = "RedSight-NASA-SpaceApps/1.0"
 MMGIS_WAYPOINTS_URL = "https://mars.nasa.gov/mmgis-maps/MSL/Layers/json/MSL_waypoints.json"
 MMGIS_CURRENT_URL = "https://mars.nasa.gov/mmgis-maps/MSL/Layers/json/MSL_waypoints_current.json"
 RAW_IMAGES_API = "https://mars.nasa.gov/api/v1/raw_image_items/"
+REMS_WEATHER_URL = "https://mars.nasa.gov/rss/api/?feed=weather&category=msl&feedtype=json"
 
-CRS_STRING = "+proj=longlat +R=3396190 +no_defs"
-BUILD_DATE = "2026-11-13"
+MARS_RADIUS_M = 3_396_190.0
+MAX_WAYPOINT_DRIFT_M = 1.0
+OPS_BOX = {"west": 137.335, "east": 137.435, "south": -4.85, "north": -4.75}
 
-PREFERRED_INSTRUMENTS = {
-    "MAHLI": 0,
-    "MAST_LEFT": 1,
-    "MAST_RIGHT": 2,
-    "CHEMCAM_RMI": 3,
-    "NAV_LEFT_B": 4,
-    "NAV_RIGHT_B": 5,
-    "FHAZ_RIGHT_B": 6,
-    "RHAZ_RIGHT_B": 7,
-}
+PREFERRED_INSTRUMENTS: tuple[str, ...] = (
+    "MAHLI",
+    "MAST_LEFT",
+    "MAST_RIGHT",
+    "CHEMCAM_RMI",
+    "NAV_LEFT_B",
+    "NAV_RIGHT_B",
+    "FHAZ_LEFT_B",
+    "FHAZ_RIGHT_B",
+    "RHAZ_LEFT_B",
+    "RHAZ_RIGHT_B",
+)
 
-# Verified stop specifications aligned with docs/demo-focus-plan.md §6, §8 and routes/index.json.
-STOP_SPECS: list[dict[str, Any]] = [
+# Historical stop specifications (S3 is built dynamically from MSL_waypoints_current.json).
+HISTORICAL_STOPS: list[dict[str, Any]] = [
     {
         "id": "S1",
         "name": "First boxwork 360",
         "kind": "panorama",
-        "coordinates": [137.38592, -4.79782],
-        "sols": [4539, 4541],
-        "query_sols": [4539, 4540, 4541],
-        "waypoint_sol": 4539,
-        "sol": "4539–4541",
-        "site": 116,
-        "drive": 408,
-        "elev_m": -3654.97,
-        "dist_km": 34.79,
+        "waypoint_key": (4541, 414),
+        "extra_waypoints": [(4544, 576)],
+        "expected_lonlat": (137.3859258, -4.79781585),
+        "sols": [4541, 4542, 4543, 4544],
+        "priority_sols": [4543, 4541, 4542, 4544],
+        "preferred_first": None,
         "approx": False,
-        "evidence": "PIA26559 (Mastcam, 2025-05-15…18, site 116)",
+        "evidence": "PIA26559 (Mastcam, 2025-05-15…18, sols 4541–4544, site 116, RMC 116_414)",
         "panorama": "PIA26559",
         "panorama_meta": {
             "id": "PIA26559",
             "title": "Curiosity's First 360-Degree View of Boxwork Patterns",
-            "page_url": "https://www.jpl.nasa.gov/images/pia26559-curiositys-first-360-degree-view-of-boxwork-patterns/",
+            "page_url": "https://photojournal.jpl.nasa.gov/catalog/PIA26559",
             "image_url": "https://images-assets.nasa.gov/image/PIA26559/PIA26559~large.jpg",
             "full_jpeg_url": "https://photojournal.jpl.nasa.gov/jpeg/PIA26559.jpg",
             "date_taken": "2025-05-15 to 2025-05-18",
-            "sol_range": "4539–4541",
+            "sol_range": "4541–4544",
             "stitched_frames": 291,
             "instrument": "Mastcam",
             "credit": "NASA/JPL-Caltech/MSSS",
             "badge": "Observed",
         },
         "science": (
-            "Curiosity's first 360-degree Mastcam station inside the Mount Sharp boxwork formations "
-            "(site 116, sols 4539–4541). Crisscrossing low ridges (~1–2 m tall) formed where ancient "
-            "groundwater flowed through bedrock fractures, precipitating calcium-sulfate minerals that "
-            "resisted wind erosion better than the surrounding host rock. Hosted within the CRISM-mapped "
-            "polyhydrated/monohydrated sulfate unit (boxwork texture is resolved by Curiosity surface "
-            "imaging, below CRISM's 18 m/px orbital resolution)."
+            "Curiosity's first 360-degree Mastcam mosaic inside the Mount Sharp boxwork patterns "
+            "(291 stitched frames acquired across sols 4541–4544, May 15–18, 2025, at site 116 drive 414). "
+            "Captures intersecting low bedrock ridges and intervening hollows along the boxwork traverse."
         ),
-        "card": {
-            "id": "S1",
+        "card_static": {
             "target_name": "Boxwork Ridge Network (Site 116)",
             "target_type": "360° Mastcam Panorama & Mineralized Ridge Outcrop",
-            "sol": "Sols 4539–4541 (May 15–18, 2025)",
-            "rock_type": "Calcium-sulfate cemented fracture ridges in sulfate-bearing sedimentary bedrock",
-            "geologic_unit": "Mount Sharp group — Sulfate-bearing unit / Boxwork member (USGS SIM 3292 unit Htu)",
-            "size": "Ridges ~1–2 m tall with cm-scale mineral veins across a multi-kilometer exposure",
-            "location": "137.38592°E, −4.79782° (Site 116, Drive 408–414, elev −3,655.0 m, odometry 34.79 km)",
-            "sample_mass_scenario_kg": 2,
-            "source_url": "https://www.jpl.nasa.gov/images/pia26559-curiositys-first-360-degree-view-of-boxwork-patterns/",
-            "badge": "Observed",
+            "sol": "Sols 4541–4544 (May 15–18, 2025)",
+            "geologic_context": (
+                "Sulfate-bearing Mount Sharp bedrock with low crisscrossing fracture ridges interpreted by "
+                "the science team as mineral cements deposited from ancient subterranean water that later "
+                "resisted wind erosion."
+            ),
+            "context_badge": "Derived",
+            "source_url": "https://photojournal.jpl.nasa.gov/catalog/PIA26559",
         },
-        "badge": "Observed",
     },
     {
         "id": "S2",
         "name": "Nevado Sajama 360",
         "kind": "panorama",
-        "coordinates": [137.381, -4.808],
-        "sols": [4711, 4741],
-        "query_sols": [4711, 4741],
-        "waypoint_sol": 4711,
-        "sol": "4711 / 4741",
-        "site": 120,
-        "drive": 82,
-        "elev_m": -3607.72,
-        "dist_km": 36.11,
+        "waypoint_key": (4711, 82),
+        "extra_waypoints": [(4741, 232)],
+        "expected_lonlat": (137.3810041, -4.80800755),
+        "sols": [4714, 4715, 4740, 4741],
+        "priority_sols": [4740, 4714, 4715, 4741],
+        "preferred_first": None,
         "approx": False,
-        "evidence": "PIA26696 (Mastcam, 2025-11-09…12-07, site 120)",
+        "evidence": "PIA26696 (Mastcam, 2025-11-09…12-07, mosaic sols 4714–4741, site 120, RMC 120_82)",
         "panorama": "PIA26696",
         "panorama_meta": {
             "id": "PIA26696",
             "title": "Curiosity Captures a 360-Degree View at Nevado Sajama",
-            "page_url": "https://www.jpl.nasa.gov/images/pia26696-curiosity-captures-a-360-degree-view-at-nevado-sajama/",
-            "image_url": "https://photojournal.jpl.nasa.gov/jpeg/PIA26696.jpg",
+            "page_url": "https://photojournal.jpl.nasa.gov/catalog/PIA26696",
+            "image_url": "https://photojournal.jpl.nasa.gov/jpegMod/PIA26696_modest.jpg",
             "full_jpeg_url": "https://photojournal.jpl.nasa.gov/jpeg/PIA26696.jpg",
             "date_taken": "2025-11-09 to 2025-12-07",
-            "sol_range": "4714–4741 (waypoints at sols 4711 / 4741)",
+            "sol_range": "4714–4741",
             "stitched_frames": 1031,
             "instrument": "Mastcam Right (100 mm)",
             "credit": "NASA/JPL-Caltech/MSSS",
             "badge": "Observed",
         },
         "science": (
-            "Ridgetop panorama and drill station at 'Nevado Sajama' inside the boxwork unit (site 120). "
-            "A 1.5-gigapixel mosaic stitched from 1,031 Mastcam right-eye (100 mm) frames captured across "
-            "sols 4714–4741, showing polygonal fracture ridges and hollows across lower Mount Sharp, paired "
-            "with nighttime LED-lit MAHLI inspection of the drill borehole wall."
+            "Ridgetop panorama station at 'Nevado Sajama' within the boxwork terrain (site 120; "
+            "bracketing MMGIS waypoints at sols 4711 and 4741). The 1.5-gigapixel PIA26696 mosaic "
+            "stitches 1,031 Mastcam right-eye (100 mm) frames acquired across sols 4714–4741 across "
+            "intersecting ridges and hollows on lower Mount Sharp."
         ),
-        "card": {
-            "id": "S2",
+        "card_static": {
             "target_name": "Nevado Sajama Ridgetop",
-            "target_type": "360° Telephoto Panorama & Ridgetop Drill Target",
-            "sol": "Sols 4711–4741 (Nov 9 – Dec 7, 2025)",
-            "rock_type": "Indurated boxwork ridgetop bedrock with mineralized fracture fills",
-            "geologic_unit": "Mount Sharp group — Boxwork unit (USGS SIM 3292 unit Htu)",
-            "size": "1.5-billion-pixel 360° panorama (1,031 Mastcam frames); ridgetop workspace",
-            "location": "137.38100°E, −4.80800° (Site 120, Drive 82–232, elev −3,607.7 m, odometry 36.11 km)",
-            "sample_mass_scenario_kg": 2,
-            "source_url": "https://www.jpl.nasa.gov/images/pia26696-curiosity-captures-a-360-degree-view-at-nevado-sajama/",
-            "badge": "Observed",
+            "target_type": "360° Telephoto Mastcam Panorama (1.5 Gigapixels)",
+            "sol": "Mosaic sols 4714–4741 (Nov 9 – Dec 7, 2025); waypoints sols 4711 & 4741",
+            "geologic_context": (
+                "Boxwork ridgetop exposure displaying intersecting mineral-cemented fracture ridges "
+                "and adjacent weathered hollows on lower Mount Sharp."
+            ),
+            "context_badge": "Derived",
+            "source_url": "https://photojournal.jpl.nasa.gov/catalog/PIA26696",
         },
-        "badge": "Observed",
-    },
-    {
-        "id": "S3",
-        "name": "Curiosity current position",
-        "kind": "rover",
-        "coordinates": [137.38915, -4.82568],
-        "sols": [5070],
-        "query_sols": [5070],
-        "waypoint_sol": 5070,
-        "sol": "5070",
-        "site": 125,
-        "drive": 2274,
-        "elev_m": -3473.68,
-        "dist_km": 38.29,
-        "approx": False,
-        "evidence": "MMGIS waypoint (MSL_waypoints_current.json, sol 5070, site 125, drive 2274)",
-        "panorama": None,
-        "panorama_meta": None,
-        "science": (
-            "Curiosity's latest published MMGIS waypoint on lower Mount Sharp (sol 5070, site 125, drive 2274, "
-            "RMC 125_2274, elevation −3,473.7 m MOLA areoid after 38.29 km of total drive odometry). Serves as "
-            "the active rover reference station and upper-slope benchmark for comparing human Marswalk plans "
-            "against actual robotic traverse progress."
-        ),
-        "card": {
-            "id": "S3",
-            "target_name": "Curiosity Active Station (RMC 125_2274)",
-            "target_type": "Active Rover Reference Waypoint",
-            "sol": "Sol 5070 (Nov 2026)",
-            "rock_type": "Upper sulfate / boxwork transition bedrock on lower Aeolis Mons",
-            "geologic_unit": "Mount Sharp group — Sulfate-bearing unit (USGS SIM 3292 unit Htu)",
-            "size": "Rover station footprint (~3 m × 2.7 m vehicle; 14.68° local tilt)",
-            "location": "137.38915°E, −4.82568° (Site 125, Drive 2274, elev −3,473.7 m, odometry 38.29 km)",
-            "sample_mass_scenario_kg": 2,
-            "source_url": "https://mars.nasa.gov/mmgis-maps/MSL/Layers/json/MSL_waypoints_current.json",
-            "badge": "Observed",
-        },
-        "badge": "Observed",
     },
     {
         "id": "D1",
         "name": "Altadena drill site",
         "kind": "drill",
-        "coordinates": [137.3835, -4.79981],
-        "sols": [4558, 4560],
-        "query_sols": [4558, 4559, 4560],
-        "waypoint_sol": 4558,
-        "sol": "4558–4560 (drilled sol 4564)",
-        "site": 116,
-        "drive": 1890,
-        "elev_m": -3646.64,
-        "dist_km": 35.0,
+        "waypoint_key": (4560, 1944),
+        "extra_waypoints": [],
+        "expected_lonlat": (137.3835414, -4.79984723),
+        "sols": [4560, 4561, 4562, 4563, 4564, 4565, 4566],
+        "priority_sols": [4564, 4561, 4566, 4565, 4560, 4562, 4563],
+        "preferred_first": (4564, "MAST_LEFT"),
         "approx": True,
-        "evidence": "JPL news 2025-06-23 (drilled 2025-06-08; nearest MMGIS waypoint sols 4558–4560)",
+        "evidence": "JPL news 2025-06-23 (drilled sol 4564 while parked at MMGIS waypoint sol 4560, RMC 116_1944)",
         "panorama": None,
         "panorama_meta": None,
         "science": (
-            "First rotary-percussive drill sample collected inside the Mount Sharp boxwork unit (drilled "
-            "June 8, 2025; JPL release June 23, 2025). Powdered bedrock from 'Altadena' was delivered to "
-            "Curiosity's internal CheMin (X-ray diffraction) and SAM (gas chromatograph / mass spectrometer) "
-            "laboratories to analyze the cement mineralogy and test how ancient groundwater evolved as Gale "
-            "Crater dried out."
+            "First rotary-percussive drill sample collected inside the Mount Sharp boxwork terrain "
+            "(drilled June 8, 2025 on sol 4564 while Curiosity was parked at site 116 drive 1944; "
+            "JPL release June 23, 2025). Powdered rock from target 'Altadena' was delivered to Curiosity's "
+            "internal CheMin and SAM analytical laboratories."
         ),
-        "card": {
-            "id": "D1",
+        "card_static": {
             "target_name": "Altadena",
-            "target_type": "Rotary-Percussive Drill Core & Powdered Sample (Boxwork Edge)",
-            "sol": "Sols 4558–4564 (drilled 2025-06-08)",
-            "rock_type": "Cemented sulfate-bearing bedrock at the boxwork unit margin (Altadena member)",
-            "geologic_unit": "Mount Sharp group — Altadena member / Boxwork unit (USGS SIM 3292 unit Htu)",
-            "size": "1.6 cm diameter × ~6 cm deep drill borehole (+ abraded DRT patch)",
-            "location": "137.38350°E, −4.79981° (approximate: nearest MMGIS waypoint sol 4558–4560, Site 116, elev −3,646.6 m)",
-            "sample_mass_scenario_kg": 2,
+            "target_type": "Rotary-Percussive Drill Target (Boxwork Terrain)",
+            "sol": "Drilled sol 4564 (2025-06-08); parked at waypoint sol 4560 (RMC 116_1944)",
+            "geologic_context": (
+                "Bedrock target in the boxwork terrain sampled by Curiosity's drill and analyzed by "
+                "CheMin and SAM to investigate mineral cements and ancient groundwater history."
+            ),
+            "context_badge": "Derived",
             "source_url": "https://www.jpl.nasa.gov/news/nasas-curiosity-mars-rover-starts-unpacking-boxwork-formations/",
-            "badge": "Observed",
         },
-        "badge": "Observed",
     },
     {
         "id": "D2",
         "name": "Valle de la Luna drill site",
         "kind": "drill",
-        "coordinates": [137.38104, -4.80784],
-        "sols": [4687],
-        "campaign_sols": [4687, 4689, 4690, 4691, 4692, 4693, 4694],
-        "query_sols": [4687, 4689, 4690, 4691, 4692, 4693, 4694],
-        "waypoint_sol": 4687,
-        "sol": "4687 (campaign sols 4689–4694)",
-        "site": 119,
-        "drive": 1722,
-        "elev_m": -3610.43,
-        "dist_km": 36.1,
+        "waypoint_key": (4687, 1722),
+        "extra_waypoints": [],
+        "expected_lonlat": (137.3810353, -4.80783916),
+        "sols": [4687, 4689, 4690, 4693, 4694],
+        "priority_sols": [4690, 4693, 4694, 4689, 4687],
+        "preferred_first": None,
         "approx": True,
-        "evidence": "NASA Curiosity blog sols 4689–4694 ('Monte Grande' hollow drill campaign, Oct 2025)",
+        "evidence": "NASA Curiosity blog sols 4689–4694 (Monte Grande hollow, waypoint sol 4687, RMC 119_1722)",
         "panorama": None,
         "panorama_meta": None,
         "science": (
-            "Curiosity's 44th Martian drill target, sampled inside the 'Monte Grande' hollow—a less-resistant "
-            "bedrock depression bounded by hardened boxwork ridges (sols 4689–4694, October 2025). Comparing "
-            "hollow bedrock at Valle de la Luna against ridge-crest targets tests why mineral-cemented fractures "
-            "resisted erosion while intervening hollows weathered away."
+            "Drill target sampled inside the 'Monte Grande' hollow between boxwork ridges "
+            "(sols 4689–4694, October 2025; rover arrival waypoint sol 4687 at site 119 drive 1722). "
+            "Powdered rock tailings were delivered to SAM and CheMin while Mastcam and ChemCam imaged "
+            "the drill hole and surrounding hollow bedrock."
         ),
-        "card": {
-            "id": "D2",
+        "card_static": {
             "target_name": "Valle de la Luna ('Monte Grande' Hollow)",
-            "target_type": "Rotary-Percussive Drill Core (#44 on Mars)",
-            "sol": "Sol 4687 waypoint; drill campaign Sols 4689–4694 (Oct 2025)",
-            "rock_type": "Inter-ridge hollow sedimentary bedrock within the boxwork unit",
-            "geologic_unit": "Mount Sharp group — Boxwork unit hollow facies (USGS SIM 3292 unit Htu)",
-            "size": "1.6 cm diameter × ~6 cm deep drill borehole in hollow floor block",
-            "location": "137.38104°E, −4.80784° (approximate: nearest MMGIS waypoint sol 4687, Site 119, elev −3,610.4 m)",
-            "sample_mass_scenario_kg": 2,
+            "target_type": "Rotary-Percussive Drill Target (Boxwork Hollow)",
+            "sol": "Waypoint sol 4687; drill campaign sols 4689–4694 (Oct 2025)",
+            "geologic_context": (
+                "Recessed hollow floor bedrock bounded by hardened boxwork ridges, sampled to compare "
+                "less-resistant hollow composition against adjacent mineralized ridge targets."
+            ),
+            "context_badge": "Derived",
             "source_url": "https://science.nasa.gov/blog/curiosity-blog-sols-4689-4694-drill-in-the-boxwork-unit-is-go/",
-            "badge": "Observed",
         },
-        "badge": "Observed",
     },
 ]
+
+
+def mars_distance_m(lon1: float, lat1: float, lon2: float, lat2: float) -> float:
+    """Great-circle distance in meters on the IAU Mars sphere (R = 3,396,190 m)."""
+    r1, r2 = math.radians(lat1), math.radians(lat2)
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    h = math.sin(dlat / 2) ** 2 + math.cos(r1) * math.cos(r2) * math.sin(dlon / 2) ** 2
+    return 2.0 * MARS_RADIUS_M * math.asin(min(1.0, math.sqrt(h)))
 
 
 def fetch_json(url: str, timeout: int = 30, retries: int = 3) -> Any:
@@ -279,189 +230,365 @@ def fetch_json(url: str, timeout: int = 30, retries: int = 3) -> Any:
     raise last_err
 
 
-def check_url_ok(url: str, timeout: int = 15) -> bool:
-    """Verify an image URL returns HTTP 200 via HEAD."""
-    try:
-        req = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            return resp.status == 200
-    except (urllib.error.URLError, TimeoutError, OSError):
-        return False
+def assert_url_ok(url: str, timeout: int = 15, retries: int = 3) -> None:
+    """Verify an asset URL returns HTTP 200; raise RuntimeError on persistent failure."""
+    last_err: Exception | str | None = None
+    for attempt in range(retries):
+        try:
+            req = urllib.request.Request(url, method="HEAD", headers={"User-Agent": USER_AGENT})
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                if resp.status == 200:
+                    return
+                last_err = f"HTTP {resp.status}"
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            last_err = exc
+        if attempt + 1 < retries:
+            time.sleep(1.0 * (attempt + 1))
+    raise RuntimeError(f"Asset URL failed verification ({last_err}): {url}")
 
 
-def load_waypoints_by_sol() -> dict[int, dict[str, Any]]:
-    """Load Curiosity MMGIS waypoints keyed by sol, preferring current endpoint for latest."""
-    by_sol: dict[int, dict[str, Any]] = {}
-    for url in (MMGIS_WAYPOINTS_URL, MMGIS_CURRENT_URL):
-        data = fetch_json(url)
-        for feat in data.get("features", []):
-            props = feat.get("properties", {})
-            sol = props.get("sol")
-            if isinstance(sol, int):
-                by_sol[sol] = props
-    return by_sol
+def _parse_waypoint_feature(feat: dict[str, Any]) -> dict[str, Any] | None:
+    geom = feat.get("geometry") or {}
+    coords = geom.get("coordinates")
+    props = feat.get("properties") or {}
+    sol = props.get("sol")
+    drive = props.get("drive")
+    if (
+        geom.get("type") != "Point"
+        or not isinstance(coords, list)
+        or len(coords) < 2
+        or not isinstance(sol, int)
+        or not isinstance(drive, int)
+    ):
+        return None
+    lon = round(float(coords[0]), 7)
+    lat = round(float(coords[1]), 7)
+    site = int(props["site"])
+    rmc = str(props.get("RMC") or f"{site}_{drive}")
+    elev_m = round(float(props["elev_geoid"]), 2)
+    dist_km = round(float(props["dist_km"]), 2)
+    tilt = round(float(props["tilt"]), 2) if props.get("tilt") is not None else None
+    return {
+        "sol": sol,
+        "site": site,
+        "drive": drive,
+        "rmc": rmc,
+        "lon": lon,
+        "lat": lat,
+        "elev_m": elev_m,
+        "dist_km": dist_km,
+        "tilt": tilt,
+    }
 
 
-def fetch_stop_photos(sols: list[int], limit: int = 4) -> list[dict[str, Any]]:
-    """Fetch diverse non-thumbnail Curiosity raw photos for the given sols."""
-    sol_csv = ",".join(str(s) for s in sols)
+def load_mmgis_waypoints() -> tuple[
+    dict[tuple[int, int], dict[str, Any]],
+    dict[int, list[dict[str, Any]]],
+    dict[str, Any],
+]:
+    """Load full MMGIS waypoints keyed by (sol, drive) plus the latest current waypoint."""
+    hist_raw = fetch_json(MMGIS_WAYPOINTS_URL)
+    by_sol_drive: dict[tuple[int, int], dict[str, Any]] = {}
+    by_sol: dict[int, list[dict[str, Any]]] = {}
+
+    for feat in hist_raw.get("features", []):
+        wp = _parse_waypoint_feature(feat)
+        if wp is None:
+            continue
+        by_sol_drive[(wp["sol"], wp["drive"])] = wp
+        by_sol.setdefault(wp["sol"], []).append(wp)
+
+    for sol_list in by_sol.values():
+        sol_list.sort(key=lambda w: w["drive"])
+
+    curr_raw = fetch_json(MMGIS_CURRENT_URL)
+    current_candidates = [
+        wp
+        for feat in curr_raw.get("features", [])
+        if (wp := _parse_waypoint_feature(feat)) is not None
+    ]
+    if not current_candidates:
+        raise RuntimeError("MSL_waypoints_current.json returned no valid waypoint features.")
+    current_wp = max(current_candidates, key=lambda w: (w["sol"], w["drive"]))
+
+    return by_sol_drive, by_sol, current_wp
+
+
+def query_sol_instrument(sol: int, instrument: str) -> list[dict[str, Any]]:
+    """Query NASA Curiosity Raw Images API for non-thumbnail images of one (sol, instrument)."""
     url = (
-        f"{RAW_IMAGES_API}?per_page=100"
-        f"&condition_1=msl:mission&condition_2={sol_csv}:sol:in"
+        f"{RAW_IMAGES_API}?per_page=25"
+        f"&condition_1=msl:mission"
+        f"&condition_2={sol}:sol:in"
+        f"&condition_3={instrument}:instrument:in"
     )
     payload = fetch_json(url)
-    all_items: list[dict[str, Any]] = [
+    items = [
         item
         for item in payload.get("items", [])
-        if not item.get("is_thumbnail") and item.get("https_url")
+        if not item.get("is_thumbnail")
+        and isinstance(item.get("https_url"), str)
+        and item["https_url"].startswith("https://mars.nasa.gov/")
     ]
+    items.sort(key=lambda x: (str(x.get("date_taken") or ""), str(x.get("imageid") or "")))
+    return items
 
-    # First pass: pick one representative per (sol, instrument) in preferred instrument order.
-    by_key: dict[tuple[int, str], dict[str, Any]] = {}
-    for item in all_items:
-        inst = item.get("instrument", "")
-        if inst not in PREFERRED_INSTRUMENTS:
+
+def _to_photo_record(item: dict[str, Any]) -> dict[str, Any]:
+    url = item["https_url"]
+    assert_url_ok(url)
+    rec: dict[str, Any] = {
+        "id": item.get("imageid"),
+        "sol": int(item["sol"]),
+        "instrument": item.get("instrument"),
+        "title": item.get("title"),
+        "date_taken": item.get("date_taken"),
+        "url": url,
+        "credit": item.get("image_credit") or "NASA/JPL-Caltech/MSSS",
+        "badge": "Observed",
+    }
+    return rec
+
+
+def fetch_stop_photos(
+    priority_sols: list[int],
+    limit: int = 4,
+    preferred_first: tuple[int, str] | None = None,
+) -> list[dict[str, Any]]:
+    """Select `limit` photos across distinct instruments and as many distinct sols as available."""
+    selected: list[dict[str, Any]] = []
+    used_instruments: set[str] = set()
+    covered_sols: set[int] = set()
+    cache: dict[tuple[int, str], list[dict[str, Any]]] = {}
+
+    def get_candidates(sol: int, inst: str) -> list[dict[str, Any]]:
+        key = (sol, inst)
+        if key not in cache:
+            cache[key] = query_sol_instrument(sol, inst)
+        return cache[key]
+
+    # Honor an explicit milestone (sol, instrument) anchor first (e.g. D1 drill-sol Mastcam).
+    if preferred_first is not None:
+        anchor_sol, anchor_inst = preferred_first
+        cands = get_candidates(anchor_sol, anchor_inst)
+        if not cands:
+            raise RuntimeError(f"Required anchor image missing for sol={anchor_sol}, inst={anchor_inst}")
+        selected.append(_to_photo_record(cands[0]))
+        used_instruments.add(anchor_inst)
+        covered_sols.add(anchor_sol)
+
+    # Pass 1: maximize distinct sols first, taking at most one photo per instrument and per sol.
+    for sol in priority_sols:
+        if len(selected) >= limit:
+            break
+        if sol in covered_sols:
             continue
-        key = (int(item["sol"]), inst)
-        if key not in by_key:
-            by_key[key] = item
+        for inst in PREFERRED_INSTRUMENTS:
+            if inst in used_instruments:
+                continue
+            cands = get_candidates(sol, inst)
+            if cands:
+                selected.append(_to_photo_record(cands[0]))
+                used_instruments.add(inst)
+                covered_sols.add(sol)
+                break
 
-    sorted_keys = sorted(
-        by_key.keys(),
-        key=lambda k: (PREFERRED_INSTRUMENTS.get(k[1], 99), k[0]),
-    )
-    selected: list[dict[str, Any]] = [by_key[k] for k in sorted_keys[:limit]]
-    seen_ids = {item["imageid"] for item in selected if item.get("imageid")}
-
-    # Second pass: if a single-sol stop has fewer than 3 distinct instruments, fill from remaining frames.
+    # Pass 2: fill remaining slots (up to `limit`) with unused instruments across priority sols.
     if len(selected) < limit:
-        remaining = sorted(
-            (
-                x
-                for x in all_items
-                if x.get("instrument") in PREFERRED_INSTRUMENTS
-                and x.get("imageid") not in seen_ids
-            ),
-            key=lambda x: (
-                PREFERRED_INSTRUMENTS.get(x.get("instrument", ""), 99),
-                int(x.get("sol", 0)),
-                x.get("imageid", ""),
-            ),
-        )
-        for item in remaining:
+        for inst in PREFERRED_INSTRUMENTS:
             if len(selected) >= limit:
                 break
-            selected.append(item)
-            seen_ids.add(item["imageid"])
+            if inst in used_instruments:
+                continue
+            for sol in priority_sols:
+                cands = get_candidates(sol, inst)
+                if cands:
+                    selected.append(_to_photo_record(cands[0]))
+                    used_instruments.add(inst)
+                    covered_sols.add(sol)
+                    break
 
-    photos: list[dict[str, Any]] = []
-    for item in selected:
-        img_url = item["https_url"]
-        if not check_url_ok(img_url):
-            continue
-        photos.append(
-            {
-                "id": item.get("imageid"),
-                "sol": int(item["sol"]),
-                "instrument": item.get("instrument"),
-                "title": item.get("title"),
-                "date_taken": item.get("date_taken"),
-                "url": img_url,
-                "credit": item.get("image_credit") or "NASA/JPL-Caltech/MSSS",
-                "approx_location": True,
-                "location_note": (
-                    "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata "
-                    "does not carry per-frame lat/lon."
-                ),
-                "badge": "Observed",
+    return selected
+
+
+def _in_ops_box(lon: float, lat: float) -> bool:
+    return (
+        OPS_BOX["west"] <= lon <= OPS_BOX["east"]
+        and OPS_BOX["south"] <= lat <= OPS_BOX["north"]
+    )
+
+
+def _format_location(wp: dict[str, Any], approx: bool) -> str:
+    prefix = "approx. rover waypoint: " if approx else ""
+    return (
+        f"{prefix}{wp['lon']:.6f}°E, {wp['lat']:.6f}° "
+        f"(Site {wp['site']}, Drive {wp['drive']}, elev {wp['elev_m']:.1f} m, "
+        f"odometry {wp['dist_km']:.2f} km)"
+    )
+
+
+def build_s3_spec(
+    current_wp: dict[str, Any],
+    by_sol: dict[int, list[dict[str, Any]]],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Build dynamic S3 stop specification from MSL_waypoints_current.json."""
+    sol = current_wp["sol"]
+    sols = [sol]
+
+    # Check if the current sol alone already provides 4 distinct camera instruments.
+    insts_on_curr = [inst for inst in PREFERRED_INSTRUMENTS if query_sol_instrument(sol, inst)]
+    if len(insts_on_curr) < 4:
+        earlier_sols = sorted((s for s in by_sol if s < sol), reverse=True)
+        for prev_sol in earlier_sols:
+            if by_sol[prev_sol][0]["site"] != current_wp["site"] and len(sols) >= 3:
+                break
+            sols.append(prev_sol)
+            combined_insts = {
+                inst
+                for s in sols
+                for inst in PREFERRED_INSTRUMENTS
+                if query_sol_instrument(s, inst)
             }
+            if len(combined_insts) >= 4:
+                break
+        sols.sort()
+
+    priority_sols = sorted(sols, reverse=True)
+    tilt_note = f"; {current_wp['tilt']:.2f}° local tilt" if current_wp["tilt"] is not None else ""
+    spec = {
+        "id": "S3",
+        "name": f"Curiosity current position (sol {sol})",
+        "kind": "rover",
+        "sols": sols,
+        "priority_sols": priority_sols,
+        "preferred_first": None,
+        "approx": False,
+        "evidence": (
+            f"MSL_waypoints_current.json (RMC {current_wp['rmc']}, "
+            f"site {current_wp['site']} drive {current_wp['drive']}, sol {sol})"
+        ),
+        "panorama": None,
+        "panorama_meta": None,
+        "science": (
+            f"Curiosity's published MMGIS rover waypoint on lower Mount Sharp "
+            f"(sol {sol}, site {current_wp['site']}, drive {current_wp['drive']}, RMC {current_wp['rmc']}, "
+            f"elevation {current_wp['elev_m']:.2f} m after {current_wp['dist_km']:.2f} km of total drive "
+            f"odometry{tilt_note})."
+        ),
+        "card_static": {
+            "target_name": f"Curiosity Active Station (RMC {current_wp['rmc']})",
+            "target_type": "Active Rover Reference Waypoint",
+            "sol": f"Sol {sol}",
+            "geologic_context": (
+                "Active Curiosity traverse station on lower Mount Sharp used as the baseline "
+                "reference anchor for human Marswalk comparisons."
+            ),
+            "context_badge": "Derived",
+            "source_url": MMGIS_CURRENT_URL,
+        },
+    }
+    return spec, current_wp
+
+
+def build_stops(pin_s3_sol: int | None = None) -> dict[str, Any]:
+    """Build the GeoJSON FeatureCollection for all 5 stops from live NASA endpoints."""
+    by_sol_drive, by_sol, current_wp = load_mmgis_waypoints()
+    print(
+        f"Loaded {len(by_sol_drive)} MMGIS waypoints ({len(by_sol)} sols); "
+        f"current rover position: sol {current_wp['sol']} (RMC {current_wp['rmc']})."
+    )
+
+    if pin_s3_sol is not None:
+        if pin_s3_sol not in by_sol:
+            raise RuntimeError(f"Pinned S3 sol {pin_s3_sol} not found in MSL_waypoints.json.")
+        s3_anchor_wp = max(by_sol[pin_s3_sol], key=lambda w: w["drive"])
+    else:
+        s3_anchor_wp = current_wp
+
+    resolved_stops: list[tuple[dict[str, Any], dict[str, Any]]] = []
+
+    for spec in HISTORICAL_STOPS:
+        key = spec["waypoint_key"]
+        if key not in by_sol_drive:
+            raise RuntimeError(f"Required MMGIS waypoint {key} for stop {spec['id']} not found.")
+        for extra_key in spec["extra_waypoints"]:
+            if extra_key not in by_sol_drive:
+                raise RuntimeError(f"Required bracket MMGIS waypoint {extra_key} for stop {spec['id']} not found.")
+
+        wp = by_sol_drive[key]
+        exp_lon, exp_lat = spec["expected_lonlat"]
+        drift_m = mars_distance_m(wp["lon"], wp["lat"], exp_lon, exp_lat)
+        if drift_m >= MAX_WAYPOINT_DRIFT_M:
+            raise RuntimeError(
+                f"Stop {spec['id']} waypoint {key} drifted {drift_m:.2f} m from expected reference coordinates."
+            )
+        if not _in_ops_box(wp["lon"], wp["lat"]):
+            raise RuntimeError(f"Stop {spec['id']} coordinates ({wp['lon']}, {wp['lat']}) lie outside ops box.")
+
+        resolved_stops.append((spec, wp))
+
+    s3_spec, s3_wp = build_s3_spec(s3_anchor_wp, by_sol)
+    if pin_s3_sol is not None:
+        s3_spec["evidence"] = (
+            f"MSL_waypoints.json pinned sol {s3_wp['sol']} "
+            f"(RMC {s3_wp['rmc']}, site {s3_wp['site']} drive {s3_wp['drive']})"
         )
-    return photos
+        s3_spec["card_static"]["source_url"] = MMGIS_WAYPOINTS_URL
+    if not _in_ops_box(s3_wp["lon"], s3_wp["lat"]):
+        raise RuntimeError(f"Dynamic S3 coordinates ({s3_wp['lon']}, {s3_wp['lat']}) lie outside ops box.")
 
+    # Canonical order: S1, S2, S3, D1, D2
+    by_id = {s["id"]: (s, wp) for s, wp in resolved_stops}
+    by_id["S3"] = (s3_spec, s3_wp)
+    ordered = [by_id[sid] for sid in ("S1", "S2", "S3", "D1", "D2")]
 
-def build_stops(waypoints: dict[int, dict[str, Any]]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    """Build the GeoJSON stops FeatureCollection and standalone stop cards list."""
     features: list[dict[str, Any]] = []
-    stop_cards: list[dict[str, Any]] = []
+    for spec, wp in ordered:
+        photos = fetch_stop_photos(
+            spec["priority_sols"],
+            limit=4,
+            preferred_first=spec.get("preferred_first"),
+        )
+        if len(photos) != 4:
+            raise RuntimeError(f"Stop {spec['id']} returned {len(photos)} photos (expected 4).")
+        if len({p["instrument"] for p in photos}) != 4:
+            raise RuntimeError(f"Stop {spec['id']} does not have 4 distinct instruments.")
+        if spec["panorama_meta"]:
+            assert_url_ok(spec["panorama_meta"]["image_url"])
 
-    for spec in STOP_SPECS:
-        wp = waypoints.get(spec["waypoint_sol"], {})
-        site = wp.get("site", spec["site"])
-        drive = wp.get("drive", spec["drive"])
-        elev_m = round(float(wp.get("elev_geoid", spec["elev_m"])), 2)
-        dist_km = round(float(wp.get("dist_km", spec["dist_km"])), 2)
-        lon, lat = spec["coordinates"]
-
-        photos = fetch_stop_photos(spec["query_sols"], limit=4)
-        if len(photos) < 3:
-            raise RuntimeError(f"Stop {spec['id']} returned fewer than 3 verified photos ({len(photos)}).")
-
-        photo_urls = [p["url"] for p in photos]
-        card = dict(spec["card"])
-        card["photos"] = photos
-
-        props: dict[str, Any] = {
-            "id": spec["id"],
-            "name": spec["name"],
-            "kind": spec["kind"],
-            "sols": spec["sols"],
-            "sol": spec["sol"],
-            "lon": lon,
-            "lat": lat,
-            "site": site,
-            "drive": drive,
-            "elev_m": elev_m,
-            "dist_km": dist_km,
-            "evidence": spec["evidence"],
-            "approx": spec["approx"],
-            "photos": photos,
-            "photo_urls": photo_urls,
-            "panorama": spec["panorama"],
-            "panorama_meta": spec["panorama_meta"],
-            "science": spec["science"],
-            "scienceText": spec["science"],
-            "detail": spec["science"],
-            "card": card,
-            "badge": spec["badge"],
+        card = {
+            **spec["card_static"],
+            "rmc": wp["rmc"],
+            "site": wp["site"],
+            "drive": wp["drive"],
+            "elev_m": wp["elev_m"],
+            "dist_km": wp["dist_km"],
+            "location": _format_location(wp, spec["approx"]),
+            "waypoint_badge": "Observed",
         }
-        if "campaign_sols" in spec:
-            props["campaign_sols"] = spec["campaign_sols"]
 
         features.append(
             {
                 "type": "Feature",
-                "geometry": {"type": "Point", "coordinates": [lon, lat]},
-                "properties": props,
+                "geometry": {"type": "Point", "coordinates": [wp["lon"], wp["lat"]]},
+                "properties": {
+                    "id": spec["id"],
+                    "name": spec["name"],
+                    "kind": spec["kind"],
+                    "sols": spec["sols"],
+                    "evidence": spec["evidence"],
+                    "approx": spec["approx"],
+                    "photos": photos,
+                    "panorama": spec["panorama"],
+                    "panorama_meta": spec["panorama_meta"],
+                    "science": spec["science"],
+                    "card": card,
+                    "badge": "Observed",
+                },
             }
         )
 
-        stop_cards.append(
-            {
-                "id": spec["id"],
-                "name": spec["name"],
-                "kind": spec["kind"],
-                "coordinates": [lon, lat],
-                "approx": spec["approx"],
-                "badge": spec["badge"],
-                "evidence": spec["evidence"],
-                "panorama": spec["panorama"],
-                "panorama_meta": spec["panorama_meta"],
-                "science": spec["science"],
-                **card,
-            }
-        )
-
-    stops_fc = {
-        "type": "FeatureCollection",
-        "crs": CRS_STRING,
-        "updated": BUILD_DATE,
-        "source": (
-            "NASA MMGIS MSL_waypoints.json (through sol 5070) + "
-            "NASA MSL Raw Images API + JPL Photojournal (PIA26559, PIA26696)"
-        ),
-        "features": features,
-    }
-    return stops_fc, stop_cards
+    return {"type": "FeatureCollection", "features": features}
 
 
 def build_rad_card() -> dict[str, Any]:
@@ -471,31 +598,37 @@ def build_rad_card() -> dict[str, Any]:
         "badge": "Observed",
         "values": [
             {
-                "label": "Surface dose rate (GCR, average)",
+                "label": "Surface GCR dose equivalent rate (average)",
                 "value": 0.64,
                 "unit": "mSv/day",
                 "pm": 0.12,
                 "badge": "Observed",
+                "note": "Measured on the Gale Crater traverse during sols 13–300 near solar maximum (Hassler et al. 2014).",
             },
             {
-                "label": "Surface GCR dose range across mission",
-                "value": "0.64–0.67",
-                "unit": "mSv/day",
+                "label": "Surface GCR absorbed dose rate (tissue-like plastic)",
+                "value": 210,
+                "unit": "µGy/day",
+                "pm": 40,
                 "badge": "Observed",
+                "note": "Detector E tissue-equivalent plastic scintillator average over sols 13–300 (Hassler et al. 2014, Table 1).",
+            },
+            {
+                "label": "Sept 2017 surface SEP event (absorbed dose in silicon)",
+                "value": 418,
+                "unit": "µGy (Si)",
+                "badge": "Observed",
+                "note": (
+                    "Largest solar energetic particle event recorded at Mars surface by RAD silicon "
+                    "detector B during 10–13 Sept 2017 (Zeitlin et al. 2018; Cohen & Mewaldt 2018)."
+                ),
             },
             {
                 "label": "Modeled 4-hour Marswalk GCR dose (unshielded)",
                 "value": 0.11,
                 "unit": "mSv",
                 "badge": "Scenario",
-                "note": "Derived arithmetic (0.64 mSv/day × 4/24 h); suit and terrain sky-view shielding not modeled.",
-            },
-            {
-                "label": "Sept 2017 surface SEP event total",
-                "value": 369,
-                "unit": "µGy",
-                "badge": "Observed",
-                "note": "Episodic solar energetic particle event measured at the surface by RAD (Zeitlin et al. 2018).",
+                "note": "Scenario estimate scaling the 0.64 mSv/day GCR baseline to a 4-hour excursion; suit and terrain sky-view shielding not modeled.",
             },
         ],
         "limits": [
@@ -503,20 +636,19 @@ def build_rad_card() -> dict[str, Any]:
                 "label": "NASA career effective dose limit",
                 "value": 600,
                 "unit": "mSv",
-                "source": "NASA-STD-3001 Vol 1",
-                "badge": "Observed",
+                "source": "NASA-STD-3001 Vol 1 (career limit for all astronauts)",
             },
             {
                 "label": "Spatial radiation map at walk scale",
                 "value": "Unavailable",
                 "unit": "—",
-                "source": "RAD is the sole surface dosimeter on Mars (single roving point)",
+                "source": "RAD is a single rover-local point dosimeter (the only surface dosimeter on Mars); no walk-scale spatial map exists",
                 "badge": "Unavailable",
             },
         ],
         "note": (
-            "Curiosity RAD is the only surface radiation dosimeter on Mars. Measurements are rover-local "
-            "point values, not a spatial map across the ops box. Suit and terrain sky-view shielding are not modeled."
+            "Curiosity RAD is a rover-local dosimeter, not a spatial map across the ops box. "
+            "SEP peak value (418 µGy) is absorbed dose in silicon, not directly equivalent to mSv effective dose."
         ),
         "claim_boundary": (
             "Context card only — never rendered as a spatial hazard heatmap. Modeled walk dose scales the "
@@ -524,84 +656,133 @@ def build_rad_card() -> dict[str, Any]:
         ),
         "source": (
             "Hassler et al. 2014, Science 343:1244797, doi:10.1126/science.1244797; "
-            "Zeitlin et al. 2018, GRL, doi:10.1029/2018GL077760; "
+            "Zeitlin et al. 2018, GRL 45:5845–5851, doi:10.1029/2018GL077760; "
+            "Cohen & Mewaldt 2018, Space Weather 16:1616–1623, doi:10.1029/2018SW002006; "
             "PDS PPI MSL-M-RAD-2-EDR-V1.0; NASA-STD-3001 Vol 1"
         ),
         "source_urls": [
+            "https://doi.org/10.1126/science.1244797",
+            "https://doi.org/10.1029/2018GL077760",
+            "https://doi.org/10.1029/2018SW002006",
             "https://pds-ppi.igpp.ucla.edu/collection/MSL-M-RAD-2-EDR-V1.0",
             "https://www.nasa.gov/wp-content/uploads/2023/03/radiation-protection-technical-brief-ochmo.pdf",
         ],
-        "date_range": "2012-08-07 → 2026 (GCR baseline 2012-08 → 2013-06; Sept 2017 SEP event)",
+        "date_range": "2012-08 → 2013-06 (sols 13–300 GCR baseline, Hassler et al. 2014); 2017-09-10 → 2017-09-13 (Sept 2017 SEP event, Zeitlin et al. 2018)",
     }
 
 
+def _rems_num(val: Any) -> float | None:
+    if val in (None, "--", ""):
+        return None
+    return float(val)
+
+
+def _fmt_temp_range_c(low_c: float, high_c: float) -> str:
+    low_i, high_i = round(low_c), round(high_c)
+    low_str = f"−{abs(low_i)}" if low_i < 0 else (f"+{low_i}" if low_i > 0 else "0")
+    high_str = f"−{abs(high_i)}" if high_i < 0 else (f"+{high_i}" if high_i > 0 else "0")
+    return f"{low_str} to {high_str}"
+
+
 def build_rems_card() -> dict[str, Any]:
-    """Build the verified Gale REMS weather context card."""
+    """Build the verified Gale REMS weather context card from live NASA REMS telemetry + literature."""
+    feed = fetch_json(REMS_WEATHER_URL)
+    soles = feed.get("soles", [])
+    if not soles:
+        raise RuntimeError("NASA REMS weather JSON feed returned no sol summaries.")
+
+    pressures = [v for s in soles if (v := _rems_num(s.get("pressure"))) is not None]
+    air_mins = [v for s in soles if (v := _rems_num(s.get("min_temp"))) is not None]
+    air_maxs = [v for s in soles if (v := _rems_num(s.get("max_temp"))) is not None]
+    gts_mins = [v for s in soles if (v := _rems_num(s.get("min_gts_temp"))) is not None]
+    gts_maxs = [v for s in soles if (v := _rems_num(s.get("max_gts_temp"))) is not None]
+    sol_nums = [int(s["sol"]) for s in soles if s.get("sol")]
+    dates = [str(s["terrestrial_date"]) for s in soles if s.get("terrestrial_date")]
+
+    if not (pressures and air_mins and air_maxs and gts_mins and gts_maxs and sol_nums and dates):
+        raise RuntimeError("NASA REMS weather JSON feed is missing required temperature/pressure series.")
+
+    p_min, p_max = round(min(pressures)), round(max(pressures))
+    air_low, air_high = min(air_mins), max(air_maxs)
+    gts_low, gts_high = min(gts_mins), max(gts_maxs)
+    sol_min, sol_max = min(sol_nums), max(sol_nums)
+    date_min, date_max = min(dates), max(dates)
+    n_sols = len(soles)
+
     return {
         "title": "Weather at Gale (REMS)",
         "badge": "Observed",
         "values": [
             {
-                "label": "Surface pressure (annual range)",
-                "value": "700–920",
+                "label": f"Surface pressure (REMS daily summary range, sols {sol_min}–{sol_max})",
+                "value": f"{p_min}–{p_max}",
                 "unit": "Pa",
                 "badge": "Observed",
+                "note": (
+                    f"Measured across {n_sols:,} reported sols in NASA's MSL REMS feed "
+                    "(seasonal CO₂ cycle and diurnal thermal tides; Gómez-Elvira et al. 2014; Haberle et al. 2014)."
+                ),
             },
             {
-                "label": "Air temperature (diurnal range, 1.6 m boom)",
-                "value": "−83 to −3",
+                "label": f"Air temperature (1.6 m boom, daily min/max sols {sol_min}–{sol_max})",
+                "value": _fmt_temp_range_c(air_low, air_high),
                 "unit": "°C",
                 "badge": "Observed",
-                "note": "Typical diurnal cycle (~190 K nighttime low to ~270 K daytime high, Gómez-Elvira et al. 2014).",
+                "note": (
+                    f"{round(air_low + 273.15)} K minimum to {round(air_high + 273.15)} K maximum daily air "
+                    f"temperature reported across {n_sols:,} sols in NASA's MSL REMS feed (Gómez-Elvira et al. 2012, 2014)."
+                ),
             },
             {
-                "label": "Ground brightness temperature (diurnal range)",
-                "value": "−90 to +17",
+                "label": f"Ground brightness temperature (daily min/max sols {sol_min}–{sol_max})",
+                "value": _fmt_temp_range_c(gts_low, gts_high),
                 "unit": "°C",
                 "badge": "Observed",
-                "note": "Typical diurnal cycle (~183 K pre-dawn to ~290 K midday, Gómez-Elvira et al. 2014).",
-            },
-            {
-                "label": "Measurement cadence",
-                "value": "1 Hz (5-min hourly windows)",
-                "unit": "cadence",
-                "badge": "Observed",
+                "note": (
+                    f"{round(gts_low + 273.15)} K pre-dawn minimum to {round(gts_high + 273.15)} K midday maximum "
+                    f"reported across {n_sols:,} sols in NASA's MSL REMS feed (Martínez et al. 2017)."
+                ),
             },
         ],
         "limits": [
             {
-                "label": "Water triple-point context",
-                "value": "611.65",
+                "label": "Armstrong limit (human physiological threshold)",
+                "value": 6300,
                 "unit": "Pa",
-                "source": "Gale surface pressure (700–920 Pa) straddles water's triple point; unsuited human survival impossible",
-                "badge": "Observed",
+                "source": (
+                    f"Water boils at human body temperature (37 °C) below ~6.3 kPa; Gale pressure ({p_min}–{p_max} Pa, "
+                    "above water's 611.65 Pa triple point) is ~7–9× below the Armstrong limit, requiring a full pressure suit (NASA-STD-3001 Vol 1)"
+                ),
             },
             {
                 "label": "Walk-scale spatial weather map",
                 "value": "Unavailable",
                 "unit": "—",
-                "source": "REMS is a single rover-local weather station; Mars Climate Database v6.2 is 5.625° × 3.75° (~330 × 220 km)",
+                "source": "REMS is a single rover-local weather station on Curiosity's mast; no walk-scale spatial weather map exists",
                 "badge": "Unavailable",
             },
         ],
         "note": (
             "REMS is a rover-local meteorological station on Curiosity; no walk-scale spatial weather map "
-            "or live forecast exists for Gale Crater. Values represent observed Gale climatology."
+            "or operational forecast exists for Gale Crater. Values reflect reported NASA REMS daily sol summaries."
         ),
         "claim_boundary": (
             "Context card only — never interpolated into per-cell route weather maps. "
             "Excursion thermal/dust windows derived from climatology are Scenario assumptions."
         ),
         "source": (
-            "Gómez-Elvira et al. 2012, Space Sci Rev, doi:10.1007/s11214-012-9921-1; "
-            "Gómez-Elvira et al. 2014, JGR-Planets, doi:10.1002/2013JE004576; "
-            "Haberle et al. 2014, JGR-Planets, doi:10.1002/2013JE004488; "
-            "PDS4 urn:nasa:pds:msl_rems_bundle"
+            "Gómez-Elvira et al. 2012, Space Sci Rev 170:583–640, doi:10.1007/s11214-012-9921-1; "
+            "Gómez-Elvira et al. 2014, JGR-Planets 119:1680–1688, doi:10.1002/2013JE004576; "
+            "Haberle et al. 2014, JGR-Planets 119:440–453, doi:10.1002/2013JE004488; "
+            "Martínez et al. 2017, Space Sci Rev 212:295–338, doi:10.1007/s11214-017-0360-x; "
+            "NASA MSL REMS Weather API; NASA PDS Atmospheres Node urn:nasa:pds:msl_rems_bundle"
         ),
         "source_urls": [
-            "https://pds-geosciences.wustl.edu/missions/msl/rems.htm",
+            REMS_WEATHER_URL,
+            "https://atmos.nmsu.edu/data_and_services/atmospheres_data/MARS/curiosity/rems.html",
+            "https://pds.nasa.gov/ds-view/pds/viewBundle.jsp?identifier=urn%3Anasa%3Apds%3Amsl_rems_bundle",
         ],
-        "date_range": "2012-08-07 → 2026 (PDS4 urn:nasa:pds:msl_rems_bundle sols 1–4843; Gómez-Elvira et al. 2014 baseline)",
+        "date_range": f"{date_min} → {date_max} (sols {sol_min}–{sol_max}, {n_sols:,} reported sols, NASA MSL REMS feed)",
     }
 
 
@@ -611,23 +792,33 @@ def write_json(path: Path, payload: Any) -> None:
 
 
 def main() -> None:
-    print("Fetching NASA MMGIS Curiosity waypoints...")
-    waypoints = load_waypoints_by_sol()
-    print(f"Loaded {len(waypoints)} waypoint sols from MMGIS.")
+    parser = argparse.ArgumentParser(description="Build RedSight stops.json and RAD/REMS context cards.")
+    parser.add_argument(
+        "--pin-s3-sol",
+        type=int,
+        default=None,
+        help="Optional historical sol in MSL_waypoints.json to freeze S3 for submission reproducibility.",
+    )
+    args = parser.parse_args()
 
-    print("Fetching Curiosity raw images and building stops.json...")
-    stops_fc, stop_cards = build_stops(waypoints)
+    print("Fetching NASA MMGIS Curiosity waypoints, Raw Images, and REMS weather feed...")
+    stops_fc = build_stops(pin_s3_sol=args.pin_s3_sol)
 
     write_json(DATA_DIR / "stops.json", stops_fc)
-    write_json(CARDS_DIR / "stops.json", {"updated": BUILD_DATE, "cards": stop_cards})
     write_json(CARDS_DIR / "rad.json", build_rad_card())
     write_json(CARDS_DIR / "rems.json", build_rems_card())
 
-    print("Wrote:")
+    size_kb = (DATA_DIR / "stops.json").stat().st_size / 1024.0
+    print(f"Wrote app/public/data/stops.json ({size_kb:.1f} KB), cards/rad.json, cards/rems.json:")
     for f in stops_fc["features"]:
         p = f["properties"]
-        print(f"  {p['id']}: {p['name']} — {len(p['photos'])} photos, site={p['site']}, elev={p['elev_m']} m")
-    print("Done.")
+        c = p["card"]
+        sol_set = sorted({ph["sol"] for ph in p["photos"]})
+        inst_set = [ph["instrument"] for ph in p["photos"]]
+        print(
+            f"  {p['id']}: {p['name']} — rmc={c['rmc']}, elev={c['elev_m']} m, "
+            f"photos={len(p['photos'])} sols={sol_set} insts={inst_set}"
+        )
 
 
 if __name__ == "__main__":

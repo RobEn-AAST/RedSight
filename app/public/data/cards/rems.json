@@ -3,53 +3,49 @@
  "badge": "Observed",
  "values": [
   {
-   "label": "Surface pressure (annual range)",
-   "value": "700–920",
+   "label": "Surface pressure (REMS daily summary range, sols 1–4995)",
+   "value": "679–925",
    "unit": "Pa",
-   "badge": "Observed"
+   "badge": "Observed",
+   "note": "Measured across 4,745 reported sols in NASA's MSL REMS feed (seasonal CO₂ cycle and diurnal thermal tides; Gómez-Elvira et al. 2014; Haberle et al. 2014)."
   },
   {
-   "label": "Air temperature (diurnal range, 1.6 m boom)",
-   "value": "−83 to −3",
+   "label": "Air temperature (1.6 m boom, daily min/max sols 1–4995)",
+   "value": "−100 to +11",
    "unit": "°C",
    "badge": "Observed",
-   "note": "Typical diurnal cycle (~190 K nighttime low to ~270 K daytime high, Gómez-Elvira et al. 2014)."
+   "note": "173 K minimum to 284 K maximum daily air temperature reported across 4,745 sols in NASA's MSL REMS feed (Gómez-Elvira et al. 2012, 2014)."
   },
   {
-   "label": "Ground brightness temperature (diurnal range)",
-   "value": "−90 to +17",
+   "label": "Ground brightness temperature (daily min/max sols 1–4995)",
+   "value": "−136 to +25",
    "unit": "°C",
    "badge": "Observed",
-   "note": "Typical diurnal cycle (~183 K pre-dawn to ~290 K midday, Gómez-Elvira et al. 2014)."
-  },
-  {
-   "label": "Measurement cadence",
-   "value": "1 Hz (5-min hourly windows)",
-   "unit": "cadence",
-   "badge": "Observed"
+   "note": "137 K pre-dawn minimum to 298 K midday maximum reported across 4,745 sols in NASA's MSL REMS feed (Martínez et al. 2017)."
   }
  ],
  "limits": [
   {
-   "label": "Water triple-point context",
-   "value": "611.65",
+   "label": "Armstrong limit (human physiological threshold)",
+   "value": 6300,
    "unit": "Pa",
-   "source": "Gale surface pressure (700–920 Pa) straddles water's triple point; unsuited human survival impossible",
-   "badge": "Observed"
+   "source": "Water boils at human body temperature (37 °C) below ~6.3 kPa; Gale pressure (679–925 Pa, above water's 611.65 Pa triple point) is ~7–9× below the Armstrong limit, requiring a full pressure suit (NASA-STD-3001 Vol 1)"
   },
   {
    "label": "Walk-scale spatial weather map",
    "value": "Unavailable",
    "unit": "—",
-   "source": "REMS is a single rover-local weather station; Mars Climate Database v6.2 is 5.625° × 3.75° (~330 × 220 km)",
+   "source": "REMS is a single rover-local weather station on Curiosity's mast; no walk-scale spatial weather map exists",
    "badge": "Unavailable"
   }
  ],
- "note": "REMS is a rover-local meteorological station on Curiosity; no walk-scale spatial weather map or live forecast exists for Gale Crater. Values represent observed Gale climatology.",
+ "note": "REMS is a rover-local meteorological station on Curiosity; no walk-scale spatial weather map or operational forecast exists for Gale Crater. Values reflect reported NASA REMS daily sol summaries.",
  "claim_boundary": "Context card only — never interpolated into per-cell route weather maps. Excursion thermal/dust windows derived from climatology are Scenario assumptions.",
- "source": "Gómez-Elvira et al. 2012, Space Sci Rev, doi:10.1007/s11214-012-9921-1; Gómez-Elvira et al. 2014, JGR-Planets, doi:10.1002/2013JE004576; Haberle et al. 2014, JGR-Planets, doi:10.1002/2013JE004488; PDS4 urn:nasa:pds:msl_rems_bundle",
+ "source": "Gómez-Elvira et al. 2012, Space Sci Rev 170:583–640, doi:10.1007/s11214-012-9921-1; Gómez-Elvira et al. 2014, JGR-Planets 119:1680–1688, doi:10.1002/2013JE004576; Haberle et al. 2014, JGR-Planets 119:440–453, doi:10.1002/2013JE004488; Martínez et al. 2017, Space Sci Rev 212:295–338, doi:10.1007/s11214-017-0360-x; NASA MSL REMS Weather API; NASA PDS Atmospheres Node urn:nasa:pds:msl_rems_bundle",
  "source_urls": [
-  "https://pds-geosciences.wustl.edu/missions/msl/rems.htm"
+  "https://mars.nasa.gov/rss/api/?feed=weather&category=msl&feedtype=json",
+  "https://atmos.nmsu.edu/data_and_services/atmospheres_data/MARS/curiosity/rems.html",
+  "https://pds.nasa.gov/ds-view/pds/viewBundle.jsp?identifier=urn%3Anasa%3Apds%3Amsl_rems_bundle"
  ],
- "date_range": "2012-08-07 → 2026 (PDS4 urn:nasa:pds:msl_rems_bundle sols 1–4843; Gómez-Elvira et al. 2014 baseline)"
+ "date_range": "2012-08-07 → 2026-08-25 (sols 1–4995, 4,745 reported sols, NASA MSL REMS feed)"
 }

@@ -67,7 +67,12 @@ function parseStops(raw: unknown): EngineStop[] | null {
       sols: Array.isArray(p.sols) ? p.sols.filter(isNumber) : [],
       evidence: typeof p.evidence === 'string' ? p.evidence : undefined,
       approx: p.approx === true,
-      photos: Array.isArray(p.photos) ? p.photos.filter((x): x is string => typeof x === 'string') : [],
+      // photos[] may be URL strings or objects with a url (Ayman's stops.json); keep the URLs either way.
+      photos: Array.isArray(p.photos)
+        ? p.photos
+            .map((x) => (typeof x === 'string' ? x : isObject(x) && typeof x.url === 'string' ? x.url : null))
+            .filter((x): x is string => x !== null)
+        : [],
       panorama: typeof p.panorama === 'string' ? p.panorama : null,
       science: typeof p.science === 'string' ? p.science : undefined,
       badge: (p.badge as EngineStop['badge']) ?? 'Observed',

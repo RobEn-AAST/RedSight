@@ -3,7 +3,9 @@ import {
   Map as MapLibreMap,
   Marker,
   NavigationControl,
+  Popup,
   setWorkerUrl,
+  type ExpressionSpecification,
   type GeoJSONSource,
   type LngLatBoundsLike,
   type StyleSpecification,
@@ -17,7 +19,7 @@ import { cn } from '@/lib/cn'
 import { absoluteDataUrl } from '@/lib/dataUrl'
 import type { EngineRouteMode, PlanMember } from '@/lib/engineDataContext'
 import { useEngineData } from '@/lib/useEngineData'
-import { MEMBER_B_COLOR, MODE_COLOR, NO_RETURN_COLOR, formatDistance } from '@/map/format'
+import { HAZARD_COLOR, MEMBER_B_COLOR, UNKNOWN_GROUND_COLOR, MODE_COLOR, NO_RETURN_COLOR, formatDistance, hazardLabel } from '@/map/format'
 import { usePlan } from '@/map/usePlan'
 
 /**
@@ -224,12 +226,47 @@ export function MapCanvas({
         source: 'ops-box',
         paint: { 'line-color': '#e9edf3', 'line-width': 1, 'line-opacity': 0.25 },
       })
+      // Blocked ground, coloured by reason: steep = violet, unknown ground (no elevation data,
+      // map edge) = grey. A light tint, because real slope areas cover km² of the box.
+      const hazardColor: ExpressionSpecification = [
+        'match',
+        ['get', 'reason'],
+        ['nodata', 'edge'],
+        UNKNOWN_GROUND_COLOR,
+        HAZARD_COLOR,
+      ]
       map.addLayer({
         id: 'hazards-fill',
         type: 'fill',
         source: 'hazards',
-        paint: { 'fill-color': NO_RETURN_COLOR, 'fill-opacity': 0.18 },
+        paint: { 'fill-color': hazardColor, 'fill-opacity': 0.2 },
       })
+      map.addLayer({
+        id: 'hazards-line',
+        type: 'line',
+        source: 'hazards',
+        paint: {
+          'line-color': hazardColor,
+          'line-width': ['interpolate', ['linear'], ['zoom'], 13, 0.4, 16, 1.2],
+          'line-opacity': 0.6,
+        },
+      })
+      // The engine ships thousands of blocked cells: their reason shows on tap, not as a label each.
+      map.on('click', 'hazards-fill', (e) => {
+        const p = e.features?.[0]?.properties
+        if (!p) return
+        const box = document.createElement('div')
+        box.className = 'text-xs'
+        const title = document.createElement('strong')
+        title.textContent = hazardLabel(p.reason)
+        const note = document.createElement('p')
+        note.className = 'mt-0.5 text-ink-dim'
+        note.textContent = String(p.label ?? '')
+        box.append(title, note)
+        new Popup({ closeButton: false, maxWidth: '240px', className: 'rs-popup' }).setLngLat(e.lngLat).setDOMContent(box).addTo(map)
+      })
+      map.on('mouseenter', 'hazards-fill', () => (map.getCanvas().style.cursor = 'help'))
+      map.on('mouseleave', 'hazards-fill', () => (map.getCanvas().style.cursor = ''))
       map.addLayer({
         id: 'targets-fill',
         type: 'fill',
@@ -467,13 +504,8 @@ export function MapCanvas({
         el.append(chip('P', 'border-ink bg-ink text-void'))
         add(el, m.coords[m.park_index])
       }
+      // The turn-back marker is drawn by the turn-back slider (it moves with the O₂ budget).
       const last = m.coords.length - 1
-      if (m.pnr_index < last && m.coords[m.pnr_index]) {
-        const el = document.createElement('div')
-        el.title = 'Modeled no-return point on this route'
-        el.append(chip('TURN BACK', 'border-caution bg-caution text-void'))
-        add(el, m.coords[m.pnr_index])
-      }
       if (crewMode === 'split') {
         const el = document.createElement('div')
         el.append(
@@ -491,6 +523,10 @@ export function MapCanvas({
   }, [ready, engine.meta, plan.goalTargets, selectedTargetId, selectTarget, activeMembers, crewMode])
 
   const hasDrive = activeMembers.some((m) => m.legs.some((l) => l.kind === 'drive'))
+  const hazardReasons = {
+    steep: engine.hazards?.features.some((f) => !['nodata', 'edge'].includes(String(f.properties?.reason))) ?? false,
+    unknown: engine.hazards?.features.some((f) => ['nodata', 'edge'].includes(String(f.properties?.reason))) ?? false,
+  }
 
   return (
     <div className="absolute inset-0">
@@ -516,6 +552,17 @@ export function MapCanvas({
         <span className="flex items-center gap-1.5">
           <span className="size-3 border border-observed bg-observed/30" /> Sample area
         </span>
+        {hazardReasons.steep && (
+          <span className="flex items-center gap-1.5">
+            <span className="size-3 border border-hazard bg-hazard/30" /> Too steep
+          </span>
+        )}
+        {hazardReasons.unknown && (
+          <span className="flex items-center gap-1.5">
+            <span className="size-3 border" style={{ borderColor: UNKNOWN_GROUND_COLOR, backgroundColor: `${UNKNOWN_GROUND_COLOR}4d` }} />{' '}
+            No elevation data
+          </span>
+        )}
         {noReturnLine && (
           <span className="flex items-center gap-1.5">
             <span
