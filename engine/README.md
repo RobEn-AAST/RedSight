@@ -32,8 +32,8 @@ elevation difference has median +52.64 m, absolute 90th percentile 131.61 m and 
 The route builder therefore uses the primary DTM only and preserves its 78.21% valid-area mask; it does
 not silently blend or apply an unsubstantiated vertical correction. Complementary-only pixels are
 marked unavailable even where the second product has coverage. The native-slope mask determines final
-habitat connectivity and per-stop reachability; the earlier coarse-mask routes are provisional until
-this native input is used.
+habitat connectivity and per-stop reachability. The committed native-mask build routes S3; the other
+four exact stop cells exceed the hard limit and remain no-route entries in the index, with reasons.
 
 The primary asset is native 1.0117 m/pixel, while the local mean-elevation crop is 600×600 at about
 9.879 m. The 15° hard mask requires the hash-checked native DEM Horn 3×3 slope aggregate in the

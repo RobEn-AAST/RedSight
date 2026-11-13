@@ -506,6 +506,14 @@ def build_real_routes(
     _write_json(output_dir / "meta.json", meta)
     _write_json(routes_dir / "index.json", route_index)
     _write_json(output_dir / "hazards.geojson", hazard_payload)
+    hashed_outputs = {
+        "constants.json": output_dir / "constants.json",
+        "meta.json": output_dir / "meta.json",
+        "hazards.geojson": output_dir / "hazards.geojson",
+        "routes/index.json": routes_dir / "index.json",
+    }
+    hashed_outputs.update({str(path.relative_to(output_dir)): path for path in exported_files})
+    output_hashes = {name: sha256_file(path) for name, path in sorted(hashed_outputs.items())}
     build_completed = datetime.now(ZoneInfo("Africa/Cairo"))
     build_runtime = perf_counter() - build_started_mono
     acquisition = manifest.get("acquisition_timing", {})
@@ -544,6 +552,7 @@ def build_real_routes(
         "s1_landmark_alignment": alignment_evidence,
         "stops_sha256": sha256_file(stops_path),
         "constants_sha256": constants_hash,
+        "output_sha256": output_hashes,
         "analysis_grid": {"rows": dem.height, "columns": dem.width, "cell_size_m": dem.resolution_m, "cell_source": "average-resampled DTM mean elevations for directional energy; separate checked Horn slope aggregate for hard mask"},
         "hard_slope_limit_deg": c["slope_limit_foot_deg"],
         "slope_hard_mask_method": slope_method,

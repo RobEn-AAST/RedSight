@@ -77,6 +77,7 @@ def test_synthetic_native_slope_manifest_drives_all_five_stop_exports(tmp_path):
     assert summary["files_written"] == 15
     assert len(result["route_index"]["routes"]) == 10
     assert result["manifest"]["s1_landmark_alignment"]["status"] == "synthetic-fixture"
+    assert result["manifest"]["output_sha256"]["routes/index.json"]
     constants = json.loads((tmp_path / "out/constants.json").read_text())
     assert all("source_url" in item for item in constants.values())
     metadata = json.loads((tmp_path / "out/meta.json").read_text())
@@ -86,6 +87,9 @@ def test_synthetic_native_slope_manifest_drives_all_five_stop_exports(tmp_path):
             route = json.loads((tmp_path / "out/routes" / f"{stop_id}_{mode}_2_15.json").read_text())
             assert route["constants_hash"] == metadata["constants_hash"]
             assert route["primary_crop_sha256"] == dem_hash
+            assert result["manifest"]["output_sha256"][f"routes/{stop_id}_{mode}_2_15.json"] == hashlib.sha256(
+                (tmp_path / "out/routes" / f"{stop_id}_{mode}_2_15.json").read_bytes()
+            ).hexdigest()
 
 
 def test_only_the_allowlisted_unreachable_route_payload_is_removed(tmp_path):
