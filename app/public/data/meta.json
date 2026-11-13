@@ -29,7 +29,7 @@
       312
     ]
   },
-  "input_hash": "74a4927c263094fd84960d8280c25ddc84b85035a7db779fc72b9af7f25bbe1e",
+  "input_hash": "4cd99563a51812519b19f1500cf7a47774db0ff2b01e69361e497518a567af16",
   "nodata": -3.4028226550889045e+38,
   "ops_box": {
     "east": 137.435,
@@ -38,10 +38,46 @@
     "west": 137.335
   },
   "routing_coverage": {
+    "access_goal_bound_m": 10.0,
+    "native_route_extent": {
+      "optimization_scope": "Fastest and lowest-modeled-hazard paths are minimized only inside the union of the existing Scenario habitat and Observed stop coordinates expanded by the stated source-data margin. This is a corridor-limited optimum.",
+      "projected_bounds_m": [
+        8142966.725607634,
+        -286290.9552217876,
+        8143951.15523876,
+        -284138.969789717
+      ],
+      "requested_margin_m": 250.0,
+      "source_bounds_clipped": false,
+      "source_pixel_count": 2069571,
+      "source_row_col_bounds_inclusive": [
+        [
+          2555,
+          2448
+        ],
+        [
+          4681,
+          3420
+        ]
+      ],
+      "source_shape_hw": [
+        2127,
+        973
+      ],
+      "valid_horn_source_pixels": 2069571,
+      "walkable_source_pixels": 1225538
+    },
     "native_slope_valid_cells": 281227,
     "native_slope_valid_fraction": 0.7811861111111111,
     "primary_dtm_valid_cells": 281563,
     "primary_dtm_valid_fraction": 0.7821194444444445,
+    "route_corridor_margin_m": 250.0,
+    "route_grid_resolution_m": 1.0117467945795104,
+    "route_grid_shape_hw": [
+      2127,
+      973
+    ],
+    "route_grid_walkable_pixels": 1225538,
     "slope_aggregation": "Horn 3x3 Horn 3x3 dz/dx,dz/dy using true native 1.0117468 m pixel spacing; slope in degrees; for each 600x600 planning cell, maximum valid native Horn slope by source-pixel center; pixels whose Horn neighborhood touches source nodata are excluded; no complementary DTM fill or seam blending slope aggregated from 1.01175 m source cells to 9.87912 m planning cells",
     "slope_limit_deg": 15.0,
     "walkable_cells_after_slope_mask": 89615,
