@@ -33,3 +33,6 @@
 .replay-voice { width: 34px; height: 30px; border: 1px solid #5a4a42; border-radius: 6px; background: #2b211d; cursor: pointer; }
 .replay-legend { font-size: 11px; opacity: 0.85; margin: 2px 0; }
 .replay-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin: 0 3px 0 6px; vertical-align: -1px; border: 1px solid #111; }
+
+/* Docked: panel lives in a page column (React app side panel) instead of over the map. */
+.replay-panel--docked { position: static; width: 100%; max-height: none; box-shadow: none; border-radius: 0; }

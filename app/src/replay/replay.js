@@ -23,7 +23,7 @@ export function createReplay(map, opts) {
   const log = [];
 
   addLayers();
-  const ui = buildPanel(map.getContainer());
+  const ui = buildPanel(opts.panelContainer ?? map.getContainer());
   render();
 
   function build() { return buildTimeline(route, model); }
@@ -107,7 +107,8 @@ export function createReplay(map, opts) {
   }
 
   function tick(now) {
-    const dt = (now - last) / 1000;
+    // rAF's frame timestamp can be earlier than the performance.now() taken in play(); never step backwards.
+    const dt = Math.max(0, (now - last) / 1000);
     last = now;
     t = Math.min(tl.totalS, t + dt * (tl.totalS / durationS));
     if (t >= tl.totalS) playing = false;
@@ -129,8 +130,9 @@ export function createReplay(map, opts) {
     // Jumping doesn't fire skipped events; the log shows the latest ones before t.
     firedUpTo = t === 0 ? -1 : t;
     log.length = 0;
-    tl.events.filter((e) => e.t <= t).slice(-4).forEach(pushLog);
-    if (t === 0) ui.log.innerHTML = "";
+    // At t = 0 nothing has happened yet; play() fires the departure itself.
+    if (t > 0) tl.events.filter((e) => e.t <= t).slice(-4).forEach(pushLog);
+    else ui.log.innerHTML = "";
     render();
   }
   function rebuild({ keepTime = true } = {}) {
@@ -142,7 +144,7 @@ export function createReplay(map, opts) {
 
   function buildPanel(container) {
     const el = document.createElement("div");
-    el.className = "replay-panel";
+    el.className = opts.panelContainer ? "replay-panel replay-panel--docked" : "replay-panel";
     el.innerHTML = `
       <div class="replay-row">
         <button class="replay-play" aria-label="Play or pause">▶</button>

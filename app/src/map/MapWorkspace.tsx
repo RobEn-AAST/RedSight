@@ -1,189 +1,104 @@
 import { useState } from 'react'
-import { Layers, MapPin, Radar, Footprints } from 'lucide-react'
+import { MapPin, Radar } from 'lucide-react'
 
-import { Panel } from '@/ui/Panel'
-import { EvidenceBadge } from '@/ui/Badge'
-import { EmptyState } from '@/ui/EmptyState'
-import { Toggle } from '@/ui/Toggle'
-import { LedDot } from '@/ui/LedDot'
-import { cn } from '@/lib/cn'
-import { type EngineStop } from '@/lib/engineDataContext'
 import { useEngineData } from '@/lib/useEngineData'
-import { layerCatalog } from '@/lib/layersData'
-import { fallbackStops, habitatNote, opsBox, type FallbackStop } from '@/lib/stopsData'
+import { opsBox as fallbackOpsBox } from '@/lib/stopsData'
+import { LayerPanel } from '@/map/LayerPanel'
+import { MapCanvas } from '@/map/MapCanvas'
+import { RouteCards } from '@/map/RouteCards'
+import { StopPicker } from '@/map/StopPicker'
+import { MissionReplay } from '@/replay/MissionReplay'
+import { TurnBackPanel } from '@/turnback/TurnBackPanel'
+import { EmptyState } from '@/ui/EmptyState'
+import { LedDot } from '@/ui/LedDot'
 
 /**
- * Map workspace (Tier 1, B1/B2) — layer + stop selection controls are real
- * interface state; the rendered map stays an honest "data not loaded" instrument
- * frame until the engine lands tiles (app/public/data/, §15).
+ * Map workspace (Tier 1, B1–B3): the ops-area map with the stop picker, the
+ * A/B route cards and the layer panel beside it. Everything shown comes from
+ * the §15 contract files; a file that is missing shows as missing.
  */
 export function MapWorkspace() {
   const engine = useEngineData()
-  // Engine layers.json wins once present; research-era catalog is the fallback.
-  const layers = engine.layers ?? layerCatalog.map((l) => ({ id: l.id, name: l.name }))
-  const usingEngineLayers = engine.layers !== null
+  const [layerChoice, setLayerChoice] = useState<Record<string, boolean>>({})
+  const [showPreview, setShowPreview] = useState(true)
+  const [showHazards, setShowHazards] = useState(true)
+  const [showOpsBox, setShowOpsBox] = useState(true)
 
-  const stops: Array<FallbackStop | (EngineStop & { detail?: string })> = engine.stops ?? fallbackStops
-  const usingEngineStops = engine.stops !== null
-
-  const [enabled, setEnabled] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(layers.slice(0, 2).map((l) => [l.id, true])),
+  const layers = engine.layers ?? []
+  const available = layers.filter((l) => l.available)
+  // Until the operator chooses, the first two available layers are on.
+  const enabledLayers = Object.fromEntries(
+    layers.map((l) => [l.id, layerChoice[l.id] ?? available.slice(0, 2).includes(l)]),
   )
-  const [selectedStop, setSelectedStop] = useState<string | null>(null)
+  const box = engine.meta?.ops_box ?? fallbackOpsBox
 
   return (
-    <div className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_auto] gap-0 lg:grid-cols-[1fr_20rem] lg:grid-rows-1">
-      {/* Map frame — flex column so the ops-box caption is in-flow below the
-          viewport copy: they can never overlap, at any frame height. */}
-      <div className="relative flex min-h-[26rem] flex-col border border-seam bg-inset lg:min-h-0 lg:border-r-0">
-        <div className="instrument-grid absolute inset-0" aria-hidden />
-        {/* Corner brackets: reticle framing */}
-        <div aria-hidden className="absolute left-3 top-3 h-5 w-5 border-l-2 border-t-2 border-observed/40" />
-        <div aria-hidden className="absolute right-3 top-3 h-5 w-5 border-r-2 border-t-2 border-observed/40" />
-        <div aria-hidden className="absolute bottom-3 left-3 h-5 w-5 border-b-2 border-l-2 border-observed/40" />
-        <div aria-hidden className="absolute bottom-3 right-3 h-5 w-5 border-b-2 border-r-2 border-observed/40" />
+    <div className="flex min-h-full flex-col gap-4 lg:grid lg:h-full lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      {/* Map frame */}
+      <div className="relative h-[58dvh] min-h-80 flex-none overflow-hidden border border-seam bg-inset lg:h-auto">
+        {engine.probed ? (
+          <MapCanvas
+            box={box}
+            enabledLayers={enabledLayers}
+            showPreview={showPreview}
+            showHazards={showHazards}
+            showOpsBox={showOpsBox}
+          />
+        ) : null}
 
-        <div className="absolute inset-x-0 top-0 z-10 flex items-center gap-2 border-b border-seam/60 bg-void/70 px-4 py-2 backdrop-blur-sm">
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-seam/60 bg-void/75 px-4 py-2 backdrop-blur-sm">
           <Radar size={13} aria-hidden className="flex-none text-observed" />
-          <span className="label-console min-w-0 flex-1 truncate text-ink-dim">
-            Ops area — Mount Sharp boxwork, Gale
-          </span>
-          <span className="flex flex-none items-center gap-2">
-            <LedDot tone={engine.probed && usingEngineLayers ? 'green' : 'off'} />
-            <span className="label-console whitespace-nowrap text-ink-faint">
-              {usingEngineLayers ? 'engine layers.json' : 'no feed'}
+          <span className="label-console text-ink-dim">Mount Sharp boxwork, Gale crater</span>
+          {engine.mock && (
+            <span className="label-console border border-scenario/50 bg-scenario-soft px-1.5 py-0.5 text-[10px] text-scenario">
+              Mock data
+            </span>
+          )}
+          <span className="ml-auto flex items-center gap-2">
+            <LedDot tone={available.length > 0 ? 'green' : 'amber'} />
+            <span className="label-console text-ink-faint">
+              {layers.length === 0
+                ? 'no layer list'
+                : available.length === 0 && engine.preview
+                  ? 'preview image only'
+                  : `${available.length} of ${layers.length} image layers built`}
             </span>
           </span>
         </div>
 
-        <div className="relative z-[1] flex min-h-0 flex-1 items-center justify-center p-6 pt-14">
-          <EmptyState
-            className="border-none bg-transparent"
-            icon={<MapPin size={28} strokeWidth={1.5} />}
-            title="Map tiles not loaded"
-            detail={
-              <>
-                Imagery, DEM products and science-site rasters are produced by the offline engine
-                (plan B1) into <span className="data-readout">app/public/data/</span> (§15) and are
-                not present in this build. Layer and stop controls are live interface state; nothing
-                is rendered on the map yet, and no sites or routes are invented in their place.
-              </>
-            }
-          />
-        </div>
-
-        <p className="data-readout relative z-[1] border-t border-seam/50 bg-void/60 px-3 py-2 text-center text-[10px] leading-relaxed text-ink-faint">
-          ops box {opsBox.west}–{opsBox.east}°E / {opsBox.south}…{opsBox.north}° · ≈5.9×5.9 km ·
-          proposed (D11), confirmed at the pilot gate
-        </p>
+        {engine.probed && !engine.meta && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-inset/90 p-6 pt-14">
+            <EmptyState
+              className="border-none bg-transparent"
+              icon={<MapPin size={28} strokeWidth={1.5} />}
+              title="Engine data not found"
+              detail={
+                <>
+                  <span className="data-readout">app/public/data/meta.json</span> is missing or not in
+                  the agreed shape, so the ops area, habitat and routes cannot be drawn.
+                </>
+              }
+            />
+          </div>
+        )}
       </div>
 
-      {/* Right column: layers + stops */}
-      <div className="flex min-h-0 flex-col border border-seam bg-panel lg:border-l lg:border-t-0">
-        <Panel
-          title={
-            <span className="flex items-center gap-2">
-              <Footprints size={13} aria-hidden /> Stops
-            </span>
-          }
-          className="border-b-0"
-          bodyClassName="p-0 overflow-y-auto max-h-64"
-        >
-          <ul className="divide-y divide-seam">
-            {stops.map((stop) => {
-              const active = selectedStop === stop.id
-              return (
-                <li key={stop.id}>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedStop(active ? null : stop.id)}
-                    aria-expanded={active}
-                    className={cn(
-                      'flex w-full flex-col gap-1 px-4 py-3 text-left transition-colors',
-                      active ? 'bg-signal-soft/40' : 'hover:bg-panel-2/60',
-                    )}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-ink">{stop.name}</span>
-                      <EvidenceBadge
-                        evidence={stop.badge === 'scenario' ? 'scenario' : 'observed'}
-                        className="ml-auto"
-                      />
-                    </span>
-                    <span className="data-readout whitespace-nowrap text-[11px] text-ink-faint">
-                      sol {stop.sol} · {stop.lon.toFixed(5)}°E {stop.lat.toFixed(5)}°
-                    </span>
-                  </button>
-                  {active && (
-                    <div className="border-t border-seam bg-inset/50 px-4 py-3 text-xs leading-relaxed text-ink-dim">
-                      <p>
-                        {stop.detail ??
-                          ('scienceText' in stop ? stop.scienceText : undefined) ??
-                          'Stop card text ships with stops.json (§15).'}
-                      </p>
-                      <p className="mt-1.5 text-ink-faint">
-                        {usingEngineStops
-                          ? 'From engine stops.json — photos, panorama and route links arrive with the data contract files.'
-                          : 'From NASA MMGIS waypoints via demo-focus-plan §6 (fallback list). Stop cards with real sol photos ship with engine stops.json (B2).'}
-                      </p>
-                    </div>
-                  )}
-                </li>
-              )
-            })}
-          </ul>
-          <p className="border-t border-seam bg-scenario-soft/30 px-4 py-2.5 text-[11px] leading-relaxed text-scenario">
-            {habitatNote}
-          </p>
-        </Panel>
-
-        <Panel
-          title={
-            <span className="flex items-center gap-2">
-              <Layers size={13} aria-hidden /> Layers
-            </span>
-          }
-          className="min-h-0 flex-1"
-          bodyClassName="p-0 overflow-y-auto"
-        >
-          <ul className="divide-y divide-seam">
-            {layers.map((layer) => (
-              <li key={layer.id} className="flex items-start gap-3 px-4 py-3">
-                <div className="pt-1">
-                  <Toggle
-                    size="sm"
-                    checked={enabled[layer.id] ?? false}
-                    onChange={(next) => setEnabled((s) => ({ ...s, [layer.id]: next }))}
-                    label={`Toggle layer: ${layer.name}`}
-                  />
-                </div>
-                <div className="flex min-w-0 flex-col gap-1">
-                  <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <span className="text-sm font-medium text-ink">{layer.name}</span>
-                    {!usingEngineLayers && (
-                      <EvidenceBadge
-                        evidence={
-                          layerCatalog.find((c) => c.id === layer.id)?.evidence ?? 'derived'
-                        }
-                      />
-                    )}
-                  </span>
-                  {!usingEngineLayers && (
-                    <>
-                      <span className="data-readout text-[11px] text-ink-faint">
-                        {layerCatalog.find((c) => c.id === layer.id)?.resolution}
-                      </span>
-                      <span className="flex items-center gap-1.5 text-[11px] text-ink-faint">
-                        <LedDot tone="off" />
-                        verified source, not pulled into app
-                      </span>
-                    </>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Panel>
+      {/* Side column */}
+      <div className="flex flex-col gap-4 lg:min-h-0 lg:overflow-y-auto">
+        <StopPicker />
+        <RouteCards />
+        <TurnBackPanel />
+        <MissionReplay />
+        <LayerPanel
+          enabledLayers={enabledLayers}
+          onToggleLayer={(id, next) => setLayerChoice((s) => ({ ...s, [id]: next }))}
+          showPreview={showPreview}
+          onTogglePreview={setShowPreview}
+          showHazards={showHazards}
+          onToggleHazards={setShowHazards}
+          showOpsBox={showOpsBox}
+          onToggleOpsBox={setShowOpsBox}
+        />
       </div>
     </div>
   )
