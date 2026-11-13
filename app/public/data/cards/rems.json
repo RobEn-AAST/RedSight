@@ -1,20 +1,55 @@
 {
- "_mock": true,
  "title": "Weather at Gale (REMS)",
  "badge": "Observed",
  "values": [
   {
    "label": "Surface pressure (annual range)",
    "value": "700–920",
-   "unit": "Pa"
+   "unit": "Pa",
+   "badge": "Observed"
   },
   {
-   "label": "Air temperature (sol of plan)",
-   "value": "TODO",
-   "unit": "°C"
+   "label": "Air temperature (diurnal range, 1.6 m boom)",
+   "value": "−83 to −3",
+   "unit": "°C",
+   "badge": "Observed",
+   "note": "Typical diurnal cycle (~190 K nighttime low to ~270 K daytime high, Gómez-Elvira et al. 2014)."
+  },
+  {
+   "label": "Ground brightness temperature (diurnal range)",
+   "value": "−90 to +17",
+   "unit": "°C",
+   "badge": "Observed",
+   "note": "Typical diurnal cycle (~183 K pre-dawn to ~290 K midday, Gómez-Elvira et al. 2014)."
+  },
+  {
+   "label": "Measurement cadence",
+   "value": "1 Hz (5-min hourly windows)",
+   "unit": "cadence",
+   "badge": "Observed"
   }
  ],
- "note": "Rover-local station; no walk-scale weather map exists.",
- "source": "Gómez-Elvira et al. 2014 doi:10.1002/2013JE004576; PDS msl_rems_bundle",
- "date_range": "TODO (Ayman)"
+ "limits": [
+  {
+   "label": "Water triple-point context",
+   "value": "611.65",
+   "unit": "Pa",
+   "source": "Gale surface pressure (700–920 Pa) straddles water's triple point; unsuited human survival impossible",
+   "badge": "Observed"
+  },
+  {
+   "label": "Walk-scale spatial weather map",
+   "value": "Unavailable",
+   "unit": "—",
+   "source": "REMS is a single rover-local weather station; Mars Climate Database v6.2 is 5.625° × 3.75° (~330 × 220 km)",
+   "badge": "Unavailable"
+  }
+ ],
+ "note": "REMS is a rover-local meteorological station on Curiosity; no walk-scale spatial weather map or live forecast exists for Gale Crater. Values represent observed Gale climatology.",
+ "claim_boundary": "Context card only — never interpolated into per-cell route weather maps. Excursion thermal/dust windows derived from climatology are Scenario assumptions.",
+ "source": "Gómez-Elvira et al. 2012, Space Sci Rev, doi:10.1007/s11214-012-9921-1; Gómez-Elvira et al. 2014, JGR-Planets, doi:10.1002/2013JE004576; Haberle et al. 2014, JGR-Planets, doi:10.1002/2013JE004488; PDS4 urn:nasa:pds:msl_rems_bundle",
+ "source_urls": [
+  "https://pds-geosciences.wustl.edu/missions/msl/rems.htm"
+ ],
+ "date_range": "2012-08-07 → 2026 (PDS4 urn:nasa:pds:msl_rems_bundle sols 1–4843; Gómez-Elvira et al. 2014 baseline)"
 }
