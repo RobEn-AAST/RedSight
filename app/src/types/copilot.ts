@@ -1,34 +1,73 @@
-/** Copilot types — chat panel state now; tool contracts are UNCONNECTED proposals. */
+/** Copilot types — live chat wiring (voice-copilot-plan §2, wired 2026-11-13). */
 
 export type CopilotConnection =
+  | 'checking'
   | 'not-configured'
   | 'requesting-permission'
   | 'permission-denied'
   | 'ready'
   | 'error'
 
-export type MessageDelivery = 'local-only' | 'queued-no-provider'
+/** Server health (/api/copilot/health) — reports capability, never keys. */
+export interface CopilotHealth {
+  ok: boolean
+  provider: 'groq' | 'gemini' | null
+  sttConfigured: boolean
+  model: string | null
+  webSearch: boolean
+  tool: string
+}
+
+export type MessageDelivery =
+  | 'local-only' // no backend — kept on this device, no reply
+  | 'queued-no-provider' // legacy marker from the pre-backend build
+  | 'streaming' // reply tokens arriving
+  | 'delivered' // full round-trip done
+  | 'error'
+
+/** A tool the server executed for a reply (search only, for now). */
+export interface CopilotToolTrace {
+  name: string
+  resultCount?: number
+}
 
 export interface ChatMessage {
   id: string
   role: 'operator' | 'copilot' | 'system'
   text: string
   createdAt: string
-  /**
-   * Honesty marker: every message in this build is local browser state only.
-   * No assistant replies are synthesized and nothing leaves the device.
-   */
   delivery: MessageDelivery
+  /** Set on copilot messages when the server ran a tool mid-reply. */
+  tool?: CopilotToolTrace
+  /** Honesty-filter notice from the server (banned-phrase detector). */
+  notice?: string
 }
+
+/** Client-side mission context sent with each chat request (data, not instructions). */
+export interface CopilotRequestContext {
+  missionState: Record<string, unknown> | null
+  availableData: string[]
+}
+
+export type DictationMode = 'cloud' | 'local' | 'none'
+
+export type DictationState =
+  | 'idle'
+  | 'requesting-permission'
+  | 'permission-denied'
+  | 'loading-model'
+  | 'recording'
+  | 'transcribing'
+  | 'error'
 
 /*
  * ---------------------------------------------------------------------------
  * FUTURE TOOL CONTRACTS — UNCONNECTED
  * ---------------------------------------------------------------------------
- * Proposed structured intents the LLM may emit; the app (authoritative engine)
- * validates and executes them. The LLM never computes numbers itself.
- * Full schemas + rationale: docs/ai/voice-copilot-plan.md §Tool contracts.
- * No runtime call site exists yet.
+ * Structured intents the LLM may emit once the team wires app-side execution
+ * (voice-copilot-plan §7). The app (authoritative engine) validates and
+ * executes them; the LLM never computes numbers itself. Until then the
+ * copilot proposes changes in words only (see server/prompt.mjs).
  */
 
 export type RouteMode = 'fastest' | 'safest' | 'balanced'

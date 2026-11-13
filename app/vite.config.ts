@@ -12,4 +12,10 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  server: {
+    proxy: {
+      // Copilot backend (server/index.mjs) — keys stay server-side.
+      '/api': 'http://127.0.0.1:8788',
+    },
+  },
 })

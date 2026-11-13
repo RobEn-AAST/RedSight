@@ -1,14 +1,20 @@
-# RedSight Voice Copilot — Implementation Plan (STATUS: NOT IMPLEMENTED / UNCONNECTED)
+# RedSight Voice Copilot — Implementation Plan (STATUS: WIRED 2026-11-13 — see the update note)
 
 **Written:** 2026-11-13 (hackathon day 1) by the web-foundation worker, from the user's request and
 live official docs (sources §9, all accessed 2026-11-13).
 **Scope note (records a precise exception):** decision D12 (decision-log) excludes an AI assistant
 from this hackathon's shipped scope. On 2026-11-13 the **user explicitly authorized** the
 spacecraft-station UI plus **planning for** an English voice/chat copilot: this document, the system
-prompt, and an honest not-configured chat panel in the app. **No provider integration, key handling,
-network call, or route mutation is implemented**; route-changing functions will be supplied by the
-user later. This exception does not authorize shipping a live AI feature at judging time — that stays
-a team decision (U4) with the demo never depending on it.
+prompt, and an honest not-configured chat panel in the app.
+**Update (later on 2026-11-13, same day):** the **user explicitly directed the wiring session** —
+backend built (`server/`, run notes in `server/README.md`), the copilot panel connected with
+streaming replies, cloud STT + an in-browser Whisper fallback, TTS **added** (was deferred; see
+§1 note), and server-side memory + the mission-knowledge search tool live. Honest deviations are
+recorded in `server/README.md` ("Honest deviations"); the runtime system prompt now lives in
+`server/prompt.mjs` (this doc remains the design rationale). Still true: **no key has been used
+yet** (the user supplies it after this session), the §7 route-mutation tool contracts stay
+UNCONNECTED, and shipping a live AI feature at judging remains gated on the team decision (U4)
+with the demo never depending on it.
 
 ---
 
@@ -18,8 +24,9 @@ a team decision (U4) with the demo never depending on it.
 - Host: **laptop**, "very fast" interaction feel — the operator is mid-planning; long dead air is
   unacceptable.
 - Modality: speech-to-text (STT) input **and** text chat; streaming responses; cancellable.
-- TTS (spoken replies) was **not requested** — deferred; text replies only. Gemini TTS / browser
-  speech synthesis noted as a future option, not planned work.
+- TTS (spoken replies): originally **not requested** — deferred. **Added 2026-11-13 (wiring
+  session, user request):** Kokoro-82M in-browser (`kokoro-js`, q8 ≈ 80 MB, cached, WebGPU/WASM)
+  with a `speechSynthesis` fallback — fully local, no audio leaves the device.
 
 ## 2. End-to-end pipeline (planned)
 

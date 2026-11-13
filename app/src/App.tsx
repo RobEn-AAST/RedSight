@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, MotionConfig } from 'motion/react'
-import { FileSearch, X } from 'lucide-react'
+import { Bot, FileSearch, X } from 'lucide-react'
 
 import { MissionProvider } from '@/lib/missionStore'
 import { useMission } from '@/lib/useMission'
@@ -10,6 +10,7 @@ import { MissionSetup } from '@/mission/MissionSetup'
 import { MapWorkspace } from '@/map/MapWorkspace'
 import { PlanProvider } from '@/map/planStore'
 import { ProvenancePanel } from '@/provenance/ProvenancePanel'
+import { CopilotDock } from '@/copilot/CopilotDock'
 import { cn } from '@/lib/cn'
 
 /*
@@ -117,10 +118,44 @@ function SourcesDialog({ onClose }: { onClose: () => void }) {
   )
 }
 
+function CopilotDrawer({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.15 }}
+        className="fixed inset-0 z-40 bg-void/60 lg:bg-void/30"
+        onClick={onClose}
+        aria-hidden
+      />
+      <motion.aside
+        role="complementary"
+        aria-label="Copilot"
+        initial={{ x: 60, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        exit={{ x: 60, opacity: 0 }}
+        transition={{ duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }}
+        className="fixed bottom-3 right-3 top-14 z-50 flex w-[calc(100%-1.5rem)] flex-col sm:w-[26rem]"
+      >
+        <CopilotDock onClose={onClose} autoFocusInput />
+      </motion.aside>
+    </>
+  )
+}
+
 function Console() {
   const { state, confirmMission } = useMission()
   const engine = useEngineData()
   const [sourcesOpen, setSourcesOpen] = useState(false)
+  const [copilotOpen, setCopilotOpen] = useState(false)
   const active = state.status === 'active'
 
   return (
@@ -148,6 +183,28 @@ function Console() {
       <main className="relative min-h-0 flex-1 overflow-y-auto lg:overflow-hidden">
         {active ? <MapWorkspace onOpenSources={() => setSourcesOpen(true)} /> : <MissionSetup />}
       </main>
+
+      {/* Copilot: one floating control, available on both screens */}
+      <AnimatePresence>
+        {copilotOpen ? (
+          <CopilotDrawer key="copilot" onClose={() => setCopilotOpen(false)} />
+        ) : (
+          <motion.button
+            key="copilot-fab"
+            type="button"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.15 }}
+            onClick={() => setCopilotOpen(true)}
+            aria-label="Open copilot (voice + chat)"
+            title="Copilot — voice + chat"
+            className="label-console fixed bottom-8 right-3 z-40 flex size-11 items-center justify-center border border-signal/50 bg-panel text-signal shadow-panel hover:border-signal hover:bg-signal hover:text-void"
+          >
+            <Bot size={17} aria-hidden />
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>{sourcesOpen && <SourcesDialog onClose={() => setSourcesOpen(false)} />}</AnimatePresence>
     </div>
