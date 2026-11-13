@@ -4,8 +4,26 @@ from dataclasses import dataclass
 import math
 
 
-MIN_METABOLIC_POWER_W = 30.0
-"""Positive downhill floor; conservative model assumption, not physiology evidence."""
+PANDOLF_1977_SOURCE = (
+    "Pandolf KB, Givoni B, Goldman RF (1977) Predicting energy expenditure with loads while "
+    "standing or walking very slowly. J Appl Physiol 43(4):577-581. "
+    "https://doi.org/10.1152/jappl.1977.43.4.577"
+)
+"""Primary source of the load-carriage equation and of its standing-with-load terms."""
+
+
+def pandolf_standing_power_w(body_mass_kg: float, load_kg: float) -> float:
+    """Standing-with-load terms of Pandolf et al. (1977): ``1.5*M + 2*(M+L)*(L/M)**2`` in watts.
+
+    These are the first two terms of the same equation, i.e. its own estimate of the cost of standing
+    still while carrying the load. They are used as the downhill floor: on steep negative grades the
+    linear grade term of the full equation drives the total below this value (and below zero), which
+    would mean walking downhill costs less than standing. Scenario model assumption: the floor is a
+    lower bound, not a measured downhill walking cost.
+    """
+    if not (math.isfinite(body_mass_kg) and math.isfinite(load_kg)) or body_mass_kg <= 0 or load_kg < 0:
+        raise ValueError("mass must be positive and load non-negative")
+    return 1.5 * body_mass_kg + 2.0 * (body_mass_kg + load_kg) * (load_kg / body_mass_kg) ** 2
 
 
 @dataclass(frozen=True)
@@ -43,21 +61,24 @@ def pandolf_power_w(
     grade_deg: float,
     terrain_factor: float,
 ) -> float:
-    """Pandolf et al. 1977 power, with grade expressed as percent."""
+    """Pandolf et al. 1977 power, with grade expressed as percent.
+
+    Never below the equation's own standing-with-load terms (:func:`pandolf_standing_power_w`).
+    """
     values = (body_mass_kg, load_kg, speed_mps, grade_deg, terrain_factor)
     if not all(math.isfinite(v) for v in values):
         raise ValueError("movement inputs must be finite")
     if body_mass_kg <= 0 or load_kg < 0 or speed_mps <= 0 or terrain_factor < 1:
         raise ValueError("mass, speed, load, or terrain factor is outside its valid range")
     grade_percent = 100 * math.tan(math.radians(grade_deg))
+    standing = pandolf_standing_power_w(body_mass_kg, load_kg)
     power = (
-        1.5 * body_mass_kg
-        + 2.0 * (body_mass_kg + load_kg) * (load_kg / body_mass_kg) ** 2
+        standing
         + terrain_factor
         * (body_mass_kg + load_kg)
         * (1.5 * speed_mps**2 + 0.35 * speed_mps * grade_percent)
     )
-    return max(MIN_METABOLIC_POWER_W, power)
+    return max(standing, power)
 
 
 def segment_cost(

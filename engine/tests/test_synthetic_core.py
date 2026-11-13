@@ -3,7 +3,8 @@ import math
 import numpy as np
 import pytest
 from engine.model.grid import build_graph
-from engine.model.metabolism import segment_cost
+from engine.model.metabolism import pandolf_power_w, pandolf_standing_power_w, segment_cost, walking_speed_mps
+from engine.model.native_grid import _movement_arrays
 from engine.route.arrays import route_arrays
 from engine.route.pnr import point_of_no_return
 from engine.route.solve import shortest_path
@@ -201,3 +202,31 @@ def test_pnr_rejects_reserve_that_consumes_the_full_capacity():
             reserve_fraction=0.2, reserve_minutes=100, walkback_o2_lpm=1.0,
             return_margin=1.2, member_factors=[1.0],
         )
+
+
+def test_downhill_power_never_drops_below_pandolf_standing_with_load():
+    # Pandolf et al. 1977 standing terms for 82 kg + 15 kg: 1.5*82 + 2*97*(15/82)**2 W.
+    standing = 1.5 * 82 + 2 * 97 * (15 / 82) ** 2
+    assert pandolf_standing_power_w(82, 15) == pytest.approx(standing)
+    assert standing == pytest.approx(129.49, abs=0.01)
+    flat = pandolf_power_w(82, 15, walking_speed_mps(0.0), 0.0, 1.0)
+    assert flat == pytest.approx(158.2, abs=0.1)
+    for grade in (-2.0, -5.0, -10.0, -12.0, -14.0, -15.0):
+        power = pandolf_power_w(82, 15, walking_speed_mps(grade), grade, 1.0)
+        assert power >= standing - 1e-9
+        assert power <= flat
+    # The old 30 W floor sat far below standing metabolism.
+    assert pandolf_power_w(82, 15, walking_speed_mps(-10.0), -10.0, 1.0) == pytest.approx(standing)
+
+
+def test_native_grid_movement_arrays_use_the_same_downhill_floor():
+    grades = np.array([-15.0, -10.0, -5.0, -1.0, 0.0, 5.0, 15.0])
+    distance = 1.0117
+    kwargs = dict(body_mass_kg=82.0, load_kg=15.0, kappa=1.3, watts_to_o2_ml_per_min=2.9,
+                  max_speed_mps=1.6 / 3.6)
+    times, o2 = _movement_arrays(distance, grades, **kwargs)
+    for grade, t_s, o2_l in zip(grades, times, o2):
+        scalar = segment_cost(distance_m=distance, grade_deg=float(grade), terrain_factor=1.0, **kwargs)
+        assert t_s == pytest.approx(scalar.t_s)
+        assert o2_l == pytest.approx(scalar.o2_l)
+        assert scalar.power_w >= 1.3 * pandolf_standing_power_w(82.0, 15.0) - 1e-9

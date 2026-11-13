@@ -140,6 +140,23 @@ disconnected Observed coordinate.
   with `back[0] = 0`; no
   reserve, return margin, crew factor, or drill factor is baked into the arrays. `total_s` remains
   outbound plus same-geometry return time.
+- Edge power is the Pandolf et al. (1977) load-carriage equation ([J Appl Physiol 43(4):577–581,
+  doi:10.1152/jappl.1977.43.4.577](https://doi.org/10.1152/jappl.1977.43.4.577)) times κ. Downhill, its
+  linear grade term drives the total below zero, so the power is floored at the same equation's
+  **standing-with-load terms**, `1.5·M + 2·(M+L)·(L/M)²` (129.5 W for 82 kg + 15 kg). Walking downhill
+  therefore never costs less than standing still with the load. This replaces the former 30 W floor
+  (2026-11-14), which sat far below standing metabolism; a flat 1.6 km/h walk is 158.2 W before κ. The
+  floor is a Scenario lower bound, not a measured downhill cost; no published downhill correction
+  (e.g. Santee et al.) is applied.
+- Lowest-hazard (`safest`) routes carry the optional `back_fast` block (contract:
+  `app/public/data/README.md`, demo-focus-plan §9 `Back_fast`): for every route point, the shortest
+  modeled time home to the habitat pixel on the same native graph and corridor (one Dijkstra on the
+  reversed time edges). `t_s[]` and `o2_l[]` are raw expected values per crew member summed edge by
+  edge with the same cost model as `back` (no reserve or margin). `path[i]` starts at point i and ends
+  at the habitat pixel; it is simplified for display (0.5 m Ramer–Douglas–Peucker) and the costs use
+  the unsimplified pixel path. `via` is omitted because the fastest way home is a shortest-time tree
+  path, not necessarily the exported fastest route. Fastest routes carry no `back_fast`. The engine
+  `pnr_index` still uses the same-path `back` arrays; the app applies the §9 switch rule itself.
 - The baseline PNR is `f * (used + m * home) <= B`, with `[1, 1]` member factors for the current
   default crew, `B = capacity - max(reserve_fraction*capacity, reserve_minutes*walkback_o2_lpm)`,
   and the actual capacity read from `constants.json`. PNR is the last passing sample in the same-path

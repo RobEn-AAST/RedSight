@@ -7,6 +7,8 @@ import numpy as np
 from rasterio.transform import rowcol
 from scipy.sparse import csr_matrix
 
+from engine.model.metabolism import pandolf_standing_power_w
+
 
 @dataclass
 class NativeRoutingGraph:
@@ -64,13 +66,10 @@ def _movement_arrays(
     speed = max_speed_mps * speed_factor
     time_s = distance / speed
     grade_percent = 100.0 * np.tan(np.radians(grade))
-    power = (
-        1.5 * body_mass_kg
-        + 2.0 * (body_mass_kg + load_kg) * (load_kg / body_mass_kg) ** 2
-        + (body_mass_kg + load_kg)
-        * (1.5 * speed**2 + 0.35 * speed * grade_percent)
-    )
-    power = np.maximum(30.0, power)
+    standing = pandolf_standing_power_w(body_mass_kg, load_kg)
+    power = standing + (body_mass_kg + load_kg) * (1.5 * speed**2 + 0.35 * speed * grade_percent)
+    # Downhill floor: the Pandolf (1977) standing-with-load terms (see engine.model.metabolism).
+    power = np.maximum(standing, power)
     o2_l = power * kappa * time_s * watts_to_o2_ml_per_min / 60_000.0
     return time_s, o2_l
 
