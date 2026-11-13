@@ -1,19 +1,22 @@
 /**
- * Spoken replies (TTS) — added 2026-11-13 at the user's request; the plan had
- * deferred TTS (voice-copilot-plan §1 note).
+ * Spoken replies (TTS) — engine ladder, fastest-first (reworked 2026-11-13
+ * after the first Kokoro load proved too slow for a live conversation):
  *
- * Engine ladder, best-first:
- * 1. Kokoro-82M in-browser via kokoro-js (Apache-2.0, q8 ≈ 80 MB, cached) —
- *    best lightweight English quality, ~5× real-time on CPU, WebGPU when
- *    available, fully local (nothing leaves the device).
- * 2. Browser speechSynthesis — zero download, instant, decent English on
- *    desktop Chrome/Edge; the honest fallback if the model can't load.
+ * 1. Groq cloud TTS (Orpheus) via the backend — ~instant, high quality, key
+ *    stays server-side. Unavailable (no key / terms not accepted / offline)
+ *    → falls through automatically.
+ * 2. Browser speechSynthesis — zero download, starts in milliseconds. The
+ *    dependable default everywhere.
+ * 3. Kokoro-82M in-browser — kept ONLY as the explicit offline path (the
+ *    ~80 MB model download is never sprung on the operator mid-call; it
+ *    loads only when enabled while online and cached for offline use).
  *
- * One utterance at a time; markdown stripped before speech; every call is
- * cancellable so the operator can always interrupt.
+ * One utterance at a time; markdown stripped; every call cancellable.
  */
 
-export type TtsEngine = 'kokoro' | 'speech-synthesis' | 'unavailable'
+import type { CopilotHealth } from '@/types/copilot'
+
+export type TtsEngine = 'groq-cloud' | 'speech-synthesis' | 'kokoro' | 'unavailable'
 
 export type TtsState = 'idle' | 'loading' | 'speaking'
 
@@ -23,10 +26,19 @@ type KokoroTts = {
 
 let kokoro: KokoroTts | null = null
 let kokoroFailed = false
-let loadingPromise: Promise<KokoroTts | null> | null = null
+let kokoroLoading: Promise<KokoroTts | null> | null = null
+/** Explicit offline opt-in — never auto-loaded. */
+let kokoroEnabled = localStorage.getItem('copilot-tts-kokoro') === 'on'
 
 let audioEl: HTMLAudioElement | null = null
 let audioUrl: string | null = null
+let currentEngine: TtsEngine = 'unavailable'
+/** Latest health for engine selection, updated via setTtsHealth(). */
+let health: CopilotHealth | null = null
+
+export function setTtsHealth(h: CopilotHealth | null) {
+  health = h
+}
 
 export function ttsStop() {
   if (audioEl) {
@@ -41,21 +53,26 @@ export function ttsStop() {
   if ('speechSynthesis' in window) window.speechSynthesis.cancel()
 }
 
-/** Strip markdown/symbols that sound wrong when read aloud. */
-function speakable(text: string): string {
-  return text
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/`([^`]+)`/g, '$1')
-    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/[*_#>|]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
+export function isKokoroEnabled() {
+  return kokoroEnabled
 }
 
+/** Opt in/out of the offline HD voice (Kokoro). Loading starts eagerly on opt-in. */
+export function setKokoroEnabled(on: boolean, onProgress?: (ready: boolean) => void) {
+  kokoroEnabled = on
+  localStorage.setItem('copilot-tts-kokoro', on ? 'on' : 'off')
+  if (!on) {
+    kokoroFailed = false
+    return
+  }
+  void ensureKokoro().then((tts) => onProgress?.(Boolean(tts)))
+}
+
+/** Preload Kokoro in the background (called when idle, never on the hot path). */
 async function ensureKokoro(): Promise<KokoroTts | null> {
   if (kokoro) return kokoro
   if (kokoroFailed) return null
-  loadingPromise ??= (async () => {
+  kokoroLoading ??= (async () => {
     try {
       const mod = await import('kokoro-js')
       const device = 'gpu' in navigator ? 'webgpu' : 'wasm'
@@ -69,29 +86,93 @@ async function ensureKokoro(): Promise<KokoroTts | null> {
       kokoroFailed = true
       return null
     } finally {
-      loadingPromise = null
+      kokoroLoading = null
     }
   })()
-  return loadingPromise
+  return kokoroLoading
 }
 
-function speakWithSynthesis(text: string, onDone: () => void): boolean {
+function speakable(text: string): string {
+  return text
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/[*_#>|]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+async function cloudSpeak(clean: string, onState?: (s: TtsState, e: TtsEngine) => void): Promise<boolean> {
+  try {
+    onState?.('loading', 'groq-cloud')
+    const res = await fetch('/api/copilot/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: clean.slice(0, 1000) }),
+    })
+    if (!res.ok) return false // terms/no-key/network → fall through
+    const blob = await res.blob()
+    if (blob.size === 0) return false
+    audioUrl = URL.createObjectURL(blob)
+    audioEl = new Audio(audioUrl)
+    audioEl.onended = () => {
+      if (audioUrl) URL.revokeObjectURL(audioUrl)
+      audioUrl = null
+      audioEl = null
+      onState?.('idle', 'groq-cloud')
+    }
+    onState?.('speaking', 'groq-cloud')
+    await audioEl.play()
+    return true
+  } catch {
+    ttsStop()
+    return false
+  }
+}
+
+function browserSpeak(clean: string, onState?: (s: TtsState, e: TtsEngine) => void): boolean {
   if (!('speechSynthesis' in window)) return false
-  const u = new SpeechSynthesisUtterance(text)
+  const u = new SpeechSynthesisUtterance(clean)
   u.lang = 'en-US'
   u.rate = 1.05
   const voice = window.speechSynthesis.getVoices().find((v) => v.lang.startsWith('en'))
   if (voice) u.voice = voice
-  u.onend = onDone
-  u.onerror = onDone
+  u.onend = () => onState?.('idle', 'speech-synthesis')
+  u.onerror = () => onState?.('idle', 'speech-synthesis')
   window.speechSynthesis.cancel()
   window.speechSynthesis.speak(u)
+  onState?.('speaking', 'speech-synthesis')
   return true
 }
 
+async function kokoroSpeak(clean: string, onState?: (s: TtsState, e: TtsEngine) => void): Promise<boolean> {
+  if (!kokoroEnabled) return false
+  const engine = await ensureKokoro()
+  if (!engine) return false
+  try {
+    onState?.('loading', 'kokoro')
+    const audio = await engine.generate(clean, { voice: 'af_heart' })
+    audioUrl = URL.createObjectURL(audio.toWav())
+    audioEl = new Audio(audioUrl)
+    audioEl.onended = () => {
+      if (audioUrl) URL.revokeObjectURL(audioUrl)
+      audioUrl = null
+      audioEl = null
+      onState?.('idle', 'kokoro')
+    }
+    onState?.('speaking', 'kokoro')
+    await audioEl.play()
+    return true
+  } catch {
+    ttsStop()
+    return false
+  }
+}
+
 /**
- * Speak one utterance (cancels whatever is playing). Reports which engine
- * was used so the UI can label it honestly.
+ * Speak one utterance (cancels whatever is playing). Resolves with the engine
+ * actually used, and `onState('idle')` when playback finishes — the voice-call
+ * loop chains its next listening turn on that signal.
  */
 export async function ttsSpeak(
   text: string,
@@ -101,31 +182,15 @@ export async function ttsSpeak(
   const clean = speakable(text)
   if (!clean) return 'unavailable'
 
-  const engine = await ensureKokoro()
-  if (engine) {
-    try {
-      onState?.('loading', 'kokoro')
-      const audio = await engine.generate(clean, { voice: 'af_heart' })
-      audioUrl = URL.createObjectURL(audio.toWav())
-      audioEl = new Audio(audioUrl)
-      audioEl.onended = () => {
-        if (audioUrl) URL.revokeObjectURL(audioUrl)
-        audioUrl = null
-        audioEl = null
-        onState?.('idle', 'kokoro')
-      }
-      onState?.('speaking', 'kokoro')
-      await audioEl.play()
-      return 'kokoro'
-    } catch {
-      ttsStop()
-    }
-  }
-
-  onState?.('speaking', 'speech-synthesis')
-  if (speakWithSynthesis(clean, () => onState?.('idle', 'speech-synthesis'))) {
-    return 'speech-synthesis'
-  }
+  // Explicit offline opt-in beats everything (operator chose local HD voice).
+  if (await kokoroSpeak(clean, onState)) return (currentEngine = 'kokoro')
+  // Cloud when the backend offers it; browser voice otherwise — both fast.
+  if (health?.ttsConfigured && (await cloudSpeak(clean, onState))) return (currentEngine = 'groq-cloud')
+  if (browserSpeak(clean, onState)) return (currentEngine = 'speech-synthesis')
   onState?.('idle', 'unavailable')
-  return 'unavailable'
+  return (currentEngine = 'unavailable')
+}
+
+export function currentTtsEngine(): TtsEngine {
+  return currentEngine
 }

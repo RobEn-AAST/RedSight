@@ -13,6 +13,7 @@ export interface CopilotHealth {
   ok: boolean
   provider: 'groq' | 'gemini' | null
   sttConfigured: boolean
+  ttsConfigured: boolean
   model: string | null
   webSearch: boolean
   tool: string

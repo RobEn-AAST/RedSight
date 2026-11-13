@@ -76,6 +76,12 @@ export const config = {
   geminiModel: env('GEMINI_MODEL', 'gemini-3.6-flash'),
   /** Plan §3: cheapest dependable English STT (~216× real-time, WER ~12%). */
   sttModel: env('STT_MODEL', 'whisper-large-v3-turbo'),
+  /** Cloud TTS (added 2026-11-13): Groq Orpheus — needs one-time terms
+   *  acceptance in the Groq console; until then the client speaks with the
+   *  browser voice (the endpoint returns 409 tts-terms-required). */
+  ttsModel: env('TTS_MODEL', 'canopylabs/orpheus-v1-english'),
+  ttsVoice: env('TTS_VOICE', 'tara'),
+  maxTtsChars: 1000,
   /** Gemini-only: native Google Search grounding for general questions. */
   geminiWebSearch: env('GEMINI_WEB_SEARCH', 'true') === 'true',
 

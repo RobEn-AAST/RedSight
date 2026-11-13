@@ -56,9 +56,14 @@ const MIME = {
 /* ------------------------------------------------------------- utilities -- */
 
 function send(res, status, body, headers = {}) {
-  const data = typeof body === 'string' ? body : JSON.stringify(body)
+  const isBuf = Buffer.isBuffer(body)
+  const data = typeof body === 'string' ? body : isBuf ? body : JSON.stringify(body)
   res.writeHead(status, {
-    'Content-Type': typeof body === 'string' ? 'text/plain; charset=utf-8' : 'application/json; charset=utf-8',
+    'Content-Type': isBuf
+      ? 'application/octet-stream'
+      : typeof body === 'string'
+        ? 'text/plain; charset=utf-8'
+        : 'application/json; charset=utf-8',
     'Cache-Control': 'no-store',
     ...headers,
   })
@@ -136,6 +141,7 @@ function health() {
     ok: true,
     provider: config.provider,
     sttConfigured: Boolean(config.groqApiKey),
+    ttsConfigured: Boolean(config.groqApiKey),
     model: config.provider === 'groq' ? config.groqModel : config.provider === 'gemini' ? config.geminiModel : null,
     webSearch: config.provider === 'gemini' && config.geminiWebSearch,
     tool: searchToolSchema.name,
@@ -297,6 +303,63 @@ async function handleReset(req, res) {
   send(res, 200, { ok: true })
 }
 
+async function handleTts(req, res, ip) {
+  if (!config.groqApiKey) {
+    return send(res, 503, { error: 'tts-not-configured', message: 'No GROQ_API_KEY — the client uses its local voice.' })
+  }
+  if (!rateCheck(ip, 2)) {
+    return send(res, 429, { error: 'rate-limited', message: 'Too many speech requests — wait a moment.' }, { 'Retry-After': '5' })
+  }
+  let body
+  try {
+    body = JSON.parse((await readBody(req, 16 * 1024)).toString('utf8') || '{}')
+  } catch {
+    return send(res, 400, { error: 'bad-json' })
+  }
+  const text = String(body.text ?? '')
+    .replace(/[*_#`>|]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (!text) return send(res, 400, { error: 'empty-text' })
+  if (text.length > config.maxTtsChars) {
+    return send(res, 413, { error: 'text-too-long', message: `Speech text exceeds ${config.maxTtsChars} characters.` })
+  }
+
+  try {
+    const upstream = await fetch('https://api.groq.com/openai/v1/audio/speech', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${config.groqApiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: config.ttsModel,
+        voice: config.ttsVoice,
+        input: text,
+        response_format: 'wav',
+      }),
+      signal: AbortSignal.timeout(config.sttUpstreamTimeoutMs),
+    })
+    if (!upstream.ok) {
+      const detail = await upstream.text().catch(() => '')
+      console.error(`[tts] upstream ${upstream.status}: ${detail.slice(0, 300)}`)
+      // Orpheus (and Groq TTS models generally) need one-time org terms
+      // acceptance — tell the client precisely that so it can fall back.
+      if (detail.includes('model_terms_required') || /terms/i.test(detail)) {
+        return send(res, 409, {
+          error: 'tts-terms-required',
+          message: 'Groq TTS needs one-time terms acceptance in the Groq console (console.groq.com/playground → TTS model). Using the local voice until then.',
+        })
+      }
+      const msg = upstream.status === 413 ? 'Speech text too long.' : 'Speech service error — using the local voice.'
+      return send(res, 502, { error: 'tts-upstream', message: msg })
+    }
+    const audio = Buffer.from(await upstream.arrayBuffer())
+    send(res, 200, audio, { 'Content-Type': 'audio/wav', ...corsHeaders(req) })
+  } catch (e) {
+    if (e.name === 'TimeoutError') return send(res, 504, { error: 'tts-timeout', message: 'Speech synthesis timed out — using the local voice.' })
+    console.error(`[tts] ${e.message}`)
+    send(res, 502, { error: 'tts-failed', message: 'Speech failed — using the local voice.' })
+  }
+}
+
 /* ----------------------------------------------------------- static files -- */
 
 async function serveStatic(req, res, pathname) {
@@ -346,6 +409,8 @@ const server = createServer(async (req, res) => {
       await handleStt(req, res, ip)
     } else if (url.pathname === '/api/copilot/chat' && req.method === 'POST') {
       await handleChat(req, res, ip)
+    } else if (url.pathname === '/api/copilot/tts' && req.method === 'POST') {
+      await handleTts(req, res, ip)
     } else if (url.pathname === '/api/copilot/reset' && req.method === 'POST') {
       await handleReset(req, res)
     } else if (url.pathname.startsWith('/api/')) {

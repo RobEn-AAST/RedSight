@@ -3,7 +3,8 @@ import {
   Bot,
   Loader2,
   Mic,
-  RotateCcw,
+  Phone,
+  PhoneOff,
   Search,
   SendHorizonal,
   ShieldAlert,
@@ -26,7 +27,7 @@ import {
   copilotReset,
   type ChatStreamEvent,
 } from '@/lib/copilotClient'
-import { ttsSpeak, ttsStop } from '@/copilot/tts'
+import { setTtsHealth, ttsSpeak, ttsStop } from '@/copilot/tts'
 import { useDictation } from '@/copilot/useDictation'
 import type { ChatMessage, CopilotHealth, CopilotRequestContext } from '@/types/copilot'
 
@@ -35,16 +36,15 @@ function newMessage(role: ChatMessage['role'], text: string, delivery: ChatMessa
   return { id: `m${nextId++}`, role, text, createdAt: new Date().toISOString(), delivery }
 }
 
-function message(text: string): ChatMessage {
-  return newMessage('operator', text, 'local-only')
-}
+type CallStatus = 'listening' | 'transcribing' | 'thinking' | 'speaking' | 'gap'
 
 /**
  * Copilot dock — live chat + voice panel (voice-copilot-plan §2, wired
- * 2026-11-13). Streaming replies via the key-holding backend; dictation via
- * cloud Whisper or the in-browser fallback; spoken replies via Kokoro with a
- * speechSynthesis fallback. Every degraded state is honest: backend down →
- * messages stay local; no reply is ever faked.
+ * 2026-11-13; speech-to-speech call mode added same day at the user's
+ * request). Streaming replies via the key-holding backend; dictation via
+ * cloud Whisper or the in-browser fallback; spoken replies via Groq cloud TTS
+ * with the browser voice as the instant fallback. Every degraded state is
+ * honest: backend down → messages stay local; no reply is ever faked.
  */
 export function CopilotDock({
   onClose,
@@ -60,16 +60,26 @@ export function CopilotDock({
   const [health, setHealth] = useState<CopilotHealth | null>(null)
   const [backendDown, setBackendDown] = useState(false)
   const [streaming, setStreaming] = useState(false)
-  const [ttsEnabled, setTtsEnabled] = useState(() => localStorage.getItem('copilot-tts') === 'on')
+  const [ttsEnabled, setTtsEnabled] = useState(() => localStorage.getItem('copilot-tts') !== 'off')
   const [ttsEngine, setTtsEngine] = useState<string | null>(null)
+  const [callMode, setCallMode] = useState(false)
+  const [callStatus, setCallStatus] = useState<CallStatus>('gap')
 
   const inputRef = useRef<HTMLInputElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
+
+  // Loop-control refs (stable across the dictation/tts callbacks).
+  const callModeRef = useRef(callMode)
   const ttsEnabledRef = useRef(ttsEnabled)
+  const streamingRef = useRef(streaming)
+  const dictationStateRef = useRef<string>('idle')
+  const listenRestart = useRef<(() => void) | null>(null)
   useEffect(() => {
+    callModeRef.current = callMode
     ttsEnabledRef.current = ttsEnabled
-  }, [ttsEnabled])
+    streamingRef.current = streaming
+  }, [callMode, ttsEnabled, streaming])
 
   const { state: mission } = useMission()
   const engine = useEngineData()
@@ -78,12 +88,13 @@ export function CopilotDock({
     if (autoFocusInput) inputRef.current?.focus()
   }, [autoFocusInput])
 
-  // Health probe on mount + when the dock re-opens (props change re-mounts).
+  // Health probe on mount; keep the tts module's engine ladder informed.
   useEffect(() => {
     const ctrl = new AbortController()
     void copilotHealth(ctrl.signal).then((h) => {
       setHealth(h)
       setBackendDown(h === null)
+      setTtsHealth(h)
     })
     return () => ctrl.abort()
   }, [])
@@ -92,11 +103,6 @@ export function CopilotDock({
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
   }, [messages])
-
-  const dictation = useDictation(health, (text) => {
-    setDraft((d) => (d ? `${d} ${text}` : text))
-    inputRef.current?.focus()
-  })
 
   const llmLive = health !== null && health.provider !== null
 
@@ -129,94 +135,130 @@ export function CopilotDock({
     return { missionState, availableData: available }
   }, [engine, mission])
 
-  const send = useCallback(async () => {
-    const text = draft.trim()
-    if (!text || streaming) return
-    setDraft('')
+  /** Core send used by both the composer and the voice-call loop. */
+  const sendText = useCallback(
+    async (text: string) => {
+      const clean = text.trim()
+      if (!clean || streamingRef.current) return
 
-    if (!llmLive) {
-      // Honest offline path: keep the message locally, explain why.
-      setMessages((m) => [...m, message(text)])
+      if (!llmLive) {
+        setMessages((m) => [
+          ...m,
+          newMessage('operator', clean, 'local-only'),
+          newMessage(
+            'system',
+            backendDown
+              ? 'Copilot backend unreachable — message kept on this device only. Start it with: node server/index.mjs'
+              : 'No AI provider key on the server — message kept on this device only. Add GROQ_API_KEY or GEMINI_API_KEY to server/.env.',
+            'local-only',
+          ),
+        ])
+        return
+      }
+
+      const userMsg = newMessage('operator', clean, 'delivered')
+      const replyId = `m${nextId++}`
       setMessages((m) => [
         ...m,
-        newMessage(
-          'system',
-          backendDown
-            ? 'Copilot backend unreachable — message kept on this device only. Start it with: node server/index.mjs'
-            : 'No AI provider key on the server — message kept on this device only. Add GROQ_API_KEY or GEMINI_API_KEY to server/.env.',
-          'local-only',
-        ),
+        userMsg,
+        { id: replyId, role: 'copilot', text: '', createdAt: new Date().toISOString(), delivery: 'streaming' },
       ])
-      inputRef.current?.focus()
-      return
-    }
+      setStreaming(true)
+      setCallStatus('thinking')
+      ttsStop()
 
-    const userMsg = message(text)
-    userMsg.delivery = 'delivered'
-    const replyId = `m${nextId++}`
-    setMessages((m) => [
-      ...m,
-      userMsg,
-      { id: replyId, role: 'copilot', text: '', createdAt: new Date().toISOString(), delivery: 'streaming' },
-    ])
-    setStreaming(true)
-    ttsStop()
-
-    const ctrl = new AbortController()
-    abortRef.current = ctrl
-    let finalText = ''
-    const onEvent = (ev: ChatStreamEvent) => {
-      setMessages((m) =>
-        m.map((msg) => {
-          if (msg.id !== replyId) return msg
-          switch (ev.t) {
-            case 'token':
-              return { ...msg, text: msg.text + ev.v }
-            case 'tool':
-              return { ...msg, tool: { name: ev.name, resultCount: ev.resultCount } }
-            case 'notice':
-              return { ...msg, notice: ev.v }
-            case 'done':
-              return { ...msg, delivery: 'delivered' }
-            case 'error':
-              return { ...msg, delivery: 'error', text: msg.text || ev.message }
-            default:
-              return msg
+      const ctrl = new AbortController()
+      abortRef.current = ctrl
+      let finalText = ''
+      const speakReply = () => {
+        // Voice call always speaks; chat speaks when the toggle is on.
+        if (!(callModeRef.current || ttsEnabledRef.current) || !finalText) return
+        let wasSpeaking = false
+        void ttsSpeak(finalText, (state) => {
+          if (state === 'speaking') {
+            wasSpeaking = true
+            if (callModeRef.current) setCallStatus('speaking')
           }
-        }),
-      )
-      if (ev.t === 'token') finalText += ev.v
-      if (ev.t === 'done') {
-        setStreaming(false)
-        abortRef.current = null
-        if (ttsEnabledRef.current && finalText) {
-          void ttsSpeak(finalText).then((e) => setTtsEngine(e))
+          if (state === 'idle' && wasSpeaking) {
+            // Speech finished → hand the floor back to the operator.
+            if (callModeRef.current) {
+              setCallStatus('gap')
+              window.setTimeout(() => {
+                if (callModeRef.current && !streamingRef.current && dictationStateRef.current === 'idle') {
+                  listenRestart.current?.()
+                }
+              }, 350)
+            }
+          }
+        }).then(setTtsEngine)
+      }
+
+      const onEvent = (ev: ChatStreamEvent) => {
+        setMessages((m) =>
+          m.map((msg) => {
+            if (msg.id !== replyId) return msg
+            switch (ev.t) {
+              case 'token':
+                return { ...msg, text: msg.text + ev.v }
+              case 'tool':
+                return { ...msg, tool: { name: ev.name, resultCount: ev.resultCount } }
+              case 'notice':
+                return { ...msg, notice: ev.v }
+              case 'done':
+                return { ...msg, delivery: 'delivered' }
+              case 'error':
+                return { ...msg, delivery: 'error', text: msg.text || ev.message }
+              default:
+                return msg
+            }
+          }),
+        )
+        if (ev.t === 'token') finalText += ev.v
+        if (ev.t === 'done') {
+          setStreaming(false)
+          abortRef.current = null
+          speakReply()
+          if (!callModeRef.current) inputRef.current?.focus()
+        }
+        if (ev.t === 'error') {
+          setStreaming(false)
+          abortRef.current = null
+          if (callModeRef.current) {
+            setCallStatus('gap')
+            listenRestart.current?.()
+          }
         }
       }
-      if (ev.t === 'error') {
+
+      try {
+        await copilotChatStream(clean, buildContext(), onEvent, ctrl.signal)
+      } catch (e) {
         setStreaming(false)
         abortRef.current = null
+        const reason =
+          e instanceof DOMException && e.name === 'AbortError'
+            ? 'Stopped by operator.'
+            : e instanceof Error
+              ? e.message
+              : 'Transport error.'
+        setMessages((m) =>
+          m.map((msg) => (msg.id === replyId ? { ...msg, delivery: 'error', text: msg.text || reason } : msg)),
+        )
+        if (callModeRef.current) {
+          setCallStatus('gap')
+          listenRestart.current?.()
+        }
       }
-    }
+    },
+    [llmLive, backendDown, buildContext],
+  )
 
-    try {
-      await copilotChatStream(text, buildContext(), onEvent, ctrl.signal)
-    } catch (e) {
-      setStreaming(false)
-      abortRef.current = null
-      const reason =
-        e instanceof DOMException && e.name === 'AbortError'
-          ? 'Stopped by operator.'
-          : e instanceof Error
-            ? e.message
-            : 'Transport error.'
-      setMessages((m) =>
-        m.map((msg) => (msg.id === replyId ? { ...msg, delivery: 'error', text: msg.text || reason } : msg)),
-      )
-    } finally {
-      inputRef.current?.focus()
-    }
-  }, [draft, streaming, llmLive, backendDown, buildContext])
+  const send = () => {
+    const text = draft.trim()
+    if (!text) return
+    setDraft('')
+    void sendText(text)
+  }
 
   const cancelStream = () => {
     abortRef.current?.abort()
@@ -224,7 +266,7 @@ export function CopilotDock({
   }
 
   const clearAll = async () => {
-    cancelStream()
+    endCall()
     await copilotReset()
     setMessages([])
   }
@@ -238,37 +280,100 @@ export function CopilotDock({
     })
   }
 
-  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      void send()
+  /* ------------------------------------------------------ voice call mode -- */
+
+  const dictation = useDictation(health, (text) => {
+    // In a call, transcripts auto-send (hands-free); in chat they land in
+    // the editable composer per plan §2 (nothing sends on voice alone).
+    if (callModeRef.current) {
+      if (text.trim()) void sendText(text)
+      else listenRestart.current?.() // silence → keep listening
+    } else {
+      setDraft((d) => (d ? `${d} ${text}` : text))
+      inputRef.current?.focus()
+    }
+  })
+
+  dictationStateRef.current = dictation.state
+  useEffect(() => {
+    if (callMode && dictation.state === 'recording') setCallStatus('listening')
+    if (callMode && dictation.state === 'transcribing') setCallStatus('transcribing')
+  }, [callMode, dictation.state])
+
+  const startListening = useCallback(() => {
+    if (dictation.state === 'idle' || dictation.state === 'error' || dictation.state === 'permission-denied') {
+      dictation.toggle()
+    }
+  }, [dictation])
+  listenRestart.current = startListening
+
+  const startCall = () => {
+    setCallMode(true)
+    setCallStatus('gap')
+    ttsStop()
+    window.setTimeout(() => listenRestart.current?.(), 150)
+  }
+
+  function endCall() {
+    setCallMode(false)
+    setCallStatus('gap')
+    ttsStop()
+    dictation.cancel()
+  }
+
+  const micClick = () => {
+    if (callMode) {
+      // Barge-in: interrupt the spoken reply and take the floor.
+      if (callStatus === 'speaking') ttsStop()
+      if (dictation.state === 'recording') dictation.toggle()
+      else startListening()
+    } else {
+      dictation.toggle()
     }
   }
 
-  // Push-to-talk: Space toggles dictation when the dock has focus but the
-  // composer does not (plan §2 — explicit, private, trivially cancellable).
+  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      send()
+    }
+  }
+
+  // Space = push-to-talk outside fields; Escape stops recording / ends a call.
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
       const inField = ['INPUT', 'TEXTAREA', 'BUTTON'].includes((e.target as HTMLElement)?.tagName ?? '')
       if (e.code === 'Space' && !inField) {
         e.preventDefault()
-        dictation.toggle()
+        micClick()
       }
-      if (e.key === 'Escape' && dictation.state === 'recording') dictation.cancel()
+      if (e.key === 'Escape') {
+        if (callModeRef.current) endCall()
+        else if (dictation.state === 'recording') dictation.cancel()
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [dictation])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dictation, callMode, callStatus])
 
-  const micLabel = {
-    idle: 'Dictate (Space)',
-    'requesting-permission': 'Requesting microphone…',
-    'loading-model': dictation.modelProgress !== null ? `Loading local model ${dictation.modelProgress}%` : 'Loading local model…',
-    recording: `Recording — ${dictation.elapsed}s / 30s (Space or click to stop)`,
-    transcribing: 'Transcribing…',
-    error: 'Voice error — click to retry',
-    'permission-denied': 'Mic denied — click to retry',
-  }[dictation.state]
+  const micLabel = callMode
+    ? {
+        listening: `Listening — ${dictation.elapsed}s / 30s (click to send, Esc to end call)`,
+        transcribing: 'Transcribing…',
+        thinking: 'Thinking… (click to interrupt the reply)',
+        speaking: 'Speaking — click to interrupt',
+        gap: 'Starting…',
+      }[callStatus]
+    : {
+        idle: 'Dictate (Space)',
+        'requesting-permission': 'Requesting microphone…',
+        'loading-model': dictation.modelProgress !== null ? `Loading local model ${dictation.modelProgress}%` : 'Loading local model…',
+        recording: `Recording — ${dictation.elapsed}s / 30s (Space or click to stop)`,
+        transcribing: 'Transcribing…',
+        error: 'Voice error — click to retry',
+        'permission-denied': 'Mic denied — click to retry',
+      }[dictation.state]
 
   const badge = (() => {
     if (backendDown) return { tone: 'amber' as const, text: 'Backend down' }
@@ -279,7 +384,7 @@ export function CopilotDock({
   return (
     <div className="flex h-full min-h-0 flex-col border border-seam bg-panel shadow-panel">
       <header className="flex items-center gap-3 border-b border-seam bg-hull/60 px-4 py-2.5">
-        <LedDot tone={badge.tone} pulse={badge.tone !== 'green'} />
+        <LedDot tone={callMode ? 'cyan' : badge.tone} pulse={callMode || badge.tone !== 'green'} />
         <h2 className="label-console flex items-center gap-2 text-ink">
           <Bot size={13} aria-hidden /> Copilot
         </h2>
@@ -297,11 +402,12 @@ export function CopilotDock({
           <button
             type="button"
             onClick={toggleTts}
+            disabled={callMode}
             aria-pressed={ttsEnabled}
             aria-label={ttsEnabled ? 'Mute spoken replies' : 'Enable spoken replies'}
-            title={ttsEnabled ? `Spoken replies on (${ttsEngine ?? 'kokoro → browser fallback'})` : 'Spoken replies off'}
+            title={ttsEnabled ? `Spoken replies on (${ttsEngine ?? 'cloud → browser voice'})` : 'Spoken replies off'}
             className={cn(
-              'flex size-8 items-center justify-center transition-colors',
+              'flex size-8 items-center justify-center transition-colors disabled:opacity-30',
               ttsEnabled ? 'text-signal' : 'text-ink-faint hover:text-ink',
             )}
           >
@@ -344,10 +450,10 @@ export function CopilotDock({
               <span className="data-readout text-ink-faint">node server/index.mjs</span> and retry.</>
           ) : llmLive ? (
             <>
-              Streaming replies via the server-side key ({health.model}); it also runs the mission-data
-              search tool{health.webSearch ? ' + grounded web search' : ''}. Dictation:{' '}
-              {dictation.mode === 'cloud' ? 'cloud Whisper' : 'local Whisper (in-browser)'}.
-              {dictation.mode === 'local' && ' First use downloads the model (~40 MB), then cached.'}
+              Streaming replies via the server-side key ({health.model}); mission-data search
+              {health.webSearch ? ' + grounded web search' : ''}. Dictation:{' '}
+              {dictation.mode === 'cloud' ? 'cloud Whisper' : 'local Whisper (in-browser)'}. Voice:{' '}
+              {ttsEngine === 'groq-cloud' ? 'Groq cloud' : ttsEngine === 'kokoro' ? 'Kokoro local' : 'browser voice'}.
             </>
           ) : (
             <>No provider key on the server — local dictation works; replies need{' '}
@@ -367,9 +473,9 @@ export function CopilotDock({
       >
         {messages.length === 0 ? (
           <p className="mt-6 text-center text-xs leading-relaxed text-ink-faint">
-            Ask about the mission data (“what’s the O₂ reserve assumption?”), or propose changes in words
-            (“set crew to two, fifteen kilos each”). Voice: hold nothing — press the mic or Space, speak,
-            fix the transcript, send.
+            Ask about the mission data (“what’s the O₂ reserve assumption?”), propose changes in words
+            (“set crew to two, fifteen kilos each”), or start a voice call — press the phone button and
+            just talk; the copilot answers out loud, hands-free.
           </p>
         ) : (
           <ul className="flex flex-col gap-2.5">
@@ -401,7 +507,7 @@ export function CopilotDock({
                   {m.role === 'copilot' && m.delivery === 'delivered' && (
                     <button
                       type="button"
-                      onClick={() => void ttsSpeak(m.text, (_s, e) => setTtsEngine(e)).then(setTtsEngine)}
+                      onClick={() => void ttsSpeak(m.text).then(setTtsEngine)}
                       aria-label="Speak this reply"
                       className="ml-auto flex size-6 items-center justify-center text-ink-faint opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
                     >
@@ -433,10 +539,39 @@ export function CopilotDock({
       </div>
 
       {/* Dictation error line */}
-      {dictation.error && (
+      {dictation.error && !callMode && (
         <p className="border-t border-caution/30 bg-caution/5 px-4 py-1.5 text-[11px] text-caution">
           {dictation.error}
         </p>
+      )}
+
+      {/* Voice-call banner */}
+      {callMode && (
+        <div className="flex items-center gap-3 border-t border-observed/40 bg-observed/10 px-4 py-2.5">
+          <LedDot tone="cyan" pulse />
+          <span className="label-console text-ink">
+            Voice call —{' '}
+            {callStatus === 'listening'
+              ? `listening (${dictation.elapsed}s)`
+              : callStatus === 'transcribing'
+                ? 'transcribing…'
+                : callStatus === 'thinking'
+                  ? 'thinking…'
+                  : callStatus === 'speaking'
+                    ? 'speaking…'
+                    : 'standby'}
+          </span>
+          <span className="text-[10px] text-ink-faint">click mic to barge in · Esc to end</span>
+          <button
+            type="button"
+            onClick={endCall}
+            aria-label="End voice call"
+            title="End voice call (Esc)"
+            className="label-console ml-auto flex items-center gap-1.5 border border-caution/50 bg-caution/15 px-2.5 py-1.5 text-caution hover:bg-caution hover:text-void"
+          >
+            <PhoneOff size={13} aria-hidden /> End
+          </button>
+        </div>
       )}
 
       {/* Composer */}
@@ -444,7 +579,7 @@ export function CopilotDock({
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={dictation.toggle}
+            onClick={micClick}
             disabled={dictation.state === 'transcribing' || dictation.state === 'requesting-permission' || dictation.state === 'loading-model'}
             aria-label={micLabel}
             title={micLabel}
@@ -452,9 +587,13 @@ export function CopilotDock({
               'relative flex size-11 flex-none items-center justify-center border transition-colors',
               dictation.state === 'recording'
                 ? 'animate-pulse border-caution bg-caution/15 text-caution'
-                : dictation.state === 'error' || dictation.state === 'permission-denied'
-                  ? 'border-caution/50 text-caution'
-                  : 'border-seam-lit text-ink-dim hover:border-signal/60 hover:text-signal disabled:opacity-40',
+                : callMode && callStatus === 'speaking'
+                  ? 'border-observed/60 bg-observed/15 text-observed'
+                  : callMode
+                    ? 'border-observed/50 text-observed'
+                    : dictation.state === 'error' || dictation.state === 'permission-denied'
+                      ? 'border-caution/50 text-caution'
+                      : 'border-seam-lit text-ink-dim hover:border-signal/60 hover:text-signal disabled:opacity-40',
             )}
           >
             {dictation.state === 'recording' ? (
@@ -478,26 +617,47 @@ export function CopilotDock({
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={onKeyDown}
+            disabled={callMode}
             placeholder={
-              dictation.state === 'recording' ? 'Listening… speak now' : 'Message the copilot…'
+              callMode
+                ? `Voice call active — ${callStatus}…`
+                : dictation.state === 'recording'
+                  ? 'Listening… speak now'
+                  : 'Message the copilot…'
             }
             aria-label="Message the copilot"
-            className="min-w-0 flex-1 border border-seam-lit bg-inset px-3 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-signal/60 focus:outline-none"
+            className="min-w-0 flex-1 border border-seam-lit bg-inset px-3 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-signal/60 focus:outline-none disabled:opacity-50"
           />
-          {streaming ? (
+          {callMode ? (
+            <Button size="md" onClick={endCall} aria-label="End voice call">
+              <PhoneOff size={14} aria-hidden />
+            </Button>
+          ) : streaming ? (
             <Button size="md" onClick={cancelStream} aria-label="Stop generating">
               <Square size={14} aria-hidden />
             </Button>
           ) : (
-            <Button size="md" onClick={() => void send()} disabled={!draft.trim()} aria-label="Send message">
-              <SendHorizonal size={14} aria-hidden />
-            </Button>
+            <>
+              <Button
+                size="md"
+                onClick={startCall}
+                disabled={!llmLive}
+                aria-label="Start voice call — speech to speech"
+                title={llmLive ? 'Voice call — talk hands-free, replies spoken (Esc to end)' : 'Needs a configured provider'}
+                className="flex-none"
+              >
+                <Phone size={14} aria-hidden />
+              </Button>
+              <Button size="md" onClick={send} disabled={!draft.trim()} aria-label="Send message">
+                <SendHorizonal size={14} aria-hidden />
+              </Button>
+            </>
           )}
         </div>
-        <p className="mt-2 flex items-center gap-2 text-[10px] leading-relaxed text-ink-faint">
-          <RotateCcw size={9} aria-hidden className="flex-none" />
-          English voice + text · streaming · cancellable. Modeled estimates only — this copilot is a
-          prototype aid, not a safety system. TTS: {ttsEngine ?? (ttsEnabled ? 'kokoro → browser fallback' : 'off')}.
+        <p className="mt-2 text-[10px] leading-relaxed text-ink-faint">
+          {callMode
+            ? 'Speech-to-speech: speak → it answers out loud → listening resumes automatically. Modeled estimates only — prototype aid, not a safety system.'
+            : 'English voice + text · streaming · cancellable · phone button = hands-free voice call. Modeled estimates only — prototype aid, not a safety system.'}
         </p>
       </div>
     </div>
