@@ -1,5 +1,9 @@
-import { useEffect, useRef } from 'react'
-import { PlayCircle } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { PlayCircle, ScanEye } from 'lucide-react'
+
+import { PANORAMAS } from '@/hud/panoramas'
+import { StopHud } from '@/hud/StopHud'
+import type { Timeline } from '@/replay/replay-core.js'
 
 import type { EngineConstants } from '@/lib/engineDataContext'
 import { useEngineData } from '@/lib/useEngineData'
@@ -32,12 +36,15 @@ export function MissionReplay({ bare = false }: { bare?: boolean } = {}) {
   const { map, activeRoute, routesStatus, o2BudgetL, mode } = usePlan()
   const hostRef = useRef<HTMLDivElement>(null)
   const replayRef = useRef<Replay | null>(null)
+  // Tier 2 prototype: 360° stop view + HUD, opened with the replay's own timeline (same numbers).
+  const [hud, setHud] = useState<Timeline | null>(null)
   const routeRef = useRef(activeRoute)
   // Runs before the creation effect below (effects run in order).
   useEffect(() => {
     routeRef.current = activeRoute
   }, [activeRoute])
   const hasRoute = !!activeRoute
+  const closeHud = useCallback(() => setHud(null), [])
 
   // One replay per map + constants; the route is swapped in place.
   useEffect(() => {
@@ -77,17 +84,74 @@ export function MissionReplay({ bare = false }: { bare?: boolean } = {}) {
     else if (capacityL != null) replay.setCapacity(capacityL)
   }, [o2BudgetL, capacityL, map, hasRoute])
 
+  const stopId = activeRoute?.stop
+  const pano = stopId ? PANORAMAS[stopId] : undefined
+  const stop = engine.stops?.find((x) => x.id === stopId)
+  const habitat = engine.meta?.habitat?.lonlat as [number, number] | undefined
+  // Lines for the fixed route drawn in the 360 view: the way out, and the way home from the stop
+  // (the fastest-way-home path when the replay switched to it, else the route walked back).
+  const wayOut = useMemo(() => (activeRoute?.coords ?? []) as [number, number][], [activeRoute])
+  const fastFromStop = hud?.fastHome ? activeRoute?.back_fast?.path?.[(activeRoute?.coords.length ?? 1) - 1] : undefined
+  const lastI = (activeRoute?.coords.length ?? 1) - 1
+  const bf = activeRoute?.back_fast
+  const bfPath = bf?.path?.[lastI]
+  const bfFaster = !!bf && !!activeRoute && bf.t_s[lastI] < activeRoute.back.t_s[lastI]
+  const fastestHome = useMemo(
+    () => (bfFaster && bfPath?.length ? bfPath : wayOut.slice().reverse()) as [number, number][],
+    [bfFaster, bfPath, wayOut],
+  )
+  // Cost of the fastest way home from the stop: back_fast if it beats the route back, else the route back.
+  const fastHomeCost = useMemo(() => {
+    const back = activeRoute?.back
+    if (!back) return null
+    const b = { t_s: back.t_s[lastI], o2_l: back.o2_l[lastI] }
+    const f = bf ? { t_s: bf.t_s[lastI], o2_l: bf.o2_l[lastI] } : null
+    return f && f.t_s < b.t_s ? f : b
+  }, [activeRoute, bf, lastI])
+  const wayHome = useMemo(
+    () => (fastFromStop?.length ? fastFromStop : wayOut.slice().reverse()) as [number, number][],
+    [fastFromStop, wayOut],
+  )
+
   const content = (
     <>
-      {!activeRoute && (
-        <p className="p-3 text-xs leading-relaxed text-ink-faint">
-          {routesStatus === 'loading'
-            ? 'Loading the route…'
-            : 'Pick a stop to play the modeled walk: crew markers, O₂ tank, turn-back moment.'}
-        </p>
-      )}
-      <div ref={hostRef} />
-    </>
+        {!activeRoute && (
+          <p className="p-3 text-xs leading-relaxed text-ink-faint">
+            {routesStatus === 'loading'
+              ? 'Loading the route…'
+              : 'Pick a stop to play the modeled walk: crew markers, O₂ tank, turn-back moment.'}
+          </p>
+        )}
+        <div ref={hostRef} />
+        {activeRoute && pano && stop && habitat && (
+          <div className="p-3 pt-0">
+            <button
+              type="button"
+              className="flex w-full items-center justify-center gap-2 border border-observed/60 px-3 py-2 text-xs text-observed hover:bg-observed/10"
+              onClick={() => replayRef.current && setHud(replayRef.current.timeline as unknown as Timeline)}
+            >
+              <ScanEye size={14} aria-hidden /> 360° view at {stop.id} + HUD
+            </button>
+          </div>
+        )}
+        {hud && pano && stop && habitat && activeRoute && (
+          <StopHud
+            pano={pano}
+            stopName={stop.name}
+            sols={stop.sols.length ? `${Math.min(...stop.sols)}–${Math.max(...stop.sols)}` : undefined}
+            timeline={hud}
+            routeMode={activeRoute.mode}
+            stopLonLat={[stop.lon, stop.lat]}
+            habitatLonLat={habitat}
+            cards={engine.cards}
+            wayOut={wayOut}
+            wayHome={wayHome}
+            fastestHome={fastestHome}
+            fastHomeCost={fastHomeCost}
+            onClose={closeHud}
+          />
+        )}
+      </>
   )
 
   if (bare) return <div>{content}</div>
