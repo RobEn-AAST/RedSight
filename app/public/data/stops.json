@@ -1,0 +1,130 @@
+{
+ "type": "FeatureCollection",
+ "_mock": true,
+ "_note": "Positions are real (demo-focus-plan §6, §8); photos/science text are TODO.",
+ "features": [
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     137.38592,
+     -4.79782
+    ]
+   },
+   "properties": {
+    "id": "S1",
+    "name": "First boxwork 360",
+    "kind": "panorama",
+    "sols": [
+     4539,
+     4541
+    ],
+    "evidence": "PIA26559",
+    "approx": false,
+    "photos": [],
+    "panorama": "PIA26559",
+    "science": "TODO (Ayman)",
+    "badge": "Observed"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     137.381,
+     -4.808
+    ]
+   },
+   "properties": {
+    "id": "S2",
+    "name": "Nevado Sajama 360",
+    "kind": "panorama",
+    "sols": [
+     4711,
+     4741
+    ],
+    "evidence": "PIA26696",
+    "approx": false,
+    "photos": [],
+    "panorama": "PIA26696",
+    "science": "TODO (Ayman)",
+    "badge": "Observed"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     137.38915,
+     -4.82568
+    ]
+   },
+   "properties": {
+    "id": "S3",
+    "name": "Curiosity current position",
+    "kind": "rover",
+    "sols": [
+     5070
+    ],
+    "evidence": "MMGIS waypoint",
+    "approx": false,
+    "photos": [],
+    "panorama": null,
+    "science": "TODO (Ayman)",
+    "badge": "Observed"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     137.3835,
+     -4.79981
+    ]
+   },
+   "properties": {
+    "id": "D1",
+    "name": "Altadena drill site",
+    "kind": "drill",
+    "sols": [
+     4558,
+     4560
+    ],
+    "evidence": "JPL news 2025-06-23",
+    "approx": true,
+    "photos": [],
+    "panorama": null,
+    "science": "TODO (Ayman)",
+    "badge": "Observed"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     137.38104,
+     -4.80784
+    ]
+   },
+   "properties": {
+    "id": "D2",
+    "name": "Valle de la Luna drill site",
+    "kind": "drill",
+    "sols": [
+     4687
+    ],
+    "evidence": "NASA Curiosity blog sols 4689–4694",
+    "approx": true,
+    "photos": [],
+    "panorama": null,
+    "science": "TODO (Ayman)",
+    "badge": "Observed"
+   }
+  }
+ ]
+}
