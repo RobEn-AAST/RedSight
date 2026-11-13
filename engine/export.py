@@ -306,7 +306,7 @@ def build_real_routes(
                     "objective_cost": path.objective_cost,
                     "distance_m": float(sum(item["cost_terms"]["distance_m"] for item in arrays["seg"])),
                     "input_sha256": dem.source_sha256,
-                    "model_note": "Scenario: 10 m mean-elevation slopes and thermal terrain factor 1.0; no sub-cell scarp or THEMIS sand cost is available in this route input.",
+                    "model_note": "Scenario: 10 m mean-elevation slopes and thermal terrain factor 1.0; no sub-cell scarp, THEMIS sand cost, or sample pickup load is included in this base 15 kg route bucket.",
                 }
                 _write_json(routes_dir / filename, route_payload)
                 exported_files.append(routes_dir / filename)
@@ -336,6 +336,14 @@ def build_real_routes(
             "cell_value": "mean elevation from ~1.01 m HiRISE DTM average-resampled to ~9.88 m planning cells",
         },
         "nodata": dem.nodata,
+        "routing_coverage": {
+            "primary_dtm_valid_cells": int(dem.valid.sum()),
+            "primary_dtm_valid_fraction": float(dem.valid.mean()),
+            "walkable_cells_after_slope_mask": int(graph.valid.sum()),
+            "walkable_fraction_of_ops_grid": float(graph.valid.mean()),
+            "slope_limit_deg": c["slope_limit_foot_deg"],
+            "slope_aggregation": "8-neighbor maximum over average-resampled planning-cell mean heights",
+        },
         "habitat": {"lonlat": habitat_lonlat, "row_col": list(habitat), "badge": "Scenario", "note": habitat_note},
         "build_date": date.today().isoformat(),
         "constants_hash": constants_hash,
@@ -361,6 +369,7 @@ def build_real_routes(
             "The overlapping companion DTM differs substantially from the primary scene; its cells are excluded instead of applying an unsupported vertical correction.",
             "Slope hard masks are 8-neighbor maxima over average-resampled approximately 9.88m elevations, not native 1m maximum slopes; smaller scarps are unresolved.",
             "No THEMIS thermal-inertia raster was supplied; the sand/terrain multiplier remains 1.0 and the lowest-hazard objective reflects slope only.",
+            "Collected sample mass is not included in the base 2-crew, 15kg route bucket; it must be modeled in a separately agreed sample/load variant.",
             "Pandolf and the piecewise walking-speed function are Scenario transfers to Mars; values are estimates, not physiological measurements.",
         ],
     }

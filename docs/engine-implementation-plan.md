@@ -151,6 +151,7 @@ are in `app/public/data/routes/` and `app/public/data/engine-build-manifest.json
 Important boundary: slope uses the maximum of eight neighboring gradients on the mean-elevation
 ~9.88 m planning cells. It is not a native 1 m maximum and cannot detect sub-cell scarps. No THEMIS
 thermal raster was included; terrain factor stays 1.0, so the lowest-hazard score is slope-based only.
+The base 2-crew, 15 kg route bucket does not add sample pickup mass.
 The native 1.01 m source resolution is recorded as provenance, not represented as the resolution of
 the route constraints. The 512 m ortho crop has 100% valid pixels and is retained as context; this
 build does not claim a visual landmark alignment review.

@@ -41,6 +41,8 @@ planning-cell mean-height grades. It is a hard limit on the represented grid and
 smaller than a planning cell; the engine does not claim native-resolution maximum slope. No THEMIS
 thermal-inertia raster was supplied, so the terrain multiplier is 1.0 and the lowest-hazard objective
 uses modeled slope exposure only. Hazards remain Derived/Unavailable as labeled in the output.
+Collected sample mass is not included in the current 2-crew, 15 kg route bucket; a sample-carrying
+variant needs a separate load bucket and routes.
 
 The five stops are S1, S2, S3, D1 and D2 from the current `stops.json`; their existing names and
 coordinates are preserved. The selected habitat is cell row 274, column 269 at 137.3799167°E,
