@@ -209,7 +209,10 @@ export function createReplay(map, opts) {
           <option value="0.1">O₂ call every 10%</option><option value="0.05">every 5%</option>
         </select>
       </div>
-      <div class="replay-foot"><span class="replay-badge">Scenario</span> modeled estimate, not a measurement.<span class="replay-note"></span></div>`;
+      <div class="replay-foot"><span class="replay-badge">Scenario</span> modeled estimate, not a measurement.<span class="replay-note"></span></div>
+      <div class="replay-earth">A signal to Earth takes up to ≈ 22 min one way, so the crew decides on site: that's why
+        the turn-back and the switch home are planned ahead.
+        <a href="https://ntrs.nasa.gov/citations/20220013418" target="_blank" rel="noopener">NASA, NTRS 20220013418</a></div>`;
     container.appendChild(el);
     const q = (c) => el.querySelector(c);
     const r = { el, play: q(".replay-play"), scrub: q(".replay-scrub"), speed: q(".replay-speed"), voice: q(".replay-voice"),
