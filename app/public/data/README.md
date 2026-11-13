@@ -16,6 +16,13 @@ tell the team first, then update this README + the generator in the same PR.
 | `cards/rad.json`, `cards/rems.json` | Ayman | RAD dose + source, REMS pressure range |
 | `fields/*.png`, `fields/coverage.png` | Ali / Youssef | not mocked yet (If-time features) |
 
+## Check your files before a PR
+
+`cd app && npm run check:data` checks every file here against this contract (shapes, lengths, routes start at
+the habitat, `cum` never decreasing, `budget_l` = C − R from `constants.json`, badges, sources, tiles present
+for `available` layers, banned wording). Errors fail the run. Before submission use
+`npm run check:data -- --final`, which also fails on any `"_mock": true` left.
+
 ## Note for Ali (engine) — O₂ numbers, read before writing routes (D27, demo-focus-plan §9c)
 
 - `cum.o2_l` and `back.o2_l` = **plain expected O₂ per crew member** at the planned walking rate (Pandolf + κ).

@@ -119,7 +119,13 @@ function addBackFast(r, fast) {
   for (const p of r.coords) {
     let j = 0; for (let k = 1; k < n; k++) if (dist(p, F[k]) < dist(p, F[j])) j = k;
     const d = dist(p, F[j]);
-    t.push(+(fast.back.t_s[j] + d * tPerM).toFixed(2));
+    const i = t.length, ownT = r.back.t_s[i];
+    const viaT = fast.back.t_s[j] + d * tPerM;
+    if (ownT <= viaT) { // walking back along this route is already the fastest way home here
+      t.push(ownT); o.push(r.back.o2_l[i]); path.push(r.coords.slice(0, i + 1).reverse());
+      continue;
+    }
+    t.push(+viaT.toFixed(2));
     o.push(+(fast.back.o2_l[j] + d * oPerM).toFixed(2));
     path.push([p, ...F.slice(0, j + 1).reverse()].filter((q, k, a) => k === 0 || q !== a[k - 1]));
   }

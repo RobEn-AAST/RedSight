@@ -37,3 +37,22 @@
 
 /* Docked: panel lives in a page column (React app side panel) instead of over the map. */
 .replay-panel--docked { position: static; width: 100%; max-height: none; box-shadow: none; border-radius: 0; }
+
+/* Map bar (docked mode): play, clock, O2 over the map while the full panel sits in the side column. */
+.replay-hud { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 3;
+  display: flex; align-items: center; gap: 8px; max-width: calc(100% - 130px); padding: 4px 10px 4px 4px;
+  background: rgba(10, 14, 20, 0.88); color: #f4ece6; border: 1px solid rgba(255,255,255,0.14);
+  font: 12px/1.2 system-ui, sans-serif; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.replay-hud-play { width: 28px; height: 24px; border: 0; background: #ffd166; color: #111; font-weight: 700; cursor: pointer; flex: none; }
+.replay-hud-tank { position: relative; width: 56px; height: 8px; background: #3a2e29; flex: none; overflow: hidden; }
+.replay-hud-fill { position: absolute; inset: 0 auto 0 0; background: #06d6a0; }
+.replay-hud-fill[data-level="tight"] { background: #ffd166; }
+.replay-hud-fill[data-level="reserve"] { background: #ef476f; }
+.replay-hud-msg { overflow: hidden; text-overflow: ellipsis; min-width: 0; opacity: 0.9; }
+.replay-hud[data-type="switch-fast"] .replay-hud-msg { color: #ffb347; font-weight: 600; }
+.replay-hud[data-type="turnback"] .replay-hud-msg, .replay-hud[data-type="forced-return"] .replay-hud-msg,
+.replay-hud[data-type="reserve"] .replay-hud-msg { color: #ff8fa8; font-weight: 600; }
+@media (max-width: 480px) { .replay-hud-clock { display: none; } .replay-hud { max-width: calc(100% - 110px); } }
+.replay-hud-badge { flex: none; padding: 1px 4px; font-size: 10px; background: #5a3fa0; color: #fff; }
+.replay-earth { margin-top: 6px; font-size: 11px; opacity: 0.8; }
+.replay-earth a { color: #9fd3ff; }

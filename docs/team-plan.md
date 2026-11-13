@@ -47,10 +47,10 @@ Marwan). Work it on your own branch. Order = priority.
 |---|---|---|
 | 1 | Ask the Local Lead the open questions (open-questions.md: cutoff, who submits, edits after submit) | |
 | 2 | 7 slides (§14) with real screenshots | Marwan (outline + notes drafted: [`submission/demo-script.md`](submission/demo-script.md); screenshots wait for real data) |
-| 3 | Project page text + NASA Data list + AI disclosure (README sections) | |
+| 3 | Project page text + NASA Data list + AI disclosure (README sections) | Marwan (drafted: [`submission/project-page.md`](submission/project-page.md); team to confirm the SI answer) |
 | 4 | 60-second demo script (§17) and a rehearsal | Marwan (script drafted, same file; rehearsal open) |
 | 5 | Logged-out test of the public URL on phone + laptop | |
-| 6 | Wording + badge audit of the UI (AGENTS rule 3) | |
+| 6 | Wording + badge audit of the UI (AGENTS rule 3) | Marwan (first pass done: [`submission/ui-audit.md`](submission/ui-audit.md); re-run on real data + deployed URL) |
 | 7 | Demo GIF/recording for the project page | |
 | 8 | **Submit** (by whoever the Local Lead says may submit) | |
 
@@ -75,6 +75,8 @@ after submission (team decision needed to go further).
   the contract; the engine replaces the mocks when ready. Changing the contract = tell everyone first,
   then Ali/Yassin agree and commit it in one PR.
 - `constants.json` is the only place numbers live. The UI never hardcodes a model number.
+- Changed anything in `app/public/data/`? Run `cd app && npm run check:data` before the PR (0 errors needed);
+  `-- --final` before submission also fails on leftover mock files.
 - `main` must always build and deploy.
 
 **Checkpoints (hours from kickoff):**
