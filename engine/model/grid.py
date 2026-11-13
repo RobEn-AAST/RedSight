@@ -111,7 +111,9 @@ def build_graph(
     if eta.shape != elevation.shape or np.any(~np.isfinite(eta)) or np.any((eta < 1.0) | (eta > 2.1)):
         raise ValueError("terrain factor must match the DEM and lie in [1.0, 2.1]")
     mean_slope, max_slope = _slopes(elevation, valid, resolution_m)
-    walkable = valid & (max_slope <= max_slope_deg)
+    # Allow only floating-point roundoff at an exact configured boundary.
+    slope_tolerance_deg = max(1e-10, abs(max_slope_deg) * 1e-12)
+    walkable = valid & (max_slope <= max_slope_deg + slope_tolerance_deg)
 
     rows, cols = elevation.shape
     edges = {}
@@ -129,7 +131,7 @@ def build_graph(
                     continue
                 distance = resolution_m * math.hypot(dr, dc)
                 grade = math.degrees(math.atan2(elevation[nr, nc] - elevation[row, col], distance))
-                if abs(grade) > max_slope_deg:
+                if abs(grade) > max_slope_deg + slope_tolerance_deg:
                     continue
                 eta_edge = (eta[row, col] + eta[nr, nc]) / 2
                 modeled: SegmentCost = segment_cost(

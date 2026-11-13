@@ -101,6 +101,14 @@ def test_all_admissible_edge_objective_costs_are_finite_and_positive():
     assert np.all(np.isfinite(g.o2_edges)) and np.all(g.o2_edges > 0)
 
 
+def test_exact_15_degree_edge_passes_but_meaningfully_steeper_edge_is_blocked():
+    at_15 = 10 * math.tan(math.radians(15))
+    below = graph([[0, at_15]], resolution=10)
+    above = graph([[0, 10 * math.tan(math.radians(15.0001))]], resolution=10)
+    assert below.edge_cost((0, 0), (0, 1)) is not None
+    assert above.edge_cost((0, 0), (0, 1)) is None
+
+
 def test_route_arrays_sum_segments_and_backtracks_same_geometry_directionally():
     g = graph([[0, 1, 1]], resolution=10)
     outbound = shortest_path(g, start=(0, 0), goal=(0, 2), objective="time")
@@ -131,7 +139,7 @@ def test_fastest_is_no_slower_than_any_admissible_candidate():
 
 def test_pnr_includes_exact_budget_equality():
     result = point_of_no_return(
-        [0.0, 10.0, 20.0], [20.0, 10.0, 0.0], capacity_l=100.0,
+        [0.0, 20.0, 40.0], [0.0, 20.0, 40.0], capacity_l=100.0,
         reserve_fraction=0.2, reserve_minutes=0, walkback_o2_lpm=0,
         return_margin=1.0, member_factors=[1.0],
     )
@@ -139,10 +147,19 @@ def test_pnr_includes_exact_budget_equality():
     assert result.pnr_index == 2
 
 
-def test_pnr_stops_at_first_failure_even_if_a_later_point_is_feasible():
+def test_pnr_with_monotone_same_path_costs_stops_at_last_feasible_prefix_point():
     result = point_of_no_return(
-        [0.0, 30.0, 50.0, 60.0], [0.0, 80.0, 30.0, 0.0], capacity_l=100.0,
-        reserve_fraction=0.0, reserve_minutes=0, walkback_o2_lpm=0,
-        return_margin=1.0, member_factors=[1.0],
+        [0.0, 20.0, 30.0, 40.0], [0.0, 20.0, 25.0, 30.0], capacity_l=100.0,
+        reserve_fraction=0.25, reserve_minutes=0, walkback_o2_lpm=0,
+        return_margin=1.0, member_factors=[1.0, 1.2],
     )
-    assert result.pnr_index == 0
+    assert result.pnr_index == 2
+
+
+def test_pnr_rejects_decreasing_same_path_home_costs():
+    with pytest.raises(ValueError, match="home O₂ must be non-decreasing"):
+        point_of_no_return(
+            [0.0, 30.0, 60.0], [0.0, 35.0, 20.0], capacity_l=100.0,
+            reserve_fraction=0.0, reserve_minutes=0, walkback_o2_lpm=0,
+            return_margin=1.2, member_factors=[1.0, 1.0],
+        )

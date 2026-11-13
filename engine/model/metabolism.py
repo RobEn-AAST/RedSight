@@ -23,8 +23,10 @@ def walking_speed_mps(grade_deg: float, max_speed_mps: float = 1.6 / 3.6) -> flo
     """Piecewise F5 speed model; angles are degrees and downhill is capped."""
     if not math.isfinite(grade_deg) or not math.isfinite(max_speed_mps) or max_speed_mps <= 0:
         raise ValueError("grade and positive max speed must be finite")
-    if grade_deg < -15 or grade_deg > 15:
+    slope_tolerance_deg = 1e-10
+    if grade_deg < -15 - slope_tolerance_deg or grade_deg > 15 + slope_tolerance_deg:
         raise ValueError("grade is outside the 15 degree foot limit")
+    grade_deg = min(15.0, max(-15.0, grade_deg))
     if grade_deg <= -12:
         factor = max(0.3, 1.1 - (abs(grade_deg) - 12) * (0.8 / 3.0))
     elif grade_deg < 0:

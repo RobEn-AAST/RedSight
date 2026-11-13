@@ -33,8 +33,18 @@ def point_of_no_return(
         raise ValueError("O₂ arrays must contain finite non-negative values")
     if any(used[i] < used[i - 1] for i in range(1, len(used))):
         raise ValueError("used O₂ must be cumulative and non-decreasing")
-    if capacity_l <= 0 or not math.isfinite(capacity_l):
+    if any(home[i] < home[i - 1] for i in range(1, len(home))):
+        raise ValueError("home O₂ must be non-decreasing along the outbound route")
+    if not math.isfinite(capacity_l) or capacity_l <= 0:
         raise ValueError("capacity must be positive and finite")
+    if not math.isfinite(reserve_fraction) or not 0 <= reserve_fraction < 1:
+        raise ValueError("reserve fraction must be finite in [0, 1)")
+    if not math.isfinite(reserve_minutes) or reserve_minutes < 0:
+        raise ValueError("reserve minutes must be finite and non-negative")
+    if not math.isfinite(walkback_o2_lpm) or walkback_o2_lpm < 0:
+        raise ValueError("walkback O₂ rate must be finite and non-negative")
+    if not math.isfinite(return_margin) or return_margin <= 0:
+        raise ValueError("return margin must be positive and finite")
     reserve = max(reserve_fraction * capacity_l, reserve_minutes * walkback_o2_lpm)
     budget = capacity_l - reserve
     factor = max(factors)
