@@ -66,10 +66,10 @@ submission, publishing, push, or deploy action is part of this plan.
   index is the last passing point in the contiguous outbound prefix; after the first failure later
   feasible samples do not reopen the path. The replay README example `[1, 1.08]` is an explicit
   example override, not the current core default.
-- Keep the constants and route contract keys stable. The current constants mock uses `source` while
-  §15 calls for `source_url`; this plan does not change that shared schema. Resolve provenance field
-  alignment with the team before any contract mutation. Never replace Youssef's display layers/tiles,
-  Ayman's stops/cards, or Marwan's replay files.
+- Keep constants and route keys stable. Add §15's `source_url` alongside each existing descriptive
+  `source` value; preserve all current values and keys. Team-choice assumptions point to the canonical
+  project plan, while measured/model anchors point to their source record. Never replace Youssef's
+  display layers/tiles, Ayman's stops/cards, or Marwan's replay files.
 
 ## Reproducibility and operator record
 
@@ -141,16 +141,42 @@ and 213.83 m maximum absolute. The build therefore excludes complementary-only c
 blending the offset into routes, slope, or elevation; the full proposed ops box remains in `meta.json`
 and excluded cells are represented in `hazards.geojson`.
 
-Derived route evidence: the prior coarse-mask build selected Scenario habitat `[274, 269]`
-(`137.3799167°E, −4.7957500°`) and emitted 10 routes. Those route files predate the native Horn
-slope hard-mask input and are **provisional**; they are not acceptance evidence for the final pilot.
-Regenerate routes and hazards with `/tmp/redsight-native-hazard-inputs.json`; record the resulting
-connected-component/reachability outcome and updated S1 alignment evidence before claiming completion.
+Observed native-slope pilot input (2026-11-13): the added cache is Horn 3×3 slope calculated at the
+native 1.0117468 m pixel spacing and aggregated as the **maximum** valid native slope per ~9.879 m
+planning-cell center, on the primary DTM only. Its local cache SHA-256 is
+`0540b673cdeb5e297a6d712d1e94792bcc6d186820d1ae19e06b2f52d5b35f0e`; 281,227 cells have valid slope
+support, and 191,612 valid cells exceed the 15° threshold. No complementary DTM values or blending are
+used. The native slope grid, not the mean-elevation gradient, supplies the hard mask; average-resampled
+mean elevations continue to supply signed directional edge grades and movement costs.
 
-Important boundary: the final hard mask requires the native Horn max/90th-percentile slope aggregate;
-source resolution and target cell size remain part of its evidence. No THEMIS thermal raster was
-included; terrain factor stays 1.0, so the lowest-hazard score is slope-based only. The base 2-crew,
-15 kg route bucket does not add sample pickup mass.
-The native 1.01 m source resolution must be recorded as provenance beside the aggregate. The 512 m
-ortho crop has 100% valid pixels; incorporate the Researcher's S1 landmark-alignment evidence before
-closing the pilot.
+Observed stop result under that hard mask: S1 = 21.82°, S2 = 31.89°, D1 = 26.29° and D2 = 29.22°;
+each exact stop cell is blocked at the configured 15° threshold, so both modes are explicitly
+unreachable for those four stops. S3 = 9.59° and remains routable in both modes. The closest walkable
+cell diagnostics are 9.88 m from S1, 91.08 m from S2, 19.76 m from D1 and 91.08 m from D2; they are
+recorded for troubleshooting only and are **not substituted as stop goals**. The full ops box and all
+five stop IDs remain in the app contracts and route index; no threshold was loosened.
+
+Because the previous north/downslope habitat candidates fell in components separated from S3 by the
+native hard mask, the final Scenario habitat is row 422, col 312 (`137.3870833°E, −4.8204167°`), the
+nearest walkable candidate to S1 in the component that contains S3. This is a 1,345.3 m offset from
+S1 and is clearly labeled in `meta.json`; it is not the earlier provisional habitat at row 274, col 269.
+The final route index has ten outcomes: S3 fastest and lowest-modeled-hazard routes are routed; the
+other eight entries are explicit no-route outcomes with slope reasons. Mission Replay consumed both
+S3 routes, including directed same-path return arrays and D27 values.
+
+S1 alignment evidence is a bounded visual sanity check from the native-DTM hillshade and fully valid
+512 m ortho crop: major ridge/trough boundaries and broad central rough terrain co-locate, with no
+obvious displacement. The review establishes no unique quantitative tie point or sub-meter residual;
+G2 is therefore recorded as partial visual evidence, not a metric registration pass.
+
+End-to-end timing uses the actual recorded first STAC response `2026-11-13T19:14:31+02:00` through
+native-slope build completion `2026-11-13T20:33:22+02:00`, **4,731.6 s (1 h 18 min 51.6 s)**. The
+first request began shortly before that response, so this is a lower-bound wall interval; the native
+cache and alignment evidence were ready at 20:19:35 and the final build itself took 22.47 s. G4 is
+under the 3 h threshold on this recorded interval. The build manifest retains all timestamps and scope.
+
+The projected Mars grid and all included hard/soft calculations are limited to their stated input
+resolution. No THEMIS raster was included; terrain factor stays 1.0, so the lowest-hazard score is
+slope-only. The base 2-crew, 15 kg route bucket still does not add sample pickup mass. The native cache
+retains its upstream COG ETag and states that the full remote COG SHA-256 was not computed; local crop,
+native-cache, manifest, ortho and evidence-image hashes are recorded separately.

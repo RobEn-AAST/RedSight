@@ -12,7 +12,7 @@ has landed; `_mock/make-mock.mjs` overwrites every data file.
 | `constants.json` | Ali | real file; stable keys and cited team defaults retained |
 | `layers.json` | Youssef | layer list + sources; `available:false` until tiles exist |
 | `stops.json` | Ayman | positions (§6, §8); photos + science text TODO |
-| `routes/index.json`, `routes/{stop}_{mode}_{crew}_{load}.json` | Ali | fastest + lowest-modeled-hazard exports for S1, S2, S3, D1 and D2 (crew 2, 15 kg) |
+| `routes/index.json`, `routes/{stop}_{mode}_{crew}_{load}.json` | Ali | fastest + lowest-modeled-hazard outcome for each of S1, S2, S3, D1 and D2 (crew 2, 15 kg); blocked targets have an explicit no-route status |
 | `hazards.geojson` | Ali | primary-DTM nodata and represented-grid slope hard masks |
 | `engine-build-manifest.json` | Ali | input hashes, source/licence data, seam statistics, model, runtime and route outcome record |
 | `cards/rad.json`, `cards/rems.json` | Ayman | RAD dose + source, REMS pressure range |
@@ -57,7 +57,7 @@ so complementary-only cells are marked unavailable and excluded from routes rath
 adjusted or blended. No THEMIS thermal raster was supplied; route terrain factor is 1.0 and the
 lowest-hazard cost currently represents modeled slope exposure only. Sample pickup mass is not
 included in the base 15 kg route bucket. **The committed route files predate the native-slope cache
-and are provisional; rerun the CLI with `/tmp/redsight-native-hazard-inputs.json` before treating them
+and are provisional; rerun the CLI with the updated `/tmp/redsight-engine-pilot-inputs.json` before treating them
 as the final pilot outputs.** See `engine-build-manifest.json`
 for the observed seam statistics, hashes and per-route outcomes.
 

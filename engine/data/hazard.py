@@ -29,13 +29,13 @@ class NativeHardSlope:
 
 
 def _asset_from_manifest(raw):
-    for key in ("native_hard_slope", "native_slope", "hard_slope_grid", "slope_cache", "hard_slope", "cached_slope"):
+    for key in ("native_hazard", "native_hard_slope", "native_slope", "hard_slope_grid", "slope_cache", "hard_slope", "cached_slope"):
         asset = raw.get(key)
         if isinstance(asset, dict):
             return asset
     outputs = raw.get("outputs")
     if isinstance(outputs, dict):
-        for key in ("native_hard_slope", "native_slope", "hard_slope_grid", "slope_cache", "hard_slope", "cached_slope"):
+        for key in ("native_hazard", "native_hard_slope", "native_slope", "hard_slope_grid", "slope_cache", "hard_slope", "cached_slope"):
             asset = outputs.get(key)
             if isinstance(asset, dict):
                 return asset
@@ -51,6 +51,13 @@ def _finite_number(obj, names, label):
         value = obj.get(name)
         if isinstance(value, (float, int)) and not isinstance(value, bool) and math.isfinite(value):
             return float(value)
+        if isinstance(value, (list, tuple)) and value and all(
+            isinstance(item, (int, float)) and not isinstance(item, bool) and math.isfinite(item)
+            for item in value
+        ):
+            if not np.allclose(value, value[0], rtol=1e-4, atol=1e-6):
+                raise ValueError(f"{label} must be square or isotropic")
+            return float(sum(value) / len(value))
     raise ValueError(f"native hazard manifest is missing finite {label}")
 
 
@@ -64,7 +71,7 @@ def read_native_hard_slope(manifest_path, dem):
     manifest_bytes = manifest_path.read_bytes()
     raw = json.loads(manifest_bytes)
     asset = _asset_from_manifest(raw)
-    path_value = asset.get("local_path", asset.get("path", asset.get("artifact_path", asset.get("cache_path"))))
+    path_value = asset.get("local_path", asset.get("path", asset.get("artifact_path", asset.get("cache_path", asset.get("artifact")))))
     if not path_value:
         raise ValueError("native hazard manifest must give the slope cache path")
     path = Path(path_value)
@@ -89,26 +96,39 @@ def read_native_hard_slope(manifest_path, dem):
     grid = raw.get("planning_grid", raw.get("grid", {}))
     if not isinstance(grid, dict):
         grid = {}
-    algorithm = str(asset.get("algorithm", process.get("algorithm", raw.get("algorithm", ""))))
+    method_text = str(asset.get("method", process.get("method", "")))
+    algorithm = str(asset.get("algorithm", process.get("algorithm", raw.get("algorithm", method_text))))
     if "horn" not in algorithm.lower():
         raise ValueError("native slope cache must identify the Horn slope algorithm")
-    aggregation = str(asset.get("aggregation", process.get("aggregation", raw.get("aggregation", ""))))
+    aggregation = str(asset.get("aggregation", process.get("aggregation", raw.get("aggregation", method_text))))
     normalized_aggregation = aggregation.lower().replace("_", " ").replace("-", " ").strip()
-    accepted_aggregations = {"max", "maximum", "p90", "90th percentile", "percentile 90", "90 percentile"}
-    if normalized_aggregation not in accepted_aggregations and not normalized_aggregation.startswith("maximum "):
+    maximum_aggregation = (
+        normalized_aggregation in {"max", "maximum"}
+        or normalized_aggregation.startswith(("max ", "maximum "))
+        or "maximum valid native horn slope" in normalized_aggregation
+    )
+    percentile_aggregation = (
+        "p90" in normalized_aggregation
+        or "90th percentile" in normalized_aggregation
+        or "percentile 90" in normalized_aggregation
+        or "90 percentile" in normalized_aggregation
+    )
+    if not (maximum_aggregation or percentile_aggregation):
         raise ValueError("native slope aggregation must be maximum or 90th percentile")
     units = str(asset.get("units", asset.get("unit", process.get("units", "")))).lower()
+    if not units and "slope in degrees" in method_text.lower():
+        units = "degrees"
     if units not in {"degree", "degrees", "deg", "°"}:
         raise ValueError("native slope cache units must be degrees")
     try:
         source_resolution = _finite_number(
-            asset, ("source_resolution_m", "native_resolution_m", "native_pixel_size_m"), "native source resolution"
+            asset, ("source_resolution_m", "native_resolution_m", "native_pixel_size_m", "source_native_resolution_m"), "native source resolution"
         )
     except ValueError:
         source_resolution = _finite_number(source, ("resolution_m", "pixel_size_m"), "native source resolution")
     try:
         planning_resolution = _finite_number(
-            asset, ("planning_resolution_m", "target_resolution_m", "cell_size_m"), "planning-grid resolution"
+            asset, ("planning_resolution_m", "target_resolution_m", "cell_size_m", "planning_cell_size_m"), "planning-grid resolution"
         )
     except ValueError:
         planning_resolution = _finite_number(grid, ("resolution_m", "cell_size_m"), "planning-grid resolution")
@@ -137,10 +157,46 @@ def read_native_hard_slope(manifest_path, dem):
     manifest_digest = hashlib.sha256(manifest_bytes).hexdigest()
     alignment = raw.get(
         "s1_landmark_alignment",
-        raw.get("S1_landmark_alignment", raw.get("alignment_evidence", raw.get("landmark_alignment"))),
+        raw.get("s1_alignment", raw.get("S1_landmark_alignment", raw.get("alignment_evidence", raw.get("landmark_alignment")))),
     )
     if not alignment:
         raise ValueError("native hazard manifest must include S1 landmark-alignment evidence")
+    if isinstance(alignment, dict):
+        verified_files = []
+        for key in ("evidence_image", "review_report", "ortho_crop", "native_primary_dtm_hillshade"):
+            value = alignment.get(key)
+            if not isinstance(value, str):
+                continue
+            evidence_file = Path(value)
+            if not evidence_file.is_absolute():
+                evidence_file = manifest_path.parent / evidence_file
+            evidence_file = evidence_file.resolve()
+            if not evidence_file.is_file():
+                raise FileNotFoundError(f"S1 alignment evidence file missing: {evidence_file}")
+            verified_files.append({"role": key, "path": str(evidence_file), "sha256": sha256_file(evidence_file)})
+        if verified_files:
+            alignment = {**alignment, "verified_files": verified_files}
+    evidence_path = None
+    expected_evidence_hash = None
+    if isinstance(alignment, dict):
+        evidence_path = alignment.get("local_path", alignment.get("path", alignment.get("evidence_path")))
+        expected_evidence_hash = alignment.get("sha256", alignment.get("checksum"))
+    elif isinstance(alignment, str) and alignment.startswith(("/", ".")):
+        evidence_path = alignment
+    if evidence_path:
+        evidence_path = Path(evidence_path)
+        if not evidence_path.is_absolute():
+            evidence_path = manifest_path.parent / evidence_path
+        evidence_path = evidence_path.resolve()
+        if not evidence_path.is_file():
+            raise FileNotFoundError(f"S1 landmark-alignment evidence file missing: {evidence_path}")
+        evidence_hash = sha256_file(evidence_path)
+        if expected_evidence_hash and evidence_hash.lower() != str(expected_evidence_hash).lower().removeprefix("sha256:"):
+            raise ValueError("S1 landmark-alignment evidence checksum does not match its manifest")
+        if isinstance(alignment, dict):
+            alignment = {**alignment, "verified_local_path": str(evidence_path), "verified_local_sha256": evidence_hash}
+        else:
+            alignment = {"description": "Referenced S1 landmark-alignment evidence", "verified_local_path": str(evidence_path), "verified_local_sha256": evidence_hash}
     return NativeHardSlope(
         slope_deg=slope,
         valid=valid,
@@ -148,7 +204,7 @@ def read_native_hard_slope(manifest_path, dem):
         local_sha256=digest,
         manifest_sha256=manifest_digest,
         source_url=str(asset.get("source_url", raw.get("source_url", ""))),
-        license=str(asset.get("license", raw.get("license", ""))),
+        license=str(asset.get("license", asset.get("source_license", raw.get("license", "")))),
         algorithm=algorithm,
         aggregation=aggregation,
         source_resolution_m=source_resolution,
