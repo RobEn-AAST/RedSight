@@ -21,9 +21,64 @@ export interface MicSession {
   abort: () => void
 }
 
+export interface MicOptions {
+  /** Voice-activity detection: auto-stop after this much silence (ms) once
+   *  the operator has actually spoken — the call loop starts transcribing the
+   *  instant they pause instead of waiting for a click. */
+  silenceAutoStopMs?: number
+  onAutoStop?: () => void
+}
+
 const TARGET_SAMPLE_RATE = 16_000
 
-export async function startMicRecording(): Promise<MicSession> {
+/** RMS energy VAD over the live mic stream. Threshold is deliberately low —
+ *  echoCancellation/noiseSuppression clean the signal first. */
+function watchSilence(stream: MediaStream, silenceMs: number, onSilence: () => void): () => void {
+  const ctx = new AudioContext()
+  const source = ctx.createMediaStreamSource(stream)
+  const analyser = ctx.createAnalyser()
+  analyser.fftSize = 512
+  source.connect(analyser)
+  const data = new Float32Array(analyser.fftSize)
+
+  const startedAt = Date.now()
+  const minSpeechMs = 250
+  let speechTotal = 0
+  let lastVoiceAt = Date.now()
+  let fired = false
+
+  const timer = window.setInterval(() => {
+    if (fired) return
+    analyser.getFloatTimeDomainData(data)
+    let sum = 0
+    for (let i = 0; i < data.length; i++) sum += data[i] * data[i]
+    const rms = Math.sqrt(sum / data.length)
+    const voiced = rms > 0.01
+    if (voiced) {
+      speechTotal += 100
+      lastVoiceAt = Date.now()
+    }
+    // Require real speech (and mic warm-up elapsed) before silence counts.
+    if (
+      Date.now() - startedAt > 400 &&
+      speechTotal >= minSpeechMs &&
+      Date.now() - lastVoiceAt >= silenceMs
+    ) {
+      fired = true
+      window.clearInterval(timer)
+      void ctx.close()
+      onSilence()
+    }
+  }, 100)
+
+  return () => {
+    fired = true
+    window.clearInterval(timer)
+    void ctx.close()
+  }
+}
+
+export async function startMicRecording(opts: MicOptions = {}): Promise<MicSession> {
   const stream = await navigator.mediaDevices.getUserMedia({
     audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 },
   })
@@ -38,12 +93,25 @@ export async function startMicRecording(): Promise<MicSession> {
   const stopped = new Promise<void>((resolve) => {
     recorder.onstop = () => resolve()
   })
-  recorder.start()
+  // Short timeslice so the final blob is assembled immediately on stop.
+  recorder.start(250)
 
   const release = () => stream.getTracks().forEach((t) => t.stop())
+  const stopVad =
+    opts.silenceAutoStopMs && opts.onAutoStop
+      ? watchSilence(stream, opts.silenceAutoStopMs, opts.onAutoStop)
+      : null
+  // VAD firing must not double-fire with a manual stop.
+  let finished = false
+  const once = (fn: () => void) => () => {
+    if (finished) return
+    finished = true
+    stopVad?.()
+    fn()
+  }
 
   return {
-    stop: async () => {
+    stop: once(async () => {
       if (recorder.state !== 'inactive') recorder.stop()
       release()
       await stopped
@@ -55,11 +123,11 @@ export async function startMicRecording(): Promise<MicSession> {
         /* decode failure — cloud path still works */
       }
       return { blob, pcm }
-    },
-    abort: () => {
+    }) as () => Promise<CapturedAudio>,
+    abort: once(() => {
       if (recorder.state !== 'inactive') recorder.stop()
       release()
-    },
+    }),
   }
 }
 

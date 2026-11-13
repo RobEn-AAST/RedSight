@@ -73,6 +73,10 @@ export const config = {
 
   /** Plan §4 verified IDs (2026-11-13). Defaults favor speed; override per env. */
   groqModel: env('GROQ_MODEL', 'openai/gpt-oss-120b'),
+  /** Voice-call profile: smaller/faster model + tighter token cap — the call
+   *  loop prizes time-to-first-audio over depth (text chat keeps groqModel). */
+  groqVoiceModel: env('GROQ_VOICE_MODEL', 'openai/gpt-oss-20b'),
+  voiceMaxTokens: 350,
   geminiModel: env('GEMINI_MODEL', 'gemini-3.6-flash'),
   /** Plan §3: cheapest dependable English STT (~216× real-time, WER ~12%). */
   sttModel: env('STT_MODEL', 'whisper-large-v3-turbo'),
@@ -98,6 +102,9 @@ export const config = {
   /** Server-side sampling per assistant-system-prompt.md enforcement note 3. */
   temperature: 0.3,
   maxTokens: 700,
+  /** gpt-oss reasoning depth for TEXT turns ('low'|'medium'|'high'); voice is
+   *  always 'low' (latency-first — measured 13s of hidden reasoning at medium). */
+  textReasoningEffort: env('TEXT_REASONING_EFFORT', 'low'),
 }
 
 /** Banned honesty phrases (AGENTS rule 3) — checked post-generation. */

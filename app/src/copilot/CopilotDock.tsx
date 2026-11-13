@@ -27,7 +27,7 @@ import {
   copilotReset,
   type ChatStreamEvent,
 } from '@/lib/copilotClient'
-import { setTtsHealth, ttsSpeak, ttsStop } from '@/copilot/tts'
+import { setTtsHealth, ttsSpeak, ttsSpeakStream, ttsStop, type StreamingSpeech } from '@/copilot/tts'
 import { useDictation } from '@/copilot/useDictation'
 import type { ChatMessage, CopilotHealth, CopilotRequestContext } from '@/types/copilot'
 
@@ -169,29 +169,26 @@ export function CopilotDock({
 
       const ctrl = new AbortController()
       abortRef.current = ctrl
-      let finalText = ''
-      const speakReply = () => {
-        // Voice call always speaks; chat speaks when the toggle is on.
-        if (!(callModeRef.current || ttsEnabledRef.current) || !finalText) return
-        let wasSpeaking = false
-        void ttsSpeak(finalText, (state) => {
-          if (state === 'speaking') {
-            wasSpeaking = true
-            if (callModeRef.current) setCallStatus('speaking')
-          }
-          if (state === 'idle' && wasSpeaking) {
-            // Speech finished → hand the floor back to the operator.
-            if (callModeRef.current) {
-              setCallStatus('gap')
-              window.setTimeout(() => {
-                if (callModeRef.current && !streamingRef.current && dictationStateRef.current === 'idle') {
-                  listenRestart.current?.()
-                }
-              }, 350)
+      const wantSpeech = callModeRef.current || ttsEnabledRef.current
+      // Streaming TTS: sentences synthesize while the LLM is still generating,
+      // so first audio starts seconds before the reply completes.
+      const speech: StreamingSpeech | null = wantSpeech
+        ? ttsSpeakStream((state) => {
+            if (state === 'speaking' && callModeRef.current) setCallStatus('speaking')
+          })
+        : null
+      speech?.firstAudio.then((engine) => setTtsEngine(engine))
+      speech?.finished.then(() => {
+        // Speech done → hand the floor back to the operator (call loop).
+        if (callModeRef.current) {
+          setCallStatus('gap')
+          window.setTimeout(() => {
+            if (callModeRef.current && !streamingRef.current && dictationStateRef.current === 'idle') {
+              listenRestart.current?.()
             }
-          }
-        }).then(setTtsEngine)
-      }
+          }, 300)
+        }
+      })
 
       const onEvent = (ev: ChatStreamEvent) => {
         setMessages((m) =>
@@ -213,16 +210,17 @@ export function CopilotDock({
             }
           }),
         )
-        if (ev.t === 'token') finalText += ev.v
+        if (ev.t === 'token') speech?.push(ev.v)
         if (ev.t === 'done') {
           setStreaming(false)
           abortRef.current = null
-          speakReply()
+          speech?.end()
           if (!callModeRef.current) inputRef.current?.focus()
         }
         if (ev.t === 'error') {
           setStreaming(false)
           abortRef.current = null
+          speech?.stop()
           if (callModeRef.current) {
             setCallStatus('gap')
             listenRestart.current?.()
@@ -231,10 +229,11 @@ export function CopilotDock({
       }
 
       try {
-        await copilotChatStream(clean, buildContext(), onEvent, ctrl.signal)
+        await copilotChatStream(clean, buildContext(), onEvent, ctrl.signal, callModeRef.current)
       } catch (e) {
         setStreaming(false)
         abortRef.current = null
+        speech?.stop()
         const reason =
           e instanceof DOMException && e.name === 'AbortError'
             ? 'Stopped by operator.'
@@ -282,17 +281,23 @@ export function CopilotDock({
 
   /* ------------------------------------------------------ voice call mode -- */
 
-  const dictation = useDictation(health, (text) => {
-    // In a call, transcripts auto-send (hands-free); in chat they land in
-    // the editable composer per plan §2 (nothing sends on voice alone).
-    if (callModeRef.current) {
-      if (text.trim()) void sendText(text)
-      else listenRestart.current?.() // silence → keep listening
-    } else {
-      setDraft((d) => (d ? `${d} ${text}` : text))
-      inputRef.current?.focus()
-    }
-  })
+  const dictation = useDictation(
+    health,
+    (text) => {
+      // In a call, transcripts auto-send (hands-free); in chat they land in
+      // the editable composer per plan §2 (nothing sends on voice alone).
+      if (callModeRef.current) {
+        if (text.trim()) void sendText(text)
+        else listenRestart.current?.() // silence → keep listening
+      } else {
+        setDraft((d) => (d ? `${d} ${text}` : text))
+        inputRef.current?.focus()
+      }
+    },
+    // Call mode: silence detection ends each utterance automatically — the
+    // pipeline starts the moment the operator pauses (no click per turn).
+    { autoStopOnSilenceMs: callMode ? 750 : undefined },
+  )
 
   dictationStateRef.current = dictation.state
   useEffect(() => {
@@ -359,7 +364,7 @@ export function CopilotDock({
 
   const micLabel = callMode
     ? {
-        listening: `Listening — ${dictation.elapsed}s / 30s (click to send, Esc to end call)`,
+        listening: `Listening — pauses automatically when you stop speaking (click to send now, Esc to end)`,
         transcribing: 'Transcribing…',
         thinking: 'Thinking… (click to interrupt the reply)',
         speaking: 'Speaking — click to interrupt',

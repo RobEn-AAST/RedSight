@@ -71,11 +71,13 @@ export async function copilotChatStream(
   context: CopilotRequestContext,
   onEvent: (ev: ChatStreamEvent) => void,
   signal?: AbortSignal,
+  /** Voice-call turns use the server's faster small-model profile. */
+  voice = false,
 ): Promise<void> {
   const res = await fetch('/api/copilot/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Copilot-Session': copilotSessionId() },
-    body: JSON.stringify({ sessionId: copilotSessionId(), message, ...context }),
+    body: JSON.stringify({ sessionId: copilotSessionId(), message, voice, ...context }),
     signal,
   })
 

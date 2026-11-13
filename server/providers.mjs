@@ -77,21 +77,29 @@ const GROQ_CHAT_URL = 'https://api.groq.com/openai/v1/chat/completions'
 /** Groq/OpenAI tool schema (same declaration, function-wrapper shape). */
 const groqTool = { type: 'function', function: searchToolSchema }
 
-async function groqStreamChat({ system, messages, runTool, signal, onEvent }) {
+async function groqStreamChat({ system, messages, runTool, signal, onEvent, voice = false }) {
   const convo = [{ role: 'system', content: system }, ...messages]
   let text = ''
+  const model = voice ? config.groqVoiceModel : config.groqModel
+  const maxTokens = voice ? config.voiceMaxTokens : config.maxTokens
 
   for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
     const res = await fetch(GROQ_CHAT_URL, {
       method: 'POST',
       headers: { Authorization: `Bearer ${config.groqApiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: config.groqModel,
+        model,
         messages: convo,
         tools: [groqTool],
         tool_choice: 'auto',
         temperature: config.temperature,
-        max_tokens: config.maxTokens,
+        max_tokens: maxTokens,
+        // gpt-oss models reason at "medium" by default — thousands of hidden
+        // thinking tokens (measured: 13s before the first visible action on a
+        // trivial lookup). Low effort + hidden format keeps voice turns snappy;
+        // these answers quote context, they don't need deep deliberation.
+        reasoning_effort: voice ? 'low' : config.textReasoningEffort,
+        ...(voice && { reasoning_format: 'hidden' }),
         stream: true,
       }),
       signal,

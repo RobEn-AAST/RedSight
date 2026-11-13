@@ -233,6 +233,7 @@ async function handleChat(req, res, ip) {
     missionState: context.missionState,
     availableData: Array.isArray(context.availableData) ? context.availableData.slice(0, 40) : [],
     webSearchActive: config.provider === 'gemini' && config.geminiWebSearch,
+    voice: body.voice === true,
   })
 
   addMessage(sessionId, 'user', message)
@@ -245,7 +246,12 @@ async function handleChat(req, res, ip) {
     'X-Accel-Buffering': 'no',
     ...corsHeaders(req),
   })
-  sseWrite(res, { t: 'meta', provider: config.provider, model: health().model })
+  sseWrite(res, {
+    t: 'meta',
+    provider: config.provider,
+    // Voice calls run the faster small-model profile (latency-first).
+    model: body.voice === true && config.provider === 'groq' ? config.groqVoiceModel : health().model,
+  })
 
   const abort = new AbortController()
   const timeout = AbortSignal.timeout(config.llmUpstreamTimeoutMs)
@@ -262,6 +268,7 @@ async function handleChat(req, res, ip) {
         system,
         messages: history,
         runTool,
+        voice: body.voice === true,
         signal: AbortSignal.any?.([abort.signal, timeout]) ?? abort.signal,
         onEvent: (ev) => {
           if (ev.t === 'token') sseWrite(res, { t: 'token', v: ev.v })

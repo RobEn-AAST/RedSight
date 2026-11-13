@@ -97,9 +97,16 @@ function transcribeWithWorker(worker: Worker, pcm: Float32Array): Promise<string
 
 /* ------------------------------------------------------------------ hook --- */
 
+export interface DictationOptions {
+  /** Auto-stop recording after this much silence (call mode) — transcription
+   *  starts the instant the operator pauses. Undefined = manual stop only. */
+  autoStopOnSilenceMs?: number
+}
+
 export function useDictation(
   health: CopilotHealth | null,
   onTranscript: (text: string) => void,
+  options?: DictationOptions,
 ): Dictation {
   const [state, setState] = useState<DictationState>('idle')
   const [elapsed, setElapsed] = useState(0)
@@ -117,11 +124,14 @@ export function useDictation(
   const healthRef = useRef(health)
   const transcriptRef = useRef(onTranscript)
   const modeRef = useRef<DictationMode>('local')
+  const optsRef = useRef(options)
+  const finishRef = useRef<() => void>(() => undefined)
   useEffect(() => {
     healthRef.current = health
     transcriptRef.current = onTranscript
     modeRef.current = health?.sttConfigured ? 'cloud' : 'local'
-  }, [health, onTranscript])
+    optsRef.current = options
+  }, [health, onTranscript, options])
 
   /** Cloud when the server has an STT key; local Whisper otherwise. */
   const mode: DictationMode = health?.sttConfigured ? 'cloud' : 'local'
@@ -161,6 +171,9 @@ export function useDictation(
       setState('error')
     }
   }, [])
+  useEffect(() => {
+    finishRef.current = finish
+  }, [finish])
 
   const start = useCallback(async () => {
     setError(null)
@@ -176,7 +189,12 @@ export function useDictation(
       }
     }
     try {
-      micRef.current = await startMicRecording()
+      const opts = optsRef.current
+      micRef.current = await startMicRecording(
+        opts?.autoStopOnSilenceMs
+          ? { silenceAutoStopMs: opts.autoStopOnSilenceMs, onAutoStop: () => void finishRef.current() }
+          : {},
+      )
       setState('recording')
       const startedAt = Date.now()
       stopTimer()
