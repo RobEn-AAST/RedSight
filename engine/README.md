@@ -20,6 +20,56 @@ stop/mode. All ten supported stop/mode outcomes remain in the index. A nonzero e
 no-route record; inspect the index and build manifest before using it. Input crops are checksum-checked
 against the handoff manifest. The command does not download data.
 
+## Re-export status and how to run it (2026-11-14)
+
+**The route JSONs in `app/public/data/routes/` are NOT re-exported yet.** They still use the old 30 W
+downhill floor, have no `back_fast` block, and were built with the older `stops.json` (S3 has since
+moved about 26 m, beyond the 10 m access bound, so `node engine/tests/check_replay_adapter.mjs` fails
+on the S3 stop coordinate). The code fixes are in place; the re-export needs the input DTM, which was
+not reachable from the integration Mac (Ali's bundle is not there, and AWS S3 reset every connection).
+
+Neither fix changes route geometry: the fastest objective is modeled time and the lowest-hazard objective
+is slope exposure, and neither depends on O₂. Re-costing the shipped geometry with the new floor gives
+this Scenario O₂ per crew member (raw expected, no reserve or margin; times unchanged):
+
+| Route | Out min | Back min | Out O₂ L old → new | Back O₂ L old → new |
+|---|---|---|---|---|
+| D1 fastest | 46.7 | 51.7 | 13.74 → 26.05 | 56.83 → 57.98 |
+| D1 safest | 47.3 | 51.4 | 12.90 → 25.82 | 56.20 → 57.10 |
+| D2 fastest | 32.0 | 35.2 | 9.23 → 17.41 | 39.08 → 39.69 |
+| D2 safest | 32.3 | 35.2 | 8.45 → 17.24 | 38.96 → 39.38 |
+| S1 fastest | 50.1 | 55.3 | 14.09 → 27.02 | 60.56 → 61.40 |
+| S1 safest | 50.7 | 55.0 | 13.16 → 26.85 | 60.07 → 60.77 |
+| S2 fastest | 32.0 | 35.3 | 9.15 → 17.36 | 39.16 → 39.75 |
+| S2 safest | 32.3 | 35.2 | 8.37 → 17.20 | 39.06 → 39.46 |
+| S3 fastest | 14.0 | 12.4 | 17.75 → 17.75 | 1.58 → 6.09 |
+| S3 safest | 14.0 | 12.4 | 17.75 → 17.75 | 1.41 → 6.04 |
+
+S3 routes will change geometry on re-export because the stop moved.
+
+**(a) Ali, from the original bundle (preferred; keeps the G2 evidence).** On the machine holding
+`data/raw/engine-pilot/`, on a branch with these fixes, run the build command at the top of this file
+with `--out app/public/data`, then `node engine/tests/check_replay_adapter.mjs` and
+`cd app && npm run check:data`.
+
+**(b) Anyone, once the primary COG is reachable.** `engine/tools/rebuild_pilot_inputs.py` range-reads
+only the 5,859 × 5,859 native window of
+[DTEEC_019698_1750_019988_1750_U01](https://astrogeo-ard.s3-us-west-2.amazonaws.com/mars/mro/hirise/controlled/dtm/ESP_019698_1750_ESP_019988_1750/DTEEC_019698_1750_019988_1750_U01.tif)
+(source rows from 1224, cols from 1335; the offsets put D1, S1 and the habitat on Ali's recorded native
+cells). It then rebuilds the 600 × 600 average crop, the Horn maximum-slope cache and a manifest marked
+**local rebuild**. That manifest has new hashes. The complement, ortho, mosaic and G2 evidence are not
+reproduced, and G2 is reported as `not_reproduced`, never as passing. `--native-window PATH` reuses an
+existing local copy of that exact window instead of reading it again.
+
+```sh
+python3 engine/tools/rebuild_pilot_inputs.py --out data/raw/engine-pilot-rebuild
+python3 -m engine build --input-manifest data/raw/engine-pilot-rebuild/input-manifest.json \
+  --constants app/public/data/constants.json --stops app/public/data/stops.json --out app/public/data
+```
+
+Ali's original bundle stays the reference. Before committing a rebuild, check that the habitat is still
+row 422, col 312 and that the native access cells match the committed `engine-build-manifest.json`.
+
 ## Durable local handoff (2026-11-13)
 
 `data/raw/engine-pilot/` is an ignored local bundle, not part of a Git clone. It contains the
@@ -140,6 +190,23 @@ disconnected Observed coordinate.
   with `back[0] = 0`; no
   reserve, return margin, crew factor, or drill factor is baked into the arrays. `total_s` remains
   outbound plus same-geometry return time.
+- Edge power is the Pandolf et al. (1977) load-carriage equation ([J Appl Physiol 43(4):577–581,
+  doi:10.1152/jappl.1977.43.4.577](https://doi.org/10.1152/jappl.1977.43.4.577)) times κ. Downhill, its
+  linear grade term drives the total below zero, so the power is floored at the same equation's
+  **standing-with-load terms**, `1.5·M + 2·(M+L)·(L/M)²` (129.5 W for 82 kg + 15 kg). Walking downhill
+  therefore never costs less than standing still with the load. This replaces the former 30 W floor
+  (2026-11-14), which sat far below standing metabolism; a flat 1.6 km/h walk is 158.2 W before κ. The
+  floor is a Scenario lower bound, not a measured downhill cost; no published downhill correction
+  (e.g. Santee et al.) is applied.
+- Lowest-hazard (`safest`) routes carry the optional `back_fast` block (contract:
+  `app/public/data/README.md`, demo-focus-plan §9 `Back_fast`): for every route point, the shortest
+  modeled time home to the habitat pixel on the same native graph and corridor (one Dijkstra on the
+  reversed time edges). `t_s[]` and `o2_l[]` are raw expected values per crew member summed edge by
+  edge with the same cost model as `back` (no reserve or margin). `path[i]` starts at point i and ends
+  at the habitat pixel; it is simplified for display (0.5 m Ramer–Douglas–Peucker) and the costs use
+  the unsimplified pixel path. `via` is omitted because the fastest way home is a shortest-time tree
+  path, not necessarily the exported fastest route. Fastest routes carry no `back_fast`. The engine
+  `pnr_index` still uses the same-path `back` arrays; the app applies the §9 switch rule itself.
 - The baseline PNR is `f * (used + m * home) <= B`, with `[1, 1]` member factors for the current
   default crew, `B = capacity - max(reserve_fraction*capacity, reserve_minutes*walkback_o2_lpm)`,
   and the actual capacity read from `constants.json`. PNR is the last passing sample in the same-path

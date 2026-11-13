@@ -24,7 +24,12 @@ from engine.data.raster import read_primary_dem, sha256_file
 from engine.model.constants import read_constants
 from engine.model.grid import build_graph
 from engine.model.native_grid import select_access_goal
-from engine.route.native import dijkstra_field as native_dijkstra_field, path_from_field
+from engine.route.native import (
+    back_fast_arrays,
+    dijkstra_field as native_dijkstra_field,
+    fastest_home_field,
+    path_from_field,
+)
 from engine.route.pnr import point_of_no_return
 
 
@@ -486,6 +491,8 @@ def build_real_routes(
         objective: native_dijkstra_field(native_graph, start=native_habitat, objective=objective)
         for objective in ("time", "hazard")
     }
+    # Fastest modeled way home from any pixel (demo-focus-plan §9 Back_fast), same graph and costs.
+    native_home_field = fastest_home_field(native_graph, home=native_habitat)
     native_graph_diagnostics = {
         **native_inputs.extent,
         "source": native_inputs.asset,
@@ -563,8 +570,24 @@ def build_real_routes(
                     return_margin=c["return_cost_margin"],
                     member_factors=[1.0, 1.0][: int(c["crew_size_default"])],
                 )
+                back_fast = None
+                if mode == "safest":
+                    back_fast = {
+                        **back_fast_arrays(
+                            native_graph, path.nodes, home=native_habitat,
+                            field=native_home_field, constants=c,
+                        ),
+                        "badge": "Scenario",
+                        "method": (
+                            "Shortest modeled time from each route point to the habitat pixel on the same native "
+                            "graph and corridor (Dijkstra on reversed edges); t_s and o2_l are raw expected values "
+                            "per crew member with no reserve or margin, like back. path is simplified for display "
+                            "(0.5 m Ramer-Douglas-Peucker); costs use the unsimplified pixel path."
+                        ),
+                    }
                 route_payload = {
                     **arrays,
+                    **({"back_fast": back_fast} if back_fast else {}),
                     **record,
                     "stop_name": stop["name"],
                     "badge": "Scenario",
@@ -684,8 +707,16 @@ def build_real_routes(
         and alignment_evidence.get("verified_local_sha256")
         and {"tiepoint_json", "independent_visual_review"}.issubset(alignment_roles)
     )
+    alignment_not_reproduced = (
+        isinstance(alignment_evidence, dict)
+        and str(alignment_evidence.get("status", "")).startswith("not_reproduced")
+    )
     g2_gate = {
-        "status": "pass_bounded_qualitative_local_landmark" if alignment_is_bounded_local_pass else "partial_visual_only",
+        "status": (
+            "pass_bounded_qualitative_local_landmark" if alignment_is_bounded_local_pass
+            else "not_reproduced" if alignment_not_reproduced
+            else "partial_visual_only"
+        ),
         "scope": "one local qualitative landmark tie; no global or calibrated registration claim",
         "feature_id": alignment_evidence.get("feature_id") if isinstance(alignment_evidence, dict) else None,
         "apparent_pick_delta_m": alignment_evidence.get("apparent_residual_m") if isinstance(alignment_evidence, dict) else None,
