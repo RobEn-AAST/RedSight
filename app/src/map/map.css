@@ -33,3 +33,15 @@
   outline: 2px solid var(--color-signal);
   outline-offset: -2px;
 }
+
+/* Tap popups (no-go ground reasons): dark panel, no rounded corners. */
+.rs-popup .maplibregl-popup-content {
+  border: 1px solid var(--color-hazard);
+  border-radius: 0;
+  background: var(--color-hull);
+  color: var(--color-ink);
+  padding: 8px 10px;
+}
+.rs-popup .maplibregl-popup-tip {
+  display: none;
+}

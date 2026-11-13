@@ -45,7 +45,8 @@ function useTurnBackMarker(result: TurnBackResult | null) {
   }, [show, map, lon, lat])
 }
 
-export function TurnBackPanel() {
+/** `bare`: no card frame, for embedding inside another panel (the routes screen's plan steps). */
+export function TurnBackPanel({ bare = false }: { bare?: boolean } = {}) {
   const engine = useEngineData()
   // The budget lives in the plan store so Mission Replay plays the same budget.
   const { activeRoute, routesStatus, o2BudgetL: budget, setO2BudgetL: setBudget } = usePlan()
@@ -91,16 +92,8 @@ export function TurnBackPanel() {
     mock,
   }
 
-  return (
-    <Panel
-      title={
-        <span className="flex items-center gap-2">
-          <Undo2 size={13} aria-hidden /> Turn-back point
-        </span>
-      }
-      className="flex-none"
-      bodyClassName="p-3"
-    >
+  const content = (
+    <>
       {!plan && engine.probed && (
         <p className="px-1 text-xs leading-relaxed text-ink-faint">
           constants.json is missing {missing.join(', ')}, so no budget can be computed. Nothing is drawn.
@@ -221,6 +214,21 @@ export function TurnBackPanel() {
           </p>
         </div>
       )}
+    </>
+  )
+
+  if (bare) return <div className="flex flex-col gap-3">{content}</div>
+  return (
+    <Panel
+      title={
+        <span className="flex items-center gap-2">
+          <Undo2 size={13} aria-hidden /> Turn-back point
+        </span>
+      }
+      className="flex-none"
+      bodyClassName="p-3"
+    >
+      {content}
     </Panel>
   )
 }

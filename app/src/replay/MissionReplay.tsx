@@ -26,7 +26,8 @@ function modelFromConstants(c: EngineConstants | null): Omit<ReplayOptions, 'rou
   }
 }
 
-export function MissionReplay() {
+/** `bare`: no card frame, for embedding inside another panel (the routes screen's plan steps). */
+export function MissionReplay({ bare = false }: { bare?: boolean } = {}) {
   const engine = useEngineData()
   const { map, activeRoute, routesStatus, o2BudgetL, mode } = usePlan()
   const hostRef = useRef<HTMLDivElement>(null)
@@ -76,6 +77,20 @@ export function MissionReplay() {
     else if (capacityL != null) replay.setCapacity(capacityL)
   }, [o2BudgetL, capacityL, map, hasRoute])
 
+  const content = (
+    <>
+      {!activeRoute && (
+        <p className="p-3 text-xs leading-relaxed text-ink-faint">
+          {routesStatus === 'loading'
+            ? 'Loading the route…'
+            : 'Pick a stop to play the modeled walk: crew markers, O₂ tank, turn-back moment.'}
+        </p>
+      )}
+      <div ref={hostRef} />
+    </>
+  )
+
+  if (bare) return <div>{content}</div>
   return (
     <Panel
       title={
@@ -86,14 +101,7 @@ export function MissionReplay() {
       className="flex-none"
       bodyClassName="p-0"
     >
-      {!activeRoute && (
-        <p className="p-3 text-xs leading-relaxed text-ink-faint">
-          {routesStatus === 'loading'
-            ? 'Loading the route…'
-            : 'Pick a stop to play the modeled walk: crew markers, O₂ tank, turn-back moment.'}
-        </p>
-      )}
-      <div ref={hostRef} />
+      {content}
     </Panel>
   )
 }

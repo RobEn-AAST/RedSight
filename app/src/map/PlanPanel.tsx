@@ -1,4 +1,4 @@
-import { Check, Footprints, Home, Pencil, Truck, Users, Microscope, TriangleAlert } from 'lucide-react'
+import { Check, Footprints, Gauge, Home, Microscope, Pencil, PlayCircle, Truck, TriangleAlert, Users } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { Map as MapLibreMap } from 'maplibre-gl'
 import type { FeatureCollection } from 'geojson'
@@ -12,13 +12,17 @@ import {
   MODE_CAPTION,
   MODE_COLOR,
   MODE_LABEL,
+  NO_RETURN_COLOR,
   formatDistance,
   formatDuration,
   summarizeCrew,
   summarizeMember,
 } from '@/map/format'
 import { DaylightNote } from '@/map/DaylightNote'
+import { Fold } from '@/map/Fold'
 import { usePlan } from '@/map/usePlan'
+import { MissionReplay } from '@/replay/MissionReplay'
+import { TurnBackPanel } from '@/turnback/TurnBackPanel'
 import { Button } from '@/ui/Button'
 
 const MODES: EngineRouteMode[] = ['fastest', 'safest']
@@ -271,32 +275,42 @@ function MemberTimeline({
   )
 }
 
-function NoReturnNote({ plan, members }: { plan: PlanFile; members: PlanMember[] }) {
+/** The no-return line and Jana's turn-back slider: one place for "how far can we go on this O₂". */
+function OxygenFold({ plan, members }: { plan: PlanFile; members: PlanMember[] }) {
   const { map, noReturnLine } = usePlan()
   const s = summarizeCrew(members, plan.budget_l)
-  const spare = Math.round(s.spareO2L)
   return (
-    <div className="flex gap-3 border border-caution/40 bg-caution-soft/40 px-3 py-2.5">
-      <span aria-hidden className="mt-1.5 h-[3px] w-5 flex-none" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #ff6d6d 0 6px, transparent 6px 10px)' }} />
-      <p className="text-xs leading-relaxed text-ink">
-        <span className="font-medium">No-return line.</span>{' '}
-        <span className="text-ink-dim">
-          The red dashed line on the map is where walking out any further leaves too little O₂ to get home.
+    <Fold
+      icon={<Gauge size={14} />}
+      title="O₂ and turn-back"
+      tone={s.reachesAll ? 'plain' : 'caution'}
+      answer={s.reachesAll ? `${Math.round(s.spareO2L)} L spare each` : 'Turns back early'}
+    >
+      <p className="flex gap-2.5 text-xs leading-relaxed text-ink-dim">
+        <span
+          aria-hidden
+          className="mt-1.5 h-[3px] w-5 flex-none"
+          style={{ backgroundImage: `repeating-linear-gradient(90deg, ${NO_RETURN_COLOR} 0 6px, transparent 6px 10px)` }}
+        />
+        <span>
+          The red dashed line is where walking out any further leaves too little O₂ to get home.
           {s.reachesAll
-            ? ` This route stays inside it, with about ${spare} L of O₂ per person to spare beyond the reserve.`
-            : ' This route reaches it before the target, so the plan turns back there.'}
+            ? ' This route stays inside it.'
+            : ' This route reaches it before the target, so the plan turns back there.'}{' '}
+          Drag the budget below to see where you would turn with less O₂.
+          {map && noReturnLine && (
+            <button
+              type="button"
+              onClick={() => showWholeLine(map, noReturnLine)}
+              className="mt-1 block text-ink underline underline-offset-2 hover:text-signal"
+            >
+              Show the whole line on the map
+            </button>
+          )}
         </span>
-        {map && noReturnLine && (
-          <button
-            type="button"
-            onClick={() => showWholeLine(map, noReturnLine)}
-            className="mt-1.5 block text-ink underline underline-offset-2 hover:text-signal"
-          >
-            Show the whole line on the map
-          </button>
-        )}
       </p>
-    </div>
+      <TurnBackPanel bare />
+    </Fold>
   )
 }
 
@@ -365,8 +379,17 @@ export function PlanPanel({ onOpenSources }: { onOpenSources: () => void }) {
               split={crewMode === 'split'}
             />
           ))}
-          <NoReturnNote plan={activePlan} members={activeMembers} />
+          <OxygenFold plan={activePlan} members={activeMembers} />
           <DaylightNote plan={activePlan} members={activeMembers} />
+          <Fold icon={<PlayCircle size={14} />} title="Replay the walk" answer="Play bar on the map">
+            <p className="text-xs leading-relaxed text-ink-dim">
+              Plays the modeled walk on the map: crew position, O₂ tank, the turn-back moment. Drills raise O₂ use from
+              any point to test the plan.
+            </p>
+            <div className="-mx-3 -mb-3">
+              <MissionReplay bare />
+            </div>
+          </Fold>
           {preset && !preset.matchesMission && (
             <p className="text-xs leading-relaxed text-scenario">
               No plan exists yet for your exact setup. Showing crew {preset.crew}, {preset.load_kg} kg,{' '}

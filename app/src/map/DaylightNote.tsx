@@ -11,6 +11,7 @@ import {
   southernSeason,
 } from '@/lib/mars24'
 import { useEngineData } from '@/lib/useEngineData'
+import { Fold } from '@/map/Fold'
 import { formatDuration, summarizeCrew } from '@/map/format'
 import { EvidenceBadge } from '@/ui/Badge'
 
@@ -52,12 +53,19 @@ export function DaylightNote({ plan, members }: { plan: PlanFile; members: PlanM
   const warn = beforeSunrise || afterSunset
 
   return (
-    <div className={cn('flex flex-col gap-2.5 border px-3 py-2.5', warn ? 'border-caution/50 bg-caution-soft/40' : 'border-seam')}>
-      <div className="flex items-center gap-2">
-        <Sun size={14} aria-hidden className="flex-none text-signal" />
-        <span className="text-xs font-medium text-ink">Daylight</span>
-        <EvidenceBadge evidence="derived" className="ml-auto" />
-      </div>
+    <Fold
+      icon={<Sun size={14} />}
+      title="Daylight"
+      tone={warn ? 'caution' : 'plain'}
+      answer={
+        beforeSunrise
+          ? 'Leaves before sunrise'
+          : afterSunset
+            ? 'Home after sunset'
+            : `Back ${formatMarsClock(back)} · sunset ${formatMarsClock(day.sunset)}`
+      }
+    >
+      <EvidenceBadge evidence="derived" className="self-start" />
 
       <div className="grid grid-cols-2 gap-2">
         <label className="flex flex-col gap-1 text-[11px] text-ink-dim">
@@ -118,6 +126,6 @@ export function DaylightNote({ plan, members }: { plan: PlanFile; members: PlanM
         From NASA GISS Mars24 (Allison &amp; McEwen 2000) for a flat horizon: crater walls and dust can shorten the light.
         Walk time excludes time spent sampling.
       </p>
-    </div>
+    </Fold>
   )
 }

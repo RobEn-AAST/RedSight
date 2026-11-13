@@ -35,6 +35,18 @@ a black page. The setup questions were the one part that worked. The request:
 - The setup questions keep their order; their help text is cut to one line each. The last button reads
   **Show routes**.
 
+**Tidy-up (2026-11-14, Yassin), after real routes and hazards arrived:**
+
+- *Your plan* = the step list + three collapsed rows, each with a one-line answer: **O₂ and turn-back**
+  (no-return note + Jana's slider, `TurnBackPanel bare`), **Daylight**, **Replay the walk** (Marwan's full
+  controls, `MissionReplay bare`; the play/clock/O₂ bar stays on the map). Both components keep their framed
+  version when used without `bare`. Shared row: `app/src/map/Fold.tsx`.
+- One turn-back marker on the map: the slider's (it moves with the budget); the map's own chip is gone.
+- Map layers moved into a **Layers** button (top right), so the bottom edge holds only the replay bar and zoom.
+- No-go ground: the real `hazards.geojson` has 2,207 areas (one steep polygon alone is 16.6 km²), so it is a
+  light tint coloured by reason (violet = too steep, grey = no elevation data / map edge) with the reason in a
+  tap popup, not a label per area.
+
 ## 3. What each part shows, and what settled it
 
 | Part | What the crew sees | Data | Settled by |
