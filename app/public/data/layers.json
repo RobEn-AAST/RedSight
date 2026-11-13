@@ -1,0 +1,102 @@
+{
+ "_mock": true,
+ "_note": "available:false until Youssef's tiles exist; app should skip unavailable layers.",
+ "layers": [
+  {
+   "id": "hirise",
+   "name": "HiRISE optical",
+   "tiles": "tiles/hirise/{z}/{x}/{y}.png",
+   "minzoom": 10,
+   "maxzoom": 16,
+   "badge": "Observed",
+   "provenance": {
+    "source": "USGS STAC / Trek curiosity_hirise_mosaic",
+    "resolution": "0.25 m",
+    "date": "TBD",
+    "license": "TBD"
+   },
+   "legend": null,
+   "available": false
+  },
+  {
+   "id": "hillshade",
+   "name": "Hillshade",
+   "tiles": "tiles/hillshade/{z}/{x}/{y}.png",
+   "minzoom": 10,
+   "maxzoom": 16,
+   "badge": "Derived",
+   "provenance": {
+    "source": "From HiRISE DTM DTEEC_009149_1750_009294_1750_U01",
+    "resolution": "1 m → 10 m",
+    "date": "TBD",
+    "license": "TBD"
+   },
+   "legend": null,
+   "available": false
+  },
+  {
+   "id": "slope",
+   "name": "Slope",
+   "tiles": "tiles/slope/{z}/{x}/{y}.png",
+   "minzoom": 10,
+   "maxzoom": 16,
+   "badge": "Derived",
+   "provenance": {
+    "source": "From HiRISE DTM",
+    "resolution": "10 m",
+    "date": "TBD",
+    "license": "TBD"
+   },
+   "legend": null,
+   "available": false
+  },
+  {
+   "id": "themis",
+   "name": "THEMIS thermal inertia (sand proxy)",
+   "tiles": "tiles/themis/{z}/{x}/{y}.png",
+   "minzoom": 10,
+   "maxzoom": 16,
+   "badge": "Derived",
+   "provenance": {
+    "source": "Mars Odyssey THEMIS",
+    "resolution": "100 m",
+    "date": "TBD",
+    "license": "TBD"
+   },
+   "legend": null,
+   "available": false
+  },
+  {
+   "id": "crism",
+   "name": "CRISM mineral indicators",
+   "tiles": "tiles/crism/{z}/{x}/{y}.png",
+   "minzoom": 10,
+   "maxzoom": 16,
+   "badge": "Derived",
+   "provenance": {
+    "source": "MRO CRISM via Trek",
+    "resolution": "18–36 m",
+    "date": "TBD",
+    "license": "TBD"
+   },
+   "legend": null,
+   "available": false
+  },
+  {
+   "id": "geology",
+   "name": "Geologic units (SIM 3292)",
+   "tiles": "tiles/geology/{z}/{x}/{y}.png",
+   "minzoom": 10,
+   "maxzoom": 16,
+   "badge": "Derived",
+   "provenance": {
+    "source": "USGS SIM 3292",
+    "resolution": "map scale",
+    "date": "TBD",
+    "license": "TBD"
+   },
+   "legend": null,
+   "available": false
+  }
+ ]
+}

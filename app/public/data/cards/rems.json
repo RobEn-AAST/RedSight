@@ -1,0 +1,20 @@
+{
+ "_mock": true,
+ "title": "Weather at Gale (REMS)",
+ "badge": "Observed",
+ "values": [
+  {
+   "label": "Surface pressure (annual range)",
+   "value": "700–920",
+   "unit": "Pa"
+  },
+  {
+   "label": "Air temperature (sol of plan)",
+   "value": "TODO",
+   "unit": "°C"
+  }
+ ],
+ "note": "Rover-local station; no walk-scale weather map exists.",
+ "source": "Gómez-Elvira et al. 2014 doi:10.1002/2013JE004576; PDS msl_rems_bundle",
+ "date_range": "TODO (Ayman)"
+}

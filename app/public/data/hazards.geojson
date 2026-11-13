@@ -1,0 +1,40 @@
+{
+ "type": "FeatureCollection",
+ "_mock": true,
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "reason": "slope",
+    "label": "Slope over 15° (MOCK area)"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       137.392,
+       -4.803
+      ],
+      [
+       137.396,
+       -4.803
+      ],
+      [
+       137.396,
+       -4.806
+      ],
+      [
+       137.392,
+       -4.806
+      ],
+      [
+       137.392,
+       -4.803
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}
