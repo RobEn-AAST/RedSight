@@ -26,6 +26,7 @@ Run both commands from the repository root (`RedSight/`):
 # 1) Download and verify all NASA / USGS datasets into data/raw/ (~35 MB, ~2 min)
 python engine/data/download.py
 
+# Needs: numpy pillow requests scipy matplotlib tifffile imagecodecs (pip install into .venv)
 # 2) Condition DEMs, generate Ali's 10 m grids + Pilot Gate report, and slice z10-16 XYZ tiles (~1 min)
 python engine/tiles/build_tiles.py
 ```
