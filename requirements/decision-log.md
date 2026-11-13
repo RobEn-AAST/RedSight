@@ -34,6 +34,7 @@ Prepared 2026-11-13. This is the initial decision log. Some source questions wer
 | D20 | **Rover vs foot mode = Tier 2 item E0** (before 360/HUD): separate rover rules (slope 20°, step 0.3 m, sand hard-avoid, width), mixed park-point plan, walkback check, rover carries samples | Adopted (team) | demo-focus-plan §8; Apollo LRV (NTRS 20250011301), EVA Walkback Test |
 | D21 | **Science targets include Curiosity drill sites** (Altadena, Valle de la Luna) with stop cards modeled on NASA's Perseverance sample page | Adopted (team) | demo-focus-plan §8 |
 | D22 | **Return-budget zones + automatic fastest-return switch in Tier 1 (B4b):** green/amber/red zones from `Out_fast + Back_safest/Back_fast` vs budget, a "don't go beyond" boundary, hazard no-go overlay, walk-along slider; HUD reuses it in Tier 2 | Adopted (team) | demo-focus-plan §9 |
+| D23 | **Judge-facing extras:** Tier 1 adds four < 1 h items (real-traverse overlay, elevation profile + "why this route", EVA dose card vs 600 mSv limit, Earth-delay note); Tier 2 E4 adds cuff card, shareable link, daylight window, uncertainty bands, EN/AR labels | Adopted (team) | demo-focus-plan §17 |
 | D17 | **Badge decision:** DEM = Observed; slope/hillshade/cost = Derived; THEMIS thermal inertia = Derived | Adopted (team) | Resolves drift between technical-approaches §1 and mapping-options §13 |
 
 ## Working boundary

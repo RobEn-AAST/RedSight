@@ -1,7 +1,7 @@
 # RedSight — Demo Focus Plan (what we actually build and submit)
 
 **Written:** 2026-11-13 (Cairo day 1), from the team planning session after a full read of the repo and a
-same-day live re-check of the official pages and data services (sources in §18, all accessed 2026-11-13).
+same-day live re-check of the official pages and data services (sources in §19, all accessed 2026-11-13).
 **Status:** working plan, **team choice** throughout. Not a challenge rule, and not a promise of a result.
 **Relationship to other docs:** this narrows [`24-48-hour-plan.md`](24-48-hour-plan.md) to a demo we can
 finish. Where the two conflict on **scope or ops area**, this file wins. Phase timing, the pilot gate,
@@ -84,6 +84,7 @@ and no specific number of formats is required.** Our plan covers three with one 
 | B5 | Provenance card on every layer and number (Observed / Derived / Scenario) | No visible layer or number without a card |
 | B6 | RAD + REMS context **cards** (not map layers) | Cards cite their PDS sources |
 | B6b | **Crew setup panel** (§8): crew of 1 or 2 (default 2, buddy rule), body mass, carried load, sample mass picked up per stop; time/O₂/turn-back recompute | Changing mass/load/crew changes O₂ and the turn-back point monotonically |
+| B6c | **Judge-facing extras that cost < 1 h each** (§17): Curiosity's real traverse overlaid on our route, elevation profile + "why this route" breakdown on the route card, EVA radiation-dose card, Earth-delay note | Each is visible on the public URL with its source card |
 | B7 | Deployed public URL + 7 slides + project page submitted | Submitted page; links tested logged-out |
 
 ### Tier 2 — Extras (start only after Tier 1 is submitted)
@@ -94,6 +95,7 @@ and no specific number of formats is required.** Our plan covers three with one 
 | E1 | 360° view at stops from real NASA panoramas (PIA26559, PIA26696) | §10 |
 | E2 | HUD overlay on the 360 view | §10 |
 | E3 | Resubmit with E0–E2 + updated slides | Only if the Lead confirms post-judging edits count |
+| E4 | Printable **cuff card** (Apollo-style wrist checklist) + shareable plan link; daylight window; uncertainty bands | §17 |
 
 ### Tier 3 — Bonus (only after Tier 2 works on a normal browser)
 
@@ -441,7 +443,30 @@ crew 2 × 15 kg.
 5. (Tier 2) every rover-mode route avoids rover-blocked cells; each blocked area shows its reason code.
 6. (Tier 2) mixed plan: walking leg + walkback-to-habitat O₂ check both shown at the park point.
 
-## 17. Doc-hygiene findings from this pass (2026-11-13)
+## 17. More ideas aimed at the judging criteria (searched 2026-11-13; Team choice)
+
+The official Judging & Awards Guide scores **Impact, Creativity, Validity, Relevance, Presentation** and
+asks teams to give Presentation equal weight (2025 guide, the latest found; re-check the 2026 text). A
+feature list doesn't guarantee a win (AGENTS rule 2). Each idea below is picked because it is cheap and
+hits a named criterion.
+
+| Idea | What the user sees | Criterion | Cost | Tier | Source / label |
+|---|---|---|---|---|---|
+| **Our route vs Curiosity's real path** | The rover's actual traverse (MMGIS waypoints, already loaded for the stops) drawn next to our modeled walk | Validity, Relevance | 30 min | 1 (B6c) | NASA MMGIS waypoints · Observed |
+| **Elevation profile + "why this route"** | Chart of height along the route; card lines like "+400 m longer to avoid a 17° slope", from the per-segment `cost_terms` already in the contract (§15) | Presentation, Validity | 45 min | 1 (B6c) | Derived |
+| **EVA radiation-dose card** | "This 4 h walk ≈ 0.11 mSv" = RAD surface dose rate × EVA hours, shown next to NASA's 600 mSv career limit. Suit/terrain shielding is **not** modeled, which the card states | Relevance, Impact | 20 min | 1 (B6c) | RAD 0.64–0.67 mSv/day (already cited) + NASA-STD-3001 Vol 1 career limit 600 mSv · Derived/Scenario |
+| **Earth can't help in time** | One line on the turn-back card and slide 5: a one-way signal to Earth takes up to ≈22 min (15–21 min during a long surface stay), with relay gaps and blackouts, so the crew decides on site. This is why the plan is precomputed and switches to the fastest return on its own | Impact | 10 min | 1 (B6c) | NASA Langley, McBrayer et al., ASCEND 2022 (NTRS 20220013418) · published analysis |
+| **Cuff card** | Printable/phone card per route: legs as heading + distance + time + O₂ at each stop + turn-back point, like the Apollo 17 wrist checklists | Creativity, Presentation | 1–2 h | 2 (E4) | Apollo Lunar Surface Journal cuff checklists · format idea |
+| **Shareable plan link** | Crew/load/stop/budget stored in the URL so a judge can open the exact plan shown on the slide | Presentation | 30 min | 2 (E4) | — |
+| **Daylight window** | Local sunrise/sunset for the planned sol at Gale, and a warning if the plan runs past sunset | Validity | 1–2 h | 2 (E4) | NASA GISS Mars24 algorithm (**to verify** before use) · Derived |
+| **Uncertainty bands** | O₂ and turn-back drawn as a range (κ 1.2–1.5, sand cost low/high), not one line | Validity | 1 h | 2 (E4) | constants.json ranges · Scenario |
+| **Bilingual labels (EN/AR)** | Toggle for Arabic UI labels for the Cairo audience; judging copy stays English | Presentation (local) | 1 h | 2 (E4) | Team choice |
+
+**Demo script (Presentation):** a 60-second click path judges can repeat, written into slide 4–5 notes:
+pick "boxwork + drill site" → crew of 2, 15 kg → compare fastest vs lowest-hazard → drag the budget down
+and watch the zones shrink → walk-along until the switch to the fastest return → open one source card.
+
+## 18. Doc-hygiene findings from this pass (2026-11-13)
 
 | Finding | Status |
 |---|---|
@@ -453,7 +478,7 @@ crew 2 × 15 kg.
 | `.gitignore` excludes `tiles/` ⇒ deploy by upload, not Pages-from-main (§4) | Noted here |
 | ai-context banned-word list omitted "safe time remaining" and "flight-safe" | Fixed in ai-context |
 
-## 18. Sources (all accessed 2026-11-13)
+## 19. Sources (all accessed 2026-11-13)
 
 - Official challenge page (live text re-extracted; resources unchanged, 5 items):
   https://www.spaceappschallenge.org/2026/challenges/interplanetary-survival-guide-martian-map/
@@ -482,6 +507,12 @@ crew 2 × 15 kg.
   https://science.nasa.gov/blog/curiosity-blog-sols-4689-4694-drill-in-the-boxwork-unit-is-go/
 - Curiosity and Perseverance designed for slopes up to 30° (JPL):
   https://www.nasa.gov/centers-and-facilities/jpl/this-transforming-rover-can-explore-the-toughest-terrain
+- Space Apps Judging & Awards Guide (five criteria): https://www.spaceappschallenge.org/resources/judging-awards-guide
+- NASA-STD-3001 radiation technical brief (career effective dose < 600 mSv):
+  https://www.nasa.gov/wp-content/uploads/2023/03/radiation-protection-technical-brief-ochmo.pdf
+- McBrayer, Chai, Judd (NASA Langley), *Communication Delays, Disruptions, and Blackouts for Crewed Mars Missions*,
+  ASCEND 2022, NTRS 20220013418: https://ntrs.nasa.gov/citations/20220013418 (max one-way ≈22 min; 15–21 min for long stays)
+- Apollo cuff checklists (heading/distance per traverse leg): https://www.nasa.gov/history/alsj/a17/cuff17.html
 - WebXR on visionOS. Apple Developer Forums (WebKit supports `immersive-vr`; AR module unsupported):
   https://developer.apple.com/forums/thread/743655 · https://developer.apple.com/forums/thread/756850 ·
   default-on in visionOS 2 (secondary report): https://roadtovr.com/visionos-2-webxr-support-vision-pro/
