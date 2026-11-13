@@ -455,7 +455,7 @@ export function StopHud({
           <span className="hud-chip hud-scn">SCENARIO</span> O₂, route and times are modeled estimates, not
           measurements · RAD/REMS: Curiosity rover-local values · Photo: {pano.pia}, {pano.credit}, {pano.taken} ·
           Real imagery only at stops; moving between stops is a jump. · Yellow route: drawn from the route's coordinates onto the photo (flat ground, no hills; photo
-          heading {pano.northCalibrated ? 'aligned' : `≈${northDeg}° at centre, from NASA's caption (crater rim at centre); [ ] adjust`}), not tracking.
+          heading {pano.northCalibrated ? 'aligned' : `≈${northDeg}° at centre, ${pano.headingNote}; [ ] adjust`}), not tracking.
         </div>
       </div>
     </div>,
