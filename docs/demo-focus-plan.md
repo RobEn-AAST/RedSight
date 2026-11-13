@@ -479,7 +479,7 @@ these files.
 | `constants.json` | every model constant: `{value, range, unit, source_url, badge}` (κ, reserve, slope limits, speeds, O₂ conversion, crew defaults, rover rules) | engine ↔ app (UI reads, never hardcodes) |
 | `layers.json` | per layer: tile URL template, zoom range, legend, provenance card fields, badge | engine → app |
 | `stops.json` | GeoJSON points: name, evidence, sol(s), waypoint lon/lat, approx flag, photos[], panorama?, science text, badge | data owner → app |
-| `routes/{stop}_{mode}_{crew}_{load}.json` | polyline, per-segment `{t, o2, slope, cost_terms}`, cumulative tables, PNR index, budget used, mode, constants hash | engine → app |
+| `routes/{stop}_{mode}_{crew}_{load}.json` + `routes/index.json` | `coords`, `seg[]` `{t_s, o2_l, slope_deg, cost_terms}`, `cum` + `back` tables (`t_s`, `o2_l` per point), `pnr_index`, `budget_l`, mode, constants hash. Exact fields: [`app/public/data/README.md`](../app/public/data/README.md) | engine → app |
 | `fields/{crew}_{load}_{field}.png` | `Out_fast`, `Back_fast`, `Back_safest` as 16-bit PNG (O₂ in 0.1 L units) on the planning grid | engine → app (zones = threshold only) |
 | `fields/coverage.png` + `coverage.json` | 8-bit mask (0 shadow / 1 habitat LOS / 2 relay LOS in Tier 2) on the planning grid; mast height, target height, CRS used | engine → app |
 | `hazards.geojson` | hard-blocked areas with reason codes (`slope`, `nodata`, `edge`; Tier 2 adds `rover_step`, `rover_sand`, `rover_width`) | engine → app |

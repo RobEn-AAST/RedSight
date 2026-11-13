@@ -1,0 +1,95 @@
+{
+ "_mock": true,
+ "routes": [
+  {
+   "id": "S1_fastest_2_15",
+   "stop": "S1",
+   "mode": "fastest",
+   "crew": 2,
+   "load_kg": 15,
+   "file": "routes/S1_fastest_2_15.json",
+   "total_s": 7866
+  },
+  {
+   "id": "S1_safest_2_15",
+   "stop": "S1",
+   "mode": "safest",
+   "crew": 2,
+   "load_kg": 15,
+   "file": "routes/S1_safest_2_15.json",
+   "total_s": 7468
+  },
+  {
+   "id": "S2_fastest_2_15",
+   "stop": "S2",
+   "mode": "fastest",
+   "crew": 2,
+   "load_kg": 15,
+   "file": "routes/S2_fastest_2_15.json",
+   "total_s": 6887
+  },
+  {
+   "id": "S2_safest_2_15",
+   "stop": "S2",
+   "mode": "safest",
+   "crew": 2,
+   "load_kg": 15,
+   "file": "routes/S2_safest_2_15.json",
+   "total_s": 6531
+  },
+  {
+   "id": "S3_fastest_2_15",
+   "stop": "S3",
+   "mode": "fastest",
+   "crew": 2,
+   "load_kg": 15,
+   "file": "routes/S3_fastest_2_15.json",
+   "total_s": 4110
+  },
+  {
+   "id": "S3_safest_2_15",
+   "stop": "S3",
+   "mode": "safest",
+   "crew": 2,
+   "load_kg": 15,
+   "file": "routes/S3_safest_2_15.json",
+   "total_s": 3826
+  },
+  {
+   "id": "D1_fastest_2_15",
+   "stop": "D1",
+   "mode": "fastest",
+   "crew": 2,
+   "load_kg": 15,
+   "file": "routes/D1_fastest_2_15.json",
+   "total_s": 7848
+  },
+  {
+   "id": "D1_safest_2_15",
+   "stop": "D1",
+   "mode": "safest",
+   "crew": 2,
+   "load_kg": 15,
+   "file": "routes/D1_safest_2_15.json",
+   "total_s": 7444
+  },
+  {
+   "id": "D2_fastest_2_15",
+   "stop": "D2",
+   "mode": "fastest",
+   "crew": 2,
+   "load_kg": 15,
+   "file": "routes/D2_fastest_2_15.json",
+   "total_s": 6900
+  },
+  {
+   "id": "D2_safest_2_15",
+   "stop": "D2",
+   "mode": "safest",
+   "crew": 2,
+   "load_kg": 15,
+   "file": "routes/D2_safest_2_15.json",
+   "total_s": 6544
+  }
+ ]
+}

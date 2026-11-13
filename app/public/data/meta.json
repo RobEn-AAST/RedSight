@@ -1,0 +1,30 @@
+{
+ "_mock": true,
+ "ops_box": {
+  "west": 137.335,
+  "east": 137.435,
+  "south": -4.85,
+  "north": -4.75
+ },
+ "crs": "+proj=longlat +R=3396190 +no_defs",
+ "grid": {
+  "resolution_m": 10,
+  "width": 600,
+  "height": 600,
+  "origin_lonlat": [
+   137.335,
+   -4.75
+  ]
+ },
+ "nodata": -32768,
+ "habitat": {
+  "lonlat": [
+   137.4005,
+   -4.8185
+  ],
+  "badge": "Scenario",
+  "note": "MOCK position"
+ },
+ "build_date": "2026-11-13",
+ "constants_hash": "mock"
+}
