@@ -55,6 +55,22 @@ the tool; unknown tools are refused.
 - Upstream timeouts, SSE heartbeat, abort passthrough on client disconnect.
 - Request bodies are never logged (privacy default); access lines carry method/path/status only.
 
+## Latency architecture (2026-11-14 rework — measured)
+
+A trivial voice lookup took **13.5s to first visible token**: gpt-oss at default
+`medium` reasoning effort generates thousands of hidden thinking tokens, and TTS
+waited for the full reply. The rework overlaps every stage:
+
+| Stage | Text chat | Voice call |
+|---|---|---|
+| STT | manual stop → cloud Whisper | **VAD auto-stop on 750 ms silence** → transcription starts the instant the operator pauses |
+| LLM | `gpt-oss-120b`, low reasoning | **`gpt-oss-20b` + `reasoning_format: hidden` + 350-token cap**; answers from CONTEXT first, search tool only for missing facts |
+| TTS | speaks on done (toggle) | **sub-sentence streaming**: sentences cut from the live token stream, synthesized in parallel, played in order — first audio starts while the LLM is still generating |
+
+Measured after (same question): first token **0.46 s** (no tool) / **2.0 s** (with
+search-tool round); full reply ≈ first token + 0.05 s. End-to-end voice turn ≈
+STT (~0.5–1 s) + first token + first audio (~0.5 s, overlapped) ≈ **1.5–3 s**.
+
 ## Honest deviations from the plan docs (dated 2026-11-13, wiring session)
 
 1. **TTS was added** — the plan had deferred it; the user requested it. Kokoro-82M runs fully
