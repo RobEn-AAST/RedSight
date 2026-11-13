@@ -45,6 +45,7 @@ export interface SetMissionParamsArgs {
   crewCount?: number
   loadKg?: number
   loadBasis?: 'perAstronaut' | 'total'
+  sampleKgPerStop?: number
   roverAvailable?: boolean
   scienceGoalId?: string
 }

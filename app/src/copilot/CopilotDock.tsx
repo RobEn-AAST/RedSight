@@ -1,4 +1,4 @@
-import { useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { Bot, Mic, SendHorizonal, Trash2, X, ShieldAlert } from 'lucide-react'
 
 import { Button } from '@/ui/Button'
@@ -24,10 +24,22 @@ function newMessage(text: string): ChatMessage {
  * transcript is local browser state and every message is marked undelivered.
  * Provider plan + future tool contracts: docs/ai/voice-copilot-plan.md.
  */
-export function CopilotDock({ onClose }: { onClose?: () => void }) {
+export function CopilotDock({
+  onClose,
+  autoFocusInput = false,
+}: {
+  onClose?: () => void
+  /** Drawer variant focuses the composer on mount; the desktop dock does not
+   *  (it must never hijack focus on page load). */
+  autoFocusInput?: boolean
+}) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [draft, setDraft] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (autoFocusInput) inputRef.current?.focus()
+  }, [autoFocusInput])
 
   const send = () => {
     const text = draft.trim()

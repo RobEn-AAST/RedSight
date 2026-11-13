@@ -12,6 +12,7 @@ import {
 
 import { MissionProvider } from '@/lib/missionStore'
 import { useMission } from '@/lib/useMission'
+import { useMediaQuery } from '@/lib/useMediaQuery'
 import { EngineDataProvider } from '@/lib/engineData'
 import { MissionWorkspace } from '@/mission/MissionWorkspace'
 import { MapWorkspace } from '@/map/MapWorkspace'
@@ -119,6 +120,9 @@ function Console() {
   const { state } = useMission()
   const [ws, setWs] = useState<WorkspaceId>('mission')
   const [copilotOpen, setCopilotOpen] = useState(false)
+  // Exactly one CopilotDock may be mounted at a time: the dock at ≥xl, the
+  // drawer below it. Both at once would duplicate #copilot-input ids.
+  const isDesktopXl = useMediaQuery('(min-width: 1280px)')
   const prevStatus = useRef(state.status)
 
   // Power-on moment: confirming the mission carries the operator to the map.
@@ -146,15 +150,18 @@ function Console() {
       if (idx >= 1 && idx <= WORKSPACES.length) {
         setWs(WORKSPACES[idx - 1].id)
       } else if (e.key === 'c' || e.key === 'C') {
-        setCopilotOpen(true)
-        requestAnimationFrame(() => document.getElementById('copilot-input')?.focus())
+        if (isDesktopXl) {
+          requestAnimationFrame(() => document.getElementById('copilot-input')?.focus())
+        } else {
+          setCopilotOpen(true) // drawer autofocuses its input on mount
+        }
       } else if (e.key === 'Escape') {
         setCopilotOpen(false)
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [])
+  }, [isDesktopXl])
 
   const active = WORKSPACES.find((w) => w.id === ws)
 
@@ -290,17 +297,20 @@ function Console() {
           </footer>
         </div>
 
-        {/* Copilot dock (desktop) */}
-        <aside className="hidden w-80 flex-none border-l border-seam p-3 xl:flex" aria-label="Copilot">
-          <div className="h-full min-h-0 w-full">
-            <CopilotDock />
-          </div>
-        </aside>
+        {/* Copilot dock (desktop ≥xl) — the drawer below replaces it under xl,
+            so only one #copilot-input exists at any viewport. */}
+        {isDesktopXl && (
+          <aside className="w-80 flex-none border-l border-seam p-3" aria-label="Copilot">
+            <div className="h-full min-h-0 w-full">
+              <CopilotDock />
+            </div>
+          </aside>
+        )}
       </div>
 
-      {/* Copilot drawer (mobile / small tablets) */}
+      {/* Copilot drawer (below xl — the dock above takes over at ≥xl) */}
       <AnimatePresence>
-        {copilotOpen && (
+        {copilotOpen && !isDesktopXl && (
           <>
             <motion.div
               key="scrim"
@@ -308,7 +318,7 @@ function Console() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className="fixed inset-0 z-40 bg-void/70 backdrop-blur-[2px] xl:hidden"
+              className="fixed inset-0 z-40 bg-void/70 backdrop-blur-[2px]"
               onClick={() => setCopilotOpen(false)}
               aria-hidden
             />
@@ -318,11 +328,11 @@ function Console() {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
-              className="fixed inset-x-0 bottom-0 z-50 mx-auto h-[75dvh] max-w-xl p-3 xl:hidden"
+              className="fixed inset-x-0 bottom-0 z-50 mx-auto h-[75dvh] max-w-xl p-3"
               role="dialog"
               aria-label="Copilot"
             >
-              <CopilotDock onClose={() => setCopilotOpen(false)} />
+              <CopilotDock onClose={() => setCopilotOpen(false)} autoFocusInput />
             </motion.div>
           </>
         )}
