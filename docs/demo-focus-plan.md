@@ -101,7 +101,7 @@ Owners and branches: [`team-plan.md`](team-plan.md).
 | E2 | HUD overlay on the 360 view | §10 |
 | E3 | Resubmit with E0–E2 + updated slides | Only if the Lead confirms post-judging edits count |
 | E5 | **Relays:** rover or buddy as a radio relay (amber "contact via relay" zone); suggested drop point for a portable relay beacon that covers the most of the route | §9b |
-| E4 | Printable **cuff card** (Apollo-style wrist checklist) + shareable plan link; daylight window; uncertainty bands | §17 |
+| E4 | Printable **cuff card** (Apollo-style wrist checklist) + shareable plan link; daylight window (✅ done by Yassin, 2026-11-13); uncertainty bands | §17 |
 
 ### Tier 3 — Bonus (only after Tier 2 works on a normal browser)
 
@@ -563,7 +563,7 @@ hits a named criterion.
 | **Earth can't help in time** | One line on the turn-back card and slide 5: a one-way signal to Earth takes up to ≈22 min (15–21 min during a long surface stay), with relay gaps and blackouts, so the crew decides on site. This is why the plan is precomputed and switches to the fastest return on its own | Impact | 10 min | 1 (B6c) | NASA Langley, McBrayer et al., ASCEND 2022 (NTRS 20220013418) · published analysis |
 | **Cuff card** | Printable/phone card per route: legs as heading + distance + time + O₂ at each stop + turn-back point, like the Apollo 17 wrist checklists | Creativity, Presentation | 1–2 h | 2 (E4) | Apollo Lunar Surface Journal cuff checklists · format idea |
 | **Shareable plan link** | Crew/load/stop/budget stored in the URL so a judge can open the exact plan shown on the slide | Presentation | 30 min | 2 (E4) | — |
-| **Daylight window** | Local sunrise/sunset for the planned sol at Gale, and a warning if the plan runs past sunset | Validity | 1–2 h | 2 (E4) | NASA GISS Mars24 algorithm (**to verify** before use) · Derived |
+| **Daylight window** ✅ **Done by Yassin (2026-11-13)** | Local sunrise/sunset for the planned sol at Gale, and a warning if the plan runs past sunset. Built: "Daylight" card under *Your plan* (Earth date + leave time in Mars local solar time → sunrise, back-home time, sunset, latest start, warning after sunset); `app/src/lib/mars24.ts`, `app/src/map/DaylightNote.tsx` | Validity | 1–2 h | 2 (E4) | NASA GISS Mars24 algorithm, **verified 2026-11-13**: the code reproduces both worked examples on the GISS algorithm page (`app/src/lib/mars24.test.mjs`, 5/5) · Derived (flat horizon; crater walls and dust not modeled) |
 | **Uncertainty bands** | O₂ and turn-back drawn as a range (κ 1.2–1.5, sand cost low/high), not one line | Validity | 1 h | 2 (E4) | constants.json ranges · Scenario |
 | **Bilingual labels (EN/AR)** | Toggle for Arabic UI labels for the Cairo audience; judging copy stays English | Presentation (local) | 1 h | 2 (E4) | Team choice |
 
