@@ -118,9 +118,18 @@ function member(id, label, targetId, mode, crew, rover) {
     cum.t_s.push(round(cum.t_s[i] + s.t_s, 1))
     cum.o2_l.push(round(cum.o2_l[i] + s.o2_l))
   })
-  // Way home from each point. MOCK: the same path reversed, so it costs what the
-  // way out cost. The engine samples its return field here instead (§9).
-  const toHome = { t_s: cum.t_s.slice(), o2_l: cum.o2_l.slice() }
+  // Way home from each point. On foot, reuse the route file's own return table and its optional
+  // back_fast (fastest way home, drives the automatic switch), scaled like the way out. With a rover
+  // (MOCK): the same path reversed, so it costs what the way out cost. The engine samples its return
+  // field here instead (§9).
+  const scale = (a, k) => a.map((x) => round(x * k))
+  const foot = !rover && r.back?.o2_l?.length === n
+  const toHome = foot
+    ? { t_s: r.back.t_s.map((x) => round(x * crewFactor, 1)), o2_l: scale(r.back.o2_l, crewFactor) }
+    : { t_s: cum.t_s.slice(), o2_l: cum.o2_l.slice() }
+  const backFast = foot && r.back_fast?.o2_l?.length === n
+    ? { via: r.back_fast.via, t_s: r.back_fast.t_s.map((x) => round(x * crewFactor, 1)), o2_l: scale(r.back_fast.o2_l, crewFactor), path: r.back_fast.path }
+    : null
   let pnr = 0
   for (let i = 0; i < n; i++) if (cum.o2_l[i] + toHome.o2_l[i] <= budgetL) pnr = i
   const legs = []
@@ -144,6 +153,7 @@ function member(id, label, targetId, mode, crew, rover) {
     seg: seg.map(({ kind: _kind, ...rest }) => rest),
     cum,
     back: toHome,
+    ...(backFast ? { back_fast: backFast } : {}),
     pnr_index: pnr,
     park_index: rover ? park : null,
   }
