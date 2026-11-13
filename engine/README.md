@@ -1,12 +1,13 @@
 # RedSight offline route engine
 
-## Build the current real-data payload
+## Build the native-slope real-data payload
 
 From the repository root, with Python 3 plus the already-installed NumPy, rasterio, SciPy and pytest:
 
 ```sh
 python3 -m engine build \
   --input-manifest /tmp/redsight-engine-pilot-inputs.json \
+  --native-hazard-manifest /tmp/redsight-native-hazard-inputs.json \
   --constants app/public/data/constants.json \
   --stops app/public/data/stops.json \
   --out app/public/data
@@ -30,33 +31,33 @@ The supplied assets are CC0-1.0; access date recorded by the input handoff: 2026
 The crops align on the same grid and overlap in 224,180 cells, but the complementary-minus-primary
 elevation difference has median +52.64 m, absolute 90th percentile 131.61 m and maximum 213.83 m.
 The route builder therefore uses the primary DTM only and preserves its 78.21% valid-area mask; it does
-not silently blend or apply an unsubstantiated vertical correction. All five supported stops and the
-selected habitat lie in one primary-source, walkable connected component. Complementary-only pixels
-are marked as unavailable/no-data in the route hazards even though the second product covers some of
-them.
+not silently blend or apply an unsubstantiated vertical correction. Complementary-only pixels are
+marked unavailable even where the second product has coverage. The native-slope mask determines final
+habitat connectivity and per-stop reachability; the earlier coarse-mask routes are provisional until
+this native input is used.
 
-The primary asset is native 1.0117 m/pixel, but the local crop supplied for this build is
-average-resampled to 9.879 m. The 15° foot mask is therefore the maximum of the eight neighboring
-planning-cell mean-height grades. It is a hard limit on the represented grid and cannot detect scarps
-smaller than a planning cell; the engine does not claim native-resolution maximum slope. No THEMIS
-thermal-inertia raster was supplied, so the terrain multiplier is 1.0 and the lowest-hazard objective
-uses modeled slope exposure only. Hazards remain Derived/Unavailable as labeled in the output.
-Collected sample mass is not included in the current 2-crew, 15 kg route bucket; a sample-carrying
-variant needs a separate load bucket and routes.
+The primary asset is native 1.0117 m/pixel, while the local mean-elevation crop is 600×600 at about
+9.879 m. The 15° hard mask requires a separate cached native DEM Horn 3×3 slope aggregate at maximum
+or 90th percentile, aligned to this exact planning grid. The CLI refuses a missing or mismatched
+cache; cells with unavailable native slope support remain blocked. Its manifest must identify the
+local path, bytes and SHA-256, degree units, Horn algorithm, aggregation, source and target resolution,
+source URL/license and S1 landmark-alignment evidence. These inputs are recorded in the build manifest.
+No THEMIS thermal-inertia raster was supplied, so the terrain multiplier is 1.0 and the lowest-hazard
+objective uses modeled slope exposure only. Collected sample mass is not included in the 2-crew,
+15 kg route bucket; a sample-carrying variant needs a separate load bucket and routes.
 
 The five stops are S1, S2, S3, D1 and D2 from the current `stops.json`; their existing names and
-coordinates are preserved. The selected habitat is cell row 274, column 269 at 137.3799167°E,
-−4.7957500°; it is a Scenario location selected as the lowest-neighborhood-slope candidate 150–600 m
-north and downslope of S1 that shares the hard-mask connected component with all five stops.
+coordinates are preserved. A new native-slope build reselects habitat from the connected stop
+component; it must report unreachable stops rather than weakening the slope or nodata mask.
 
 ## Model and route contract
 
 - Terrain analysis uses the input raster's Mars 2015 sphere, ocentric equirectangular projected CRS
   (IAU:49910, radius 3,396,190 m). Browser/export route coordinates are converted to east-positive
   planetocentric longitude/latitude on the same sphere.
-- Nodata and over-limit slope are hard blocked; no DEM values are filled. The maximum of the eight
-  neighboring planning-cell grades supplies the hard mask. Signed directed edge grades use the
-  destination minus source mean heights; reversing an edge recomputes time and O₂.
+- Nodata and over-limit slope are hard blocked; no DEM or slope values are filled. The checked native
+  Horn max/p90 aggregate supplies the hard mask. Signed directed edge grades use the destination minus
+  source mean heights; reversing an edge recomputes time and O₂.
 - Fastest minimizes modeled edge time. Safest minimizes the exposed weighted slope-hazard score; it is
   a preference within available data, not a guarantee or a lexicographic tie-break. Both modes use the
   same admissible graph and report their actual time costs.

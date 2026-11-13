@@ -3,6 +3,7 @@
 from datetime import date
 import hashlib
 import json
+from collections import Counter
 from pathlib import Path
 import platform
 
@@ -13,6 +14,7 @@ from rasterio.warp import transform, transform_geom
 from scipy import __version__ as scipy_version
 from scipy.sparse.csgraph import connected_components
 
+from engine.data.hazard import read_native_hard_slope
 from engine.data.raster import read_primary_dem, sha256_file
 from engine.model.constants import read_constants
 from engine.model.grid import build_graph
@@ -176,23 +178,35 @@ def _choose_habitat(dem, graph, stops):
         for r, c in choices
     ]
     _, labels = connected_components(graph.time_csr, directed=True, connection="weak")
-    stop_components = {labels[graph.node(stop["cell"])] for stop in stops.values()}
-    if len(stop_components) != 1:
-        raise ValueError("the five supported stops do not share a connected primary-DTM walkable component")
-    shared_component = next(iter(stop_components))
+    valid_stop_components = [
+        int(labels[graph.node(stops[stop_id]["cell"])])
+        for stop_id in SUPPORTED_STOPS
+        if graph.valid[stops[stop_id]["cell"]]
+    ]
+    if valid_stop_components:
+        component_counts = Counter(valid_stop_components)
+        shared_component = sorted(component_counts, key=lambda component: (-component_counts[component], component))[0]
+    else:
+        candidate_components = [int(labels[graph.node((r, c))]) for _, _, r, c in scores]
+        component_counts = Counter(candidate_components)
+        shared_component = sorted(component_counts, key=lambda component: (-component_counts[component], component))[0]
     for _, _, row, col in sorted(scores):
         if labels[graph.node((row, col))] == shared_component:
-            return (row, col), "Lowest neighborhood-slope candidate 150–600 m north and downslope of S1 within the component containing all five supported stops."
-    raise ValueError("no habitat candidate can reach all five supported stops under the 15°/nodata hard mask")
+            count = component_counts.get(shared_component, 0)
+            return (row, col), f"Lowest neighborhood-slope candidate 150–600 m north and downslope of S1 in a component containing {count} supported stop(s) under the native-slope hard mask. Stops outside this component will be marked unreachable."
+    raise ValueError("no walkable habitat candidate lies in a component connected to the supported-stop area")
 
 
-def _hazards_geojson(dem, graph, slope_limit_deg):
+def _hazards_geojson(dem, graph, slope_limit_deg, slope_method):
     reasons = np.zeros(graph.shape, dtype=np.uint8)
     reasons[~dem.valid] = 2
-    reasons[dem.valid & (graph.slope_max_deg > slope_limit_deg + 1e-10)] = 1
+    slope_missing = dem.valid & ~np.isfinite(graph.slope_max_deg)
+    reasons[slope_missing] = 3
+    reasons[dem.valid & np.isfinite(graph.slope_max_deg) & (graph.slope_max_deg > slope_limit_deg + 1e-10)] = 1
     labels = {
-        1: ("slope", f"8-neighbor maximum slope on average-resampled ~9.88 m cells exceeds the {slope_limit_deg:g}° Scenario threshold"),
+        1: ("slope", f"{slope_method} exceeds the {slope_limit_deg:g}° Scenario threshold"),
         2: ("nodata", "Primary DTM nodata; complementary-only cells excluded because overlapping scenes show substantial height offsets"),
+        3: ("edge", "Native slope support unavailable at this cell; route blocked without interpolation"),
     }
     features_out = []
     for geom, value in shapes(reasons, mask=reasons > 0, transform=dem.transform, connectivity=4):
@@ -213,6 +227,7 @@ def _hazards_geojson(dem, graph, slope_limit_deg):
 def build_real_routes(
     *,
     input_manifest,
+    native_hazard_manifest,
     constants_path,
     stops_path,
     output_dir,
@@ -222,6 +237,26 @@ def build_real_routes(
     manifest, manifest_hash = _read_manifest(input_manifest)
     dem = read_primary_dem(input_manifest)
     sources = _handoff_sources(manifest, dem)
+    native_slope = read_native_hard_slope(native_hazard_manifest, dem)
+    slope_method = (
+        f"Horn 3x3 {native_slope.aggregation} slope aggregated from "
+        f"{native_slope.source_resolution_m:g} m source cells to "
+        f"{native_slope.planning_resolution_m:g} m planning cells"
+    )
+    sources["native_hard_slope"] = {
+        "manifest_sha256": native_slope.manifest_sha256,
+        "local_path": native_slope.local_path,
+        "local_cache_sha256": native_slope.local_sha256,
+        "source_url": native_slope.source_url,
+        "license": native_slope.license,
+        "algorithm": native_slope.algorithm,
+        "aggregation": native_slope.aggregation,
+        "source_resolution_m": native_slope.source_resolution_m,
+        "planning_resolution_m": native_slope.planning_resolution_m,
+        "valid_cells": int(native_slope.valid.sum()),
+        "total_cells": int(native_slope.valid.size),
+    }
+    alignment_evidence = native_slope.alignment_evidence
     constants_raw, c = read_constants(constants_path)
     constants_raw.pop("_mock", None)
     constants_raw.pop("_note", None)
@@ -233,6 +268,7 @@ def build_real_routes(
         dem.elevation_m,
         resolution_m=dem.resolution_m,
         nodata=None,
+        hard_slope_deg=native_slope.slope_deg,
         max_slope_deg=c["slope_limit_foot_deg"],
         body_mass_kg=c["body_mass_kg"],
         load_kg=c["carried_load_kg"],
@@ -307,7 +343,7 @@ def build_real_routes(
                     "objective_cost": path.objective_cost,
                     "distance_m": float(sum(item["cost_terms"]["distance_m"] for item in arrays["seg"])),
                     "primary_crop_sha256": dem.local_crop_sha256,
-                    "model_note": "Scenario: 10 m mean-elevation slopes and thermal terrain factor 1.0; no sub-cell scarp, THEMIS sand cost, or sample pickup load is included in this base 15 kg route bucket.",
+                    "model_note": f"Scenario: {slope_method}; directed edge grades use average-resampled mean elevations; thermal terrain factor is 1.0, with no THEMIS sand cost or sample pickup load in this base 15 kg route bucket.",
                 }
                 _write_json(routes_dir / filename, route_payload)
                 exported_files.append(routes_dir / filename)
@@ -343,7 +379,9 @@ def build_real_routes(
             "walkable_cells_after_slope_mask": int(graph.valid.sum()),
             "walkable_fraction_of_ops_grid": float(graph.valid.mean()),
             "slope_limit_deg": c["slope_limit_foot_deg"],
-            "slope_aggregation": "8-neighbor maximum over average-resampled planning-cell mean heights",
+            "slope_aggregation": slope_method,
+            "native_slope_valid_cells": int(native_slope.valid.sum()),
+            "native_slope_valid_fraction": float(native_slope.valid.mean()),
         },
         "habitat": {"lonlat": habitat_lonlat, "row_col": list(habitat), "badge": "Scenario", "note": habitat_note},
         "build_date": date.today().isoformat(),
@@ -355,12 +393,14 @@ def build_real_routes(
         "engine": "RedSight Python NumPy rasterio SciPy sparse Dijkstra",
         "engine_commit": _git_head(Path(__file__).resolve().parents[1]),
         "build_date": date.today().isoformat(),
-        "command": "python3 -m engine build --input-manifest <manifest> --constants <constants.json> --stops <stops.json> --out <app/public/data>",
+        "command": "python3 -m engine build --input-manifest <manifest> --native-hazard-manifest <native-slope-manifest> --constants <constants.json> --stops <stops.json> --out <app/public/data>",
         "inputs": sources,
+        "s1_landmark_alignment": alignment_evidence,
         "stops_sha256": sha256_file(stops_path),
         "constants_sha256": constants_hash,
-        "analysis_grid": {"rows": dem.height, "columns": dem.width, "cell_size_m": dem.resolution_m, "cell_source": "average-resampled 1.01m DTM; 8-neighbor max slope derived at planning-cell scale"},
+        "analysis_grid": {"rows": dem.height, "columns": dem.width, "cell_size_m": dem.resolution_m, "cell_source": "average-resampled DTM mean elevations for directional energy; separate checked Horn slope aggregate for hard mask"},
         "hard_slope_limit_deg": c["slope_limit_foot_deg"],
+        "slope_hard_mask_method": slope_method,
         "habitat": {"row_col": list(habitat), "lonlat": habitat_lonlat, "badge": "Scenario", "selection_note": habitat_note},
         "constants": constants_raw,
         "runtime": {"python": platform.python_version(), "numpy": np.__version__, "rasterio": rasterio.__version__, "scipy": scipy_version},
@@ -368,7 +408,7 @@ def build_real_routes(
         "limitations": [
             "The primary crop covers 78.2% of the 600x600 planning grid; complementary-only cells remain blocked.",
             "The overlapping companion DTM differs substantially from the primary scene; its cells are excluded instead of applying an unsupported vertical correction.",
-            "Slope hard masks are 8-neighbor maxima over average-resampled approximately 9.88m elevations, not native 1m maximum slopes; smaller scarps are unresolved.",
+            "Native Horn slope is aggregated to approximately 9.88m planning cells; features below the source resolution and cells with unavailable native slope support remain unavailable.",
             "No THEMIS thermal-inertia raster was supplied; the sand/terrain multiplier remains 1.0 and the lowest-hazard objective reflects slope only.",
             "Collected sample mass is not included in the base 2-crew, 15kg route bucket; it must be modeled in a separately agreed sample/load variant.",
             "Pandolf and the piecewise walking-speed function are Scenario transfers to Mars; values are estimates, not physiological measurements.",
@@ -379,7 +419,7 @@ def build_real_routes(
     _write_json(output_dir / "meta.json", meta)
     _write_json(routes_dir / "index.json", route_index)
     _write_json(output_dir / "engine-build-manifest.json", build_manifest)
-    _write_json(output_dir / "hazards.geojson", _hazards_geojson(dem, graph, c["slope_limit_foot_deg"]))
+    _write_json(output_dir / "hazards.geojson", _hazards_geojson(dem, graph, c["slope_limit_foot_deg"], slope_method))
     return {
         "output_dir": str(output_dir),
         "meta": meta,

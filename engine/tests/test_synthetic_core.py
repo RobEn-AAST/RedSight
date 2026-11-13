@@ -109,6 +109,25 @@ def test_exact_15_degree_edge_passes_but_meaningfully_steeper_edge_is_blocked():
     assert above.edge_cost((0, 0), (0, 1)) is None
 
 
+def test_external_conservative_hard_slope_grid_masks_flat_mean_elevation_cells():
+    dem = np.zeros((2, 3))
+    hard_slope = np.zeros_like(dem)
+    hard_slope[0, 1] = 18.0
+    g = build_graph(dem, resolution_m=10.0, hard_slope_deg=hard_slope)
+    assert g.valid[0, 0]
+    assert not g.valid[0, 1]
+    assert g.slope_max_deg[0, 1] == pytest.approx(18.0)
+
+
+def test_external_hard_slope_nodata_is_blocked_without_filling():
+    dem = np.array([[0.0, -9999.0, 0.0]])
+    hard_slope = np.array([[2.0, np.nan, np.nan]])
+    g = build_graph(dem, resolution_m=10.0, nodata=-9999, hard_slope_deg=hard_slope)
+    assert g.valid[0, 0]
+    assert not g.valid[0, 1]
+    assert not g.valid[0, 2]
+
+
 def test_route_arrays_sum_segments_and_backtracks_same_geometry_directionally():
     g = graph([[0, 1, 1]], resolution=10)
     outbound = shortest_path(g, start=(0, 0), goal=(0, 2), objective="time")

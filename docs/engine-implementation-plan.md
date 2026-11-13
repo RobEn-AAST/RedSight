@@ -34,10 +34,10 @@ submission, publishing, push, or deploy action is part of this plan.
 - Analysis coordinates are projected Mars metric coordinates derived from the existing spherical Mars
   CRS (`+proj=longlat +R=3396190 +no_defs`), never Earth Web Mercator. Grid metadata and terrain fields
   are engine-owned; the app contract's existing `meta.json` values and stable keys remain unchanged.
-- Do not fill DEM nodata. Nodata/outside-coverage cells and edges are hard blocked. Resample the real
-  source DEM to each planning cell by mean elevation; synthetic fixtures supply per-cell mean heights
-  directly. Slope is derived from local elevation gradients; a conservative neighborhood maximum is
-  the hard-mask statistic, while signed directional grade comes from source/destination mean heights.
+- Do not fill DEM or slope nodata. Nodata/outside-coverage cells and edges are hard blocked. Resample
+  the real source DEM to each planning cell by mean elevation; use a separate, hash-checked native
+  Horn max/90th-percentile slope aggregate for the hard mask. Synthetic fixtures supply mean heights
+  and hard slopes directly. Signed directional grade comes from source/destination mean heights.
   Foot edges above the
   existing 15° team threshold are blocked. Diagonals require both orthogonal side cells to be
   traversable (no corner cutting).
@@ -141,17 +141,16 @@ and 213.83 m maximum absolute. The build therefore excludes complementary-only c
 blending the offset into routes, slope, or elevation; the full proposed ops box remains in `meta.json`
 and excluded cells are represented in `hazards.geojson`.
 
-Derived route evidence: the chosen Scenario habitat is `[274, 269]` (`137.3799167°E, −4.7957500°`),
-selected on the primary DEM 150–600 m north/downslope of S1 in the component that reaches all five
-stops. The offline build produced 10 routes (fastest and lowest-modeled-hazard for S1, S2, S3, D1,
-D2); every route has finite positive segments, raw cumulative per-member O₂, directed same-geometry
-return costs, a D27 PNR index, and `total_s` as round-trip time. Exact per-route values and provenance
-are in `app/public/data/routes/` and `app/public/data/engine-build-manifest.json`.
+Derived route evidence: the prior coarse-mask build selected Scenario habitat `[274, 269]`
+(`137.3799167°E, −4.7957500°`) and emitted 10 routes. Those route files predate the native Horn
+slope hard-mask input and are **provisional**; they are not acceptance evidence for the final pilot.
+Regenerate routes and hazards with `/tmp/redsight-native-hazard-inputs.json`; record the resulting
+connected-component/reachability outcome and updated S1 alignment evidence before claiming completion.
 
-Important boundary: slope uses the maximum of eight neighboring gradients on the mean-elevation
-~9.88 m planning cells. It is not a native 1 m maximum and cannot detect sub-cell scarps. No THEMIS
-thermal raster was included; terrain factor stays 1.0, so the lowest-hazard score is slope-based only.
-The base 2-crew, 15 kg route bucket does not add sample pickup mass.
-The native 1.01 m source resolution is recorded as provenance, not represented as the resolution of
-the route constraints. The 512 m ortho crop has 100% valid pixels and is retained as context; this
-build does not claim a visual landmark alignment review.
+Important boundary: the final hard mask requires the native Horn max/90th-percentile slope aggregate;
+source resolution and target cell size remain part of its evidence. No THEMIS thermal raster was
+included; terrain factor stays 1.0, so the lowest-hazard score is slope-based only. The base 2-crew,
+15 kg route bucket does not add sample pickup mass.
+The native 1.01 m source resolution must be recorded as provenance beside the aggregate. The 512 m
+ortho crop has 100% valid pixels; incorporate the Researcher's S1 landmark-alignment evidence before
+closing the pilot.

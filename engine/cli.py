@@ -12,6 +12,7 @@ def parser():
     sub = root.add_subparsers(dest="command", required=True)
     build = sub.add_parser("build", help="build real DEM routes and Ali-owned contract outputs")
     build.add_argument("--input-manifest", required=True, help="verified local input handoff JSON")
+    build.add_argument("--native-hazard-manifest", required=True, help="hash-checked native Horn slope planning-grid cache manifest")
     build.add_argument("--constants", required=True, help="stable constants.json input")
     build.add_argument("--stops", required=True, help="current stops.json contract")
     build.add_argument("--out", required=True, help="output data directory, normally app/public/data")
@@ -24,6 +25,7 @@ def main(argv=None):
     try:
         result = build_real_routes(
             input_manifest=args.input_manifest,
+            native_hazard_manifest=args.native_hazard_manifest,
             constants_path=args.constants,
             stops_path=args.stops,
             output_dir=args.out,

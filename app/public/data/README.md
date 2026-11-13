@@ -50,12 +50,15 @@ arrays. Current replay invocation must pass capacity, reserve, margin and defaul
 same route geometry walked in reverse, with index 0 at the habitat and the final index at the stop.
 
 **Terrain boundary:** the 600×600 DTM crop is average-resampled to ~9.88 m cells. The route hard mask
-uses the maximum 8-neighbor grade on those mean-elevation cells; it does not claim a native 1 m maximum
-or represent smaller scarps. The companion DTM has large scene-to-scene height differences on overlap,
+must use the separate native Horn max/90th-percentile slope cache aligned to this grid; no gradient of
+the downsampled elevations may stand in for that hard mask. The cache manifest must include S1
+landmark-alignment evidence. The companion DTM has large scene-to-scene height differences on overlap,
 so complementary-only cells are marked unavailable and excluded from routes rather than vertically
 adjusted or blended. No THEMIS thermal raster was supplied; route terrain factor is 1.0 and the
 lowest-hazard cost currently represents modeled slope exposure only. Sample pickup mass is not
-included in the base 15 kg route bucket. See `engine-build-manifest.json`
+included in the base 15 kg route bucket. **The committed route files predate the native-slope cache
+and are provisional; rerun the CLI with `/tmp/redsight-native-hazard-inputs.json` before treating them
+as the final pilot outputs.** See `engine-build-manifest.json`
 for the observed seam statistics, hashes and per-route outcomes.
 
 Regenerate mocks: `node app/public/data/_mock/make-mock.mjs` (overwrites ALL files — don't run it after real
