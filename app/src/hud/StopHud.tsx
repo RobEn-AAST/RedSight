@@ -138,8 +138,9 @@ export function StopHud({
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const viewerRef = useRef<PanoViewer | null>(null)
   const overlayRef = useRef<RouteOverlay | null>(null)
-  // Which leg is drawn on the ground: the route to this stop, or the way home from it.
-  const [leg, setLeg] = useState<'to' | 'home'>('to')
+  // Which leg is drawn in yellow: the next walk from here (way home, arrows lead away from the viewer, default)
+  // or the route already walked to this stop (shown without arrows, so nothing moves toward the viewer).
+  const [leg, setLeg] = useState<'to' | 'home'>('home')
   // Bearing the view faces at start. Unverified estimate; [ and ] rotate the drawn route to align it.
   const [northDeg, setNorthDeg] = useState(pano.northOffsetDeg)
   const northRef = useRef(northDeg)
@@ -183,10 +184,10 @@ export function StopHud({
     if (!viewer) return
     const yellow = { color: '#ffd400', opacity: 0.7, widthM: 1.2, arrows: true }
     const faint = { color: '#7fe3ff', opacity: 0.35, widthM: 0.8, arrows: false }
-    // Arrows run in the direction of travel: toward the stop on the way out, toward the habitat going home.
+    // Arrows only on the walk ahead, so they always lead away from where the viewer stands.
     const paths =
       leg === 'to'
-        ? [{ ...faint, coords: wayHome }, { ...yellow, coords: wayOut }]
+        ? [{ ...faint, coords: wayHome }, { ...yellow, arrows: false, coords: wayOut }]
         : [{ ...faint, coords: wayOut }, { ...yellow, coords: wayHome }]
     const overlay = createRouteOverlay(viewer.scene, viewer.onFrame, {
       stop: stopLonLat,
@@ -195,6 +196,9 @@ export function StopHud({
       northOffsetDeg: northRef.current,
     })
     overlayRef.current = overlay
+    // Face the walk ahead: turn to the bearing of the yellow line ~40 m out from the stop.
+    const ahead = paths[1].coords.find((c) => distanceM(stopLonLat, c) > 40)
+    if (ahead) viewer.setYaw(northRef.current - bearingDeg(stopLonLat, ahead))
     return () => {
       overlay.dispose()
       if (overlayRef.current === overlay) overlayRef.current = null
@@ -273,8 +277,8 @@ export function StopHud({
           {sols ? ` · SOL ${sols}` : ''}
         </span>
         <span className="hud-seg" role="group" aria-label="Route drawn on the ground">
-          <button aria-pressed={leg === 'to'} onClick={() => setLeg('to')}>ROUTE TO {pano.stopId}</button>
-          <button aria-pressed={leg === 'home'} onClick={() => setLeg('home')}>WAY HOME</button>
+          <button aria-pressed={leg === 'home'} onClick={() => setLeg('home')}>NEXT: WAY HOME ▸</button>
+          <button aria-pressed={leg === 'to'} onClick={() => setLeg('to')}>ROUTE WALKED</button>
         </span>
         <button className="hud-close" onClick={onClose} aria-label="Close 360 view">✕</button>
       </div>
@@ -357,7 +361,7 @@ export function StopHud({
           <span className="hud-chip hud-scn">SCENARIO</span> O₂, route and times are modeled estimates, not
           measurements · RAD/REMS: Curiosity rover-local values · Photo: {pano.pia}, {pano.credit}, {pano.taken} ·
           Real imagery only at stops; moving between stops is a jump. · Yellow route: drawn from the route's coordinates onto the photo (flat ground, no hills; photo
-          heading {pano.northCalibrated ? 'aligned' : `not verified, start ≈${northDeg}°, align with [ ]`}), not tracking.
+          heading {pano.northCalibrated ? 'aligned' : `≈${northDeg}° at centre, from NASA's caption (crater rim at centre); [ ] adjust`}), not tracking.
         </div>
       </div>
     </div>

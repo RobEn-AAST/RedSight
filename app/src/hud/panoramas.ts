@@ -25,7 +25,8 @@ export const PANORAMAS: Record<string, StopPanorama> = {
     taken: 'Mastcam, 291 images, 2025-05-15 to 05-18',
     source: 'https://images.nasa.gov/details/PIA26559',
     northCalibrated: false,
-    // Not verified: starting guess. Align in the viewer with [ and ] against a known landmark.
+    // Image centre ≈ north: NASA's caption puts the Gale crater rim at the top centre, and from S1 the rim lies
+    // north across the crater floor (images-api.nasa.gov PIA26559, read 2026-11-13). Approximate; [ ] adjust.
     northOffsetDeg: 0,
     // Distant crater-floor haze sits ~18° above the mosaic's centre (by eye, at the default zoom).
     horizonDeg: 18,

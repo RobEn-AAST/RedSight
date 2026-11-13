@@ -28,10 +28,10 @@ are pending: decision D28). Design source: [`demo-focus-plan.md`](demo-focus-pla
 - **Fixed route on the photo (2026-11-13, user request):** the route's own coordinates are turned into
   directions seen from the stop (bearing + distance on flat ground, eye at Mastcam height 1.97 m) and drawn
   **once** as a yellow ribbon on the ground with moving arrows in the direction of travel. No GPS, no tracking.
-  Toggle **ROUTE TO S1** (way out, arrows toward the stop) / **WAY HOME** (arrows toward the habitat; the
-  fastest-way-home path when §9's switch fired). A HABITAT pin with its distance; heading tape with N/E/S/W.
-  Limits, stated on screen: flat ground (hills don't hide the line), photo heading **not verified** (start
-  bearing 0° is a guess; `[` `]` rotate the drawn route to align it to a landmark), horizon set by eye
+  Default **NEXT: WAY HOME** (arrows lead away from the viewer toward the habitat; the fastest-way-home path
+  when §9's switch fired) and the view opens facing it; **ROUTE WALKED** shows the way out without arrows
+  (user feedback 2026-11-13: arrows must never come toward the viewer). A HABITAT pin with its distance; heading tape with N/E/S/W.
+  Limits, stated on screen: flat ground (hills don't hide the line), photo heading approximate (image centre ≈ north per NASA's caption: Gale crater rim at top centre; `[` `]` rotate the drawn route to align it to a landmark), horizon set by eye
   (18° above the mosaic centre, `panoramas.ts`). Code: `app/src/hud/routeOverlay.ts`.
 - **Honesty on screen:** Observed chip on the photo, Scenario chip on the numbers, photo credit, and "Real
   imagery exists only at stops: moving between stops is a jump" (§10).

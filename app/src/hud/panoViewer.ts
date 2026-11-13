@@ -10,6 +10,8 @@ export interface PanoViewer {
   readonly scene: THREE.Scene
   /** Called every frame with the time in seconds (for animated overlays). */
   onFrame(cb: (tS: number) => void): void
+  /** Turn the view to a yaw (degrees, same sign as yawDeg). */
+  setYaw(deg: number): void
   destroy(): void
 }
 
@@ -128,6 +130,9 @@ export function createPanoViewer(
 
   return {
     scene,
+    setYaw(deg) {
+      yaw = THREE.MathUtils.degToRad(deg)
+    },
     onFrame(cb) {
       frameCbs.push(cb)
     },
