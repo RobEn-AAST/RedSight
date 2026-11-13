@@ -12,6 +12,7 @@ Run from repo root:
 
 from __future__ import annotations
 
+import argparse
 import json
 import math
 import time
@@ -28,6 +29,7 @@ USER_AGENT = "RedSight-NASA-SpaceApps/1.0"
 MMGIS_WAYPOINTS_URL = "https://mars.nasa.gov/mmgis-maps/MSL/Layers/json/MSL_waypoints.json"
 MMGIS_CURRENT_URL = "https://mars.nasa.gov/mmgis-maps/MSL/Layers/json/MSL_waypoints_current.json"
 RAW_IMAGES_API = "https://mars.nasa.gov/api/v1/raw_image_items/"
+REMS_WEATHER_URL = "https://mars.nasa.gov/rss/api/?feed=weather&category=msl&feedtype=json"
 
 MARS_RADIUS_M = 3_396_190.0
 MAX_WAYPOINT_DRIFT_M = 1.0
@@ -52,14 +54,14 @@ HISTORICAL_STOPS: list[dict[str, Any]] = [
         "id": "S1",
         "name": "First boxwork 360",
         "kind": "panorama",
-        "waypoint_key": (4539, 408),
-        "extra_waypoints": [(4541, 414)],
-        "expected_lonlat": (137.3859207, -4.797816),
-        "sols": [4539, 4540, 4541],
-        "priority_sols": [4539, 4540, 4541],
+        "waypoint_key": (4541, 414),
+        "extra_waypoints": [(4544, 576)],
+        "expected_lonlat": (137.3859258, -4.79781585),
+        "sols": [4541, 4542, 4543, 4544],
+        "priority_sols": [4543, 4541, 4542, 4544],
         "preferred_first": None,
         "approx": False,
-        "evidence": "PIA26559 (Mastcam, 2025-05-15…18, site 116, RMC 116_408)",
+        "evidence": "PIA26559 (Mastcam, 2025-05-15…18, sols 4541–4544, site 116, RMC 116_414)",
         "panorama": "PIA26559",
         "panorama_meta": {
             "id": "PIA26559",
@@ -68,7 +70,7 @@ HISTORICAL_STOPS: list[dict[str, Any]] = [
             "image_url": "https://images-assets.nasa.gov/image/PIA26559/PIA26559~large.jpg",
             "full_jpeg_url": "https://photojournal.jpl.nasa.gov/jpeg/PIA26559.jpg",
             "date_taken": "2025-05-15 to 2025-05-18",
-            "sol_range": "4539–4541",
+            "sol_range": "4541–4544",
             "stitched_frames": 291,
             "instrument": "Mastcam",
             "credit": "NASA/JPL-Caltech/MSSS",
@@ -76,17 +78,17 @@ HISTORICAL_STOPS: list[dict[str, Any]] = [
         },
         "science": (
             "Curiosity's first 360-degree Mastcam mosaic inside the Mount Sharp boxwork patterns "
-            "(291 stitched frames across sols 4539–4541, May 15–18, 2025). The low crisscrossing ridges "
-            "and intervening hollows are interpreted by the science team as ancient bedrock fractures "
-            "cemented by minerals deposited from subterranean water that later resisted wind erosion."
+            "(291 stitched frames acquired across sols 4541–4544, May 15–18, 2025, at site 116 drive 414). "
+            "Captures intersecting low bedrock ridges and intervening hollows along the boxwork traverse."
         ),
         "card_static": {
             "target_name": "Boxwork Ridge Network (Site 116)",
             "target_type": "360° Mastcam Panorama & Mineralized Ridge Outcrop",
-            "sol": "Sols 4539–4541 (May 15–18, 2025)",
+            "sol": "Sols 4541–4544 (May 15–18, 2025)",
             "geologic_context": (
-                "Sulfate-bearing Mount Sharp bedrock with erosion-resistant fracture ridges and "
-                "inter-ridge hollows resolved at Curiosity surface scale."
+                "Sulfate-bearing Mount Sharp bedrock with low crisscrossing fracture ridges interpreted by "
+                "the science team as mineral cements deposited from ancient subterranean water that later "
+                "resisted wind erosion."
             ),
             "context_badge": "Derived",
             "source_url": "https://photojournal.jpl.nasa.gov/catalog/PIA26559",
@@ -99,11 +101,11 @@ HISTORICAL_STOPS: list[dict[str, Any]] = [
         "waypoint_key": (4711, 82),
         "extra_waypoints": [(4741, 232)],
         "expected_lonlat": (137.3810041, -4.80800755),
-        "sols": [4711, 4741],
-        "priority_sols": [4711, 4741],
+        "sols": [4714, 4715, 4740, 4741],
+        "priority_sols": [4740, 4714, 4715, 4741],
         "preferred_first": None,
         "approx": False,
-        "evidence": "PIA26696 (Mastcam, 2025-11-09…12-07, site 120, RMC 120_82)",
+        "evidence": "PIA26696 (Mastcam, 2025-11-09…12-07, mosaic sols 4714–4741, site 120, RMC 120_82)",
         "panorama": "PIA26696",
         "panorama_meta": {
             "id": "PIA26696",
@@ -112,7 +114,7 @@ HISTORICAL_STOPS: list[dict[str, Any]] = [
             "image_url": "https://photojournal.jpl.nasa.gov/jpegMod/PIA26696_modest.jpg",
             "full_jpeg_url": "https://photojournal.jpl.nasa.gov/jpeg/PIA26696.jpg",
             "date_taken": "2025-11-09 to 2025-12-07",
-            "sol_range": "4714–4741 (waypoint bracket: sols 4711 and 4741)",
+            "sol_range": "4714–4741",
             "stitched_frames": 1031,
             "instrument": "Mastcam Right (100 mm)",
             "credit": "NASA/JPL-Caltech/MSSS",
@@ -121,13 +123,13 @@ HISTORICAL_STOPS: list[dict[str, Any]] = [
         "science": (
             "Ridgetop panorama station at 'Nevado Sajama' within the boxwork terrain (site 120; "
             "bracketing MMGIS waypoints at sols 4711 and 4741). The 1.5-gigapixel PIA26696 mosaic "
-            "was stitched from 1,031 Mastcam right-eye (100 mm) frames captured across sols 4714–4741, "
-            "showing polygonal fracture ridges and hollows across lower Mount Sharp."
+            "stitches 1,031 Mastcam right-eye (100 mm) frames acquired across sols 4714–4741 across "
+            "intersecting ridges and hollows on lower Mount Sharp."
         ),
         "card_static": {
             "target_name": "Nevado Sajama Ridgetop",
             "target_type": "360° Telephoto Mastcam Panorama (1.5 Gigapixels)",
-            "sol": "Sols 4711 & 4741 (MMGIS waypoints); mosaic sols 4714–4741",
+            "sol": "Mosaic sols 4714–4741 (Nov 9 – Dec 7, 2025); waypoints sols 4711 & 4741",
             "geologic_context": (
                 "Boxwork ridgetop exposure displaying intersecting mineral-cemented fracture ridges "
                 "and adjacent weathered hollows on lower Mount Sharp."
@@ -153,8 +155,8 @@ HISTORICAL_STOPS: list[dict[str, Any]] = [
         "science": (
             "First rotary-percussive drill sample collected inside the Mount Sharp boxwork terrain "
             "(drilled June 8, 2025 on sol 4564 while Curiosity was parked at site 116 drive 1944; "
-            "JPL release June 23, 2025). Powdered rock from 'Altadena' was delivered to Curiosity's "
-            "internal CheMin and SAM laboratories to investigate mineral cements and ancient groundwater."
+            "JPL release June 23, 2025). Powdered rock from target 'Altadena' was delivered to Curiosity's "
+            "internal CheMin and SAM analytical laboratories."
         ),
         "card_static": {
             "target_name": "Altadena",
@@ -162,7 +164,7 @@ HISTORICAL_STOPS: list[dict[str, Any]] = [
             "sol": "Drilled sol 4564 (2025-06-08); parked at waypoint sol 4560 (RMC 116_1944)",
             "geologic_context": (
                 "Bedrock target in the boxwork terrain sampled by Curiosity's drill and analyzed by "
-                "CheMin and SAM to trace groundwater mineralization history."
+                "CheMin and SAM to investigate mineral cements and ancient groundwater history."
             ),
             "context_badge": "Derived",
             "source_url": "https://www.jpl.nasa.gov/news/nasas-curiosity-mars-rover-starts-unpacking-boxwork-formations/",
@@ -183,10 +185,10 @@ HISTORICAL_STOPS: list[dict[str, Any]] = [
         "panorama": None,
         "panorama_meta": None,
         "science": (
-            "Drill target sampled inside the 'Monte Grande' hollow between hardened boxwork ridges "
+            "Drill target sampled inside the 'Monte Grande' hollow between boxwork ridges "
             "(sols 4689–4694, October 2025; rover arrival waypoint sol 4687 at site 119 drive 1722). "
-            "Powdered tailings were delivered to SAM and CheMin while Mastcam and ChemCam imaged the "
-            "hollow bedrock to compare less-resistant hollows against adjacent mineralized ridges."
+            "Powdered rock tailings were delivered to SAM and CheMin while Mastcam and ChemCam imaged "
+            "the drill hole and surrounding hollow bedrock."
         ),
         "card_static": {
             "target_name": "Valle de la Luna ('Monte Grande' Hollow)",
@@ -194,7 +196,7 @@ HISTORICAL_STOPS: list[dict[str, Any]] = [
             "sol": "Waypoint sol 4687; drill campaign sols 4689–4694 (Oct 2025)",
             "geologic_context": (
                 "Recessed hollow floor bedrock bounded by hardened boxwork ridges, sampled to compare "
-                "composition against nearby ridge targets."
+                "less-resistant hollow composition against adjacent mineralized ridge targets."
             ),
             "context_badge": "Derived",
             "source_url": "https://science.nasa.gov/blog/curiosity-blog-sols-4689-4694-drill-in-the-boxwork-unit-is-go/",
@@ -468,16 +470,19 @@ def build_s3_spec(
         "panorama": None,
         "panorama_meta": None,
         "science": (
-            f"Curiosity's latest published MMGIS rover waypoint on lower Mount Sharp "
+            f"Curiosity's published MMGIS rover waypoint on lower Mount Sharp "
             f"(sol {sol}, site {current_wp['site']}, drive {current_wp['drive']}, RMC {current_wp['rmc']}, "
             f"elevation {current_wp['elev_m']:.2f} m after {current_wp['dist_km']:.2f} km of total drive "
-            f"odometry{tilt_note}). Used as the active rover benchmark for human Marswalk comparisons."
+            f"odometry{tilt_note})."
         ),
         "card_static": {
             "target_name": f"Curiosity Active Station (RMC {current_wp['rmc']})",
             "target_type": "Active Rover Reference Waypoint",
             "sol": f"Sol {sol}",
-            "geologic_context": "Lower Mount Sharp traverse terrain along the active Curiosity route.",
+            "geologic_context": (
+                "Active Curiosity traverse station on lower Mount Sharp used as the baseline "
+                "reference anchor for human Marswalk comparisons."
+            ),
             "context_badge": "Derived",
             "source_url": MMGIS_CURRENT_URL,
         },
@@ -485,13 +490,20 @@ def build_s3_spec(
     return spec, current_wp
 
 
-def build_stops() -> dict[str, Any]:
+def build_stops(pin_s3_sol: int | None = None) -> dict[str, Any]:
     """Build the GeoJSON FeatureCollection for all 5 stops from live NASA endpoints."""
     by_sol_drive, by_sol, current_wp = load_mmgis_waypoints()
     print(
         f"Loaded {len(by_sol_drive)} MMGIS waypoints ({len(by_sol)} sols); "
         f"current rover position: sol {current_wp['sol']} (RMC {current_wp['rmc']})."
     )
+
+    if pin_s3_sol is not None:
+        if pin_s3_sol not in by_sol:
+            raise RuntimeError(f"Pinned S3 sol {pin_s3_sol} not found in MSL_waypoints.json.")
+        s3_anchor_wp = max(by_sol[pin_s3_sol], key=lambda w: w["drive"])
+    else:
+        s3_anchor_wp = current_wp
 
     resolved_stops: list[tuple[dict[str, Any], dict[str, Any]]] = []
 
@@ -515,7 +527,13 @@ def build_stops() -> dict[str, Any]:
 
         resolved_stops.append((spec, wp))
 
-    s3_spec, s3_wp = build_s3_spec(current_wp, by_sol)
+    s3_spec, s3_wp = build_s3_spec(s3_anchor_wp, by_sol)
+    if pin_s3_sol is not None:
+        s3_spec["evidence"] = (
+            f"MSL_waypoints.json pinned sol {s3_wp['sol']} "
+            f"(RMC {s3_wp['rmc']}, site {s3_wp['site']} drive {s3_wp['drive']})"
+        )
+        s3_spec["card_static"]["source_url"] = MMGIS_WAYPOINTS_URL
     if not _in_ops_box(s3_wp["lon"], s3_wp["lat"]):
         raise RuntimeError(f"Dynamic S3 coordinates ({s3_wp['lon']}, {s3_wp['lat']}) lie outside ops box.")
 
@@ -593,7 +611,7 @@ def build_rad_card() -> dict[str, Any]:
                 "unit": "µGy/day",
                 "pm": 40,
                 "badge": "Observed",
-                "note": "Detector B tissue-equivalent plastic scintillator average over sols 13–300 (Hassler et al. 2014, Table 1).",
+                "note": "Detector E tissue-equivalent plastic scintillator average over sols 13–300 (Hassler et al. 2014, Table 1).",
             },
             {
                 "label": "Sept 2017 surface SEP event (absorbed dose in silicon)",
@@ -602,7 +620,7 @@ def build_rad_card() -> dict[str, Any]:
                 "badge": "Observed",
                 "note": (
                     "Largest solar energetic particle event recorded at Mars surface by RAD silicon "
-                    "detector E during 10–13 Sept 2017 (Zeitlin et al. 2018; Berger et al. 2018)."
+                    "detector B during 10–13 Sept 2017 (Zeitlin et al. 2018; Cohen & Mewaldt 2018)."
                 ),
             },
             {
@@ -638,8 +656,8 @@ def build_rad_card() -> dict[str, Any]:
         ),
         "source": (
             "Hassler et al. 2014, Science 343:1244797, doi:10.1126/science.1244797; "
-            "Zeitlin et al. 2018, GRL 45:5860, doi:10.1029/2018GL077760; "
-            "Berger et al. 2018, Space Weather 16:1714, doi:10.1029/2018SW002006; "
+            "Zeitlin et al. 2018, GRL 45:5845–5851, doi:10.1029/2018GL077760; "
+            "Cohen & Mewaldt 2018, Space Weather 16:1616–1623, doi:10.1029/2018SW002006; "
             "PDS PPI MSL-M-RAD-2-EDR-V1.0; NASA-STD-3001 Vol 1"
         ),
         "source_urls": [
@@ -653,32 +671,77 @@ def build_rad_card() -> dict[str, Any]:
     }
 
 
+def _rems_num(val: Any) -> float | None:
+    if val in (None, "--", ""):
+        return None
+    return float(val)
+
+
+def _fmt_temp_range_c(low_c: float, high_c: float) -> str:
+    low_i, high_i = round(low_c), round(high_c)
+    low_str = f"−{abs(low_i)}" if low_i < 0 else (f"+{low_i}" if low_i > 0 else "0")
+    high_str = f"−{abs(high_i)}" if high_i < 0 else (f"+{high_i}" if high_i > 0 else "0")
+    return f"{low_str} to {high_str}"
+
+
 def build_rems_card() -> dict[str, Any]:
-    """Build the verified Gale REMS weather context card."""
+    """Build the verified Gale REMS weather context card from live NASA REMS telemetry + literature."""
+    feed = fetch_json(REMS_WEATHER_URL)
+    soles = feed.get("soles", [])
+    if not soles:
+        raise RuntimeError("NASA REMS weather JSON feed returned no sol summaries.")
+
+    pressures = [v for s in soles if (v := _rems_num(s.get("pressure"))) is not None]
+    air_mins = [v for s in soles if (v := _rems_num(s.get("min_temp"))) is not None]
+    air_maxs = [v for s in soles if (v := _rems_num(s.get("max_temp"))) is not None]
+    gts_mins = [v for s in soles if (v := _rems_num(s.get("min_gts_temp"))) is not None]
+    gts_maxs = [v for s in soles if (v := _rems_num(s.get("max_gts_temp"))) is not None]
+    sol_nums = [int(s["sol"]) for s in soles if s.get("sol")]
+    dates = [str(s["terrestrial_date"]) for s in soles if s.get("terrestrial_date")]
+
+    if not (pressures and air_mins and air_maxs and gts_mins and gts_maxs and sol_nums and dates):
+        raise RuntimeError("NASA REMS weather JSON feed is missing required temperature/pressure series.")
+
+    p_min, p_max = round(min(pressures)), round(max(pressures))
+    air_low, air_high = min(air_mins), max(air_maxs)
+    gts_low, gts_high = min(gts_mins), max(gts_maxs)
+    sol_min, sol_max = min(sol_nums), max(sol_nums)
+    date_min, date_max = min(dates), max(dates)
+    n_sols = len(soles)
+
     return {
         "title": "Weather at Gale (REMS)",
         "badge": "Observed",
         "values": [
             {
-                "label": "Surface pressure (annual range)",
-                "value": "700–920",
+                "label": f"Surface pressure (REMS daily summary range, sols {sol_min}–{sol_max})",
+                "value": f"{p_min}–{p_max}",
                 "unit": "Pa",
                 "badge": "Observed",
-                "note": "Seasonal CO₂ cycle and diurnal thermal tides at Gale Crater (Gómez-Elvira et al. 2014; Haberle et al. 2014).",
+                "note": (
+                    f"Measured across {n_sols:,} reported sols in NASA's MSL REMS feed "
+                    "(seasonal CO₂ cycle and diurnal thermal tides; Gómez-Elvira et al. 2014; Haberle et al. 2014)."
+                ),
             },
             {
-                "label": "Air temperature (sols 1–100 range, 1.6 m boom)",
-                "value": "−83 to −3",
+                "label": f"Air temperature (1.6 m boom, daily min/max sols {sol_min}–{sol_max})",
+                "value": _fmt_temp_range_c(air_low, air_high),
                 "unit": "°C",
                 "badge": "Observed",
-                "note": "190 K nighttime low to 270 K daytime high during sols 1–100 (Gómez-Elvira et al. 2014); multi-year Gale range 180–278 K / −93 to +5 °C (Martínez et al. 2017).",
+                "note": (
+                    f"{round(air_low + 273.15)} K minimum to {round(air_high + 273.15)} K maximum daily air "
+                    f"temperature reported across {n_sols:,} sols in NASA's MSL REMS feed (Gómez-Elvira et al. 2012, 2014)."
+                ),
             },
             {
-                "label": "Ground brightness temperature (multi-year range)",
-                "value": "−100 to +16",
+                "label": f"Ground brightness temperature (daily min/max sols {sol_min}–{sol_max})",
+                "value": _fmt_temp_range_c(gts_low, gts_high),
                 "unit": "°C",
                 "badge": "Observed",
-                "note": "173 K pre-dawn minimum to 289 K midday maximum across Gale seasons (Martínez et al. 2017; up to ~280 K / +7 °C in sols 1–100, Gómez-Elvira et al. 2014).",
+                "note": (
+                    f"{round(gts_low + 273.15)} K pre-dawn minimum to {round(gts_high + 273.15)} K midday maximum "
+                    f"reported across {n_sols:,} sols in NASA's MSL REMS feed (Martínez et al. 2017)."
+                ),
             },
         ],
         "limits": [
@@ -687,7 +750,7 @@ def build_rems_card() -> dict[str, Any]:
                 "value": 6300,
                 "unit": "Pa",
                 "source": (
-                    "Water boils at human body temperature (37 °C) below ~6.3 kPa; Gale pressure (700–920 Pa, "
+                    f"Water boils at human body temperature (37 °C) below ~6.3 kPa; Gale pressure ({p_min}–{p_max} Pa, "
                     "above water's 611.65 Pa triple point) is ~7–9× below the Armstrong limit, requiring a full pressure suit (NASA-STD-3001 Vol 1)"
                 ),
             },
@@ -701,24 +764,25 @@ def build_rems_card() -> dict[str, Any]:
         ],
         "note": (
             "REMS is a rover-local meteorological station on Curiosity; no walk-scale spatial weather map "
-            "or operational forecast exists for Gale Crater. Values represent observed Gale climatology."
+            "or operational forecast exists for Gale Crater. Values reflect reported NASA REMS daily sol summaries."
         ),
         "claim_boundary": (
             "Context card only — never interpolated into per-cell route weather maps. "
             "Excursion thermal/dust windows derived from climatology are Scenario assumptions."
         ),
         "source": (
-            "Gómez-Elvira et al. 2012, Space Sci Rev 170:583, doi:10.1007/s11214-012-9921-1; "
-            "Gómez-Elvira et al. 2014, JGR-Planets 119:1680, doi:10.1002/2013JE004576; "
-            "Haberle et al. 2014, JGR-Planets 119:1544, doi:10.1002/2013JE004488; "
-            "Martínez et al. 2017, Space Sci Rev 212:295, doi:10.1007/s11214-017-0360-x; "
-            "NASA PDS Atmospheres Node urn:nasa:pds:msl_rems_bundle"
+            "Gómez-Elvira et al. 2012, Space Sci Rev 170:583–640, doi:10.1007/s11214-012-9921-1; "
+            "Gómez-Elvira et al. 2014, JGR-Planets 119:1680–1688, doi:10.1002/2013JE004576; "
+            "Haberle et al. 2014, JGR-Planets 119:440–453, doi:10.1002/2013JE004488; "
+            "Martínez et al. 2017, Space Sci Rev 212:295–338, doi:10.1007/s11214-017-0360-x; "
+            "NASA MSL REMS Weather API; NASA PDS Atmospheres Node urn:nasa:pds:msl_rems_bundle"
         ),
         "source_urls": [
+            REMS_WEATHER_URL,
             "https://atmos.nmsu.edu/data_and_services/atmospheres_data/MARS/curiosity/rems.html",
             "https://pds.nasa.gov/ds-view/pds/viewBundle.jsp?identifier=urn%3Anasa%3Apds%3Amsl_rems_bundle",
         ],
-        "date_range": "2012-08 → 2012-11 (sols 1–100 baseline, Gómez-Elvira et al. 2014); 2012-08 → 2017 (multi-year review, Martínez et al. 2017)",
+        "date_range": f"{date_min} → {date_max} (sols {sol_min}–{sol_max}, {n_sols:,} reported sols, NASA MSL REMS feed)",
     }
 
 
@@ -728,8 +792,17 @@ def write_json(path: Path, payload: Any) -> None:
 
 
 def main() -> None:
-    print("Fetching NASA MMGIS Curiosity waypoints and raw photos...")
-    stops_fc = build_stops()
+    parser = argparse.ArgumentParser(description="Build RedSight stops.json and RAD/REMS context cards.")
+    parser.add_argument(
+        "--pin-s3-sol",
+        type=int,
+        default=None,
+        help="Optional historical sol in MSL_waypoints.json to freeze S3 for submission reproducibility.",
+    )
+    args = parser.parse_args()
+
+    print("Fetching NASA MMGIS Curiosity waypoints, Raw Images, and REMS weather feed...")
+    stops_fc = build_stops(pin_s3_sol=args.pin_s3_sol)
 
     write_json(DATA_DIR / "stops.json", stops_fc)
     write_json(CARDS_DIR / "rad.json", build_rad_card())

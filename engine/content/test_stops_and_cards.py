@@ -8,6 +8,7 @@ Run with pytest or directly from repo root:
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 import urllib.error
@@ -15,6 +16,8 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 from typing import Any
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import build_stops_and_cards as builder  # noqa: E402
@@ -93,6 +96,16 @@ def _assert_clean_content(label: str, data: Any) -> None:
             assert term not in lower, f"{label} contains unverified/invented term {term!r}: {s!r}"
 
 
+def _skip_if_offline(exc: BaseException | None = None) -> None:
+    if os.environ.get("REDSIGHT_OFFLINE") == "1":
+        pytest.skip("REDSIGHT_OFFLINE=1 set; skipping live network check")
+    if exc is not None:
+        if isinstance(exc, urllib.error.HTTPError):
+            raise exc
+        if isinstance(exc, (urllib.error.URLError, TimeoutError, OSError)):
+            pytest.skip(f"Offline or network unreachable ({exc}); skipping live network check")
+
+
 def _head_or_get_status(url: str, timeout: int = 15) -> int:
     for method in ("HEAD", "GET"):
         req = urllib.request.Request(
@@ -161,8 +174,11 @@ def test_stops_schema_and_size() -> None:
         sid = props["id"]
         bad_prop_keys = set(props.keys()) & FORBIDDEN_STOP_PROP_KEYS
         assert not bad_prop_keys, f"{sid}: unexpected bloated/duplicate property keys {bad_prop_keys}"
-        assert props.get("badge") in VALID_BADGES, f"{sid}: invalid badge {props.get('badge')}"
+        assert props.get("badge") == "Observed", f"{sid}: stop badge must be Observed, got {props.get('badge')}"
         assert isinstance(props.get("science"), str) and len(props["science"]) > 30, f"{sid}: short science text"
+        assert "interpreted" not in props["science"].lower(), (
+            f"{sid}: interpretive prose belongs in card.geologic_context (Derived), not properties.science (Observed)"
+        )
 
         card = props.get("card", {})
         bad_card_keys = (set(card.keys()) & {"photos", "sample_mass_scenario_kg", "badge"})
@@ -172,18 +188,31 @@ def test_stops_schema_and_size() -> None:
         assert card["waypoint_badge"] == "Observed", f"{sid}: card.waypoint_badge must be Observed"
         assert card["context_badge"] == "Derived", f"{sid}: card.context_badge must be Derived"
 
+    s1 = next(f for f in features if f["properties"]["id"] == "S1")
+    assert s1["properties"]["sols"] == [4541, 4542, 4543, 4544], "S1 sols must match PIA26559 dates (sols 4541-4544)"
+    assert s1["properties"]["panorama_meta"]["sol_range"] == "4541–4544"
+    assert "RMC 116_414" in s1["properties"]["evidence"]
+
     s2 = next(f for f in features if f["properties"]["id"] == "S2")
+    assert s2["properties"]["sols"] == [4714, 4715, 4740, 4741], "S2 sols must fall inside PIA26696 mosaic window"
     s2_meta = s2["properties"]["panorama_meta"]
+    assert s2_meta["sol_range"] == "4714–4741"
     assert "jpegMod/PIA26696_modest.jpg" in s2_meta["image_url"], "S2 preview must use modest-resolution JPEG"
 
 
+@pytest.mark.network
 def test_coordinates_match_live_mmgis() -> None:
-    """Verify every stop matches its live NASA MMGIS waypoint within 1.0 m and S3 matches MSL_waypoints_current."""
+    """Verify every stop (including S3) matches its own recorded RMC in NASA MMGIS within 1.0 m."""
+    _skip_if_offline()
     stops_fc = _load_json(DATA_DIR / "stops.json")
-    by_sol_drive, _, current_wp = builder.load_mmgis_waypoints()
+    try:
+        by_sol_drive, _, current_wp = builder.load_mmgis_waypoints()
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        _skip_if_offline(exc)
+        raise
 
     expected_keys = {
-        "S1": (4539, 408),
+        "S1": (4541, 414),
         "S2": (4711, 82),
         "D1": (4560, 1944),
         "D2": (4687, 1722),
@@ -195,7 +224,17 @@ def test_coordinates_match_live_mmgis() -> None:
         lon, lat = feat["geometry"]["coordinates"]
         card = props["card"]
 
-        wp = current_wp if sid == "S3" else by_sol_drive[expected_keys[sid]]
+        if sid == "S3":
+            sol_match = re.search(r"(\d+)", str(card["sol"]))
+            assert sol_match, f"S3 card.sol missing sol number: {card['sol']!r}"
+            s3_key = (int(sol_match.group(1)), int(card["drive"]))
+            wp = by_sol_drive.get(s3_key)
+            if wp is None and (current_wp["sol"], current_wp["drive"]) == s3_key:
+                wp = current_wp
+            assert wp is not None, f"S3 recorded waypoint {s3_key} ({card['rmc']}) not found in MMGIS"
+        else:
+            wp = by_sol_drive[expected_keys[sid]]
+
         dist_m = builder.mars_distance_m(lon, lat, wp["lon"], wp["lat"])
         assert dist_m < 1.0, f"{sid}: coordinate differs by {dist_m:.2f} m from MMGIS waypoint {wp['rmc']}"
         assert card["rmc"] == wp["rmc"], f"{sid}: card.rmc {card['rmc']} != {wp['rmc']}"
@@ -204,8 +243,8 @@ def test_coordinates_match_live_mmgis() -> None:
         assert abs(card["elev_m"] - wp["elev_m"]) < 0.05, f"{sid}: elev_m mismatch"
         assert abs(card["dist_km"] - wp["dist_km"]) < 0.05, f"{sid}: dist_km mismatch"
         if sid == "S3":
-            assert wp["sol"] in props["sols"], f"S3 current sol {wp['sol']} missing from S3.sols {props['sols']}"
-            assert f"sol {wp['sol']}" in props["name"], f"S3 name {props['name']!r} missing current sol {wp['sol']}"
+            assert wp["sol"] in props["sols"], f"S3 recorded sol {wp['sol']} missing from S3.sols {props['sols']}"
+            assert f"sol {wp['sol']}" in props["name"], f"S3 name {props['name']!r} missing recorded sol {wp['sol']}"
 
 
 def test_photos_sols_and_instrument_diversity() -> None:
@@ -249,6 +288,15 @@ def test_cards_rad_and_rems() -> None:
     assert len(sep_rows) == 1 and sep_rows[0]["value"] == 418 and "Si" in sep_rows[0]["unit"], (
         f"Unexpected SEP row: {sep_rows}"
     )
+    assert "detector B" in sep_rows[0]["note"], "Sept 2017 Si SEP measurement must cite silicon detector B"
+
+    plastic_rows = [v for v in rad["values"] if "plastic" in v["label"].lower()]
+    assert len(plastic_rows) == 1 and "Detector E" in plastic_rows[0]["note"], (
+        "Tissue-equivalent plastic scintillator must cite Detector E"
+    )
+    assert "Berger" not in json.dumps(rad), "Misattributed Berger 2018 citation must not be present"
+    assert "Cohen & Mewaldt 2018" in rad["source"] and "16:1616" in rad["source"]
+    assert "45:5845" in rad["source"] and "45:5860" not in rad["source"]
 
     walk_rows = [v for v in rad["values"] if "4-hour" in v["label"]]
     assert len(walk_rows) == 1 and walk_rows[0]["badge"] == "Scenario"
@@ -264,15 +312,21 @@ def test_cards_rad_and_rems() -> None:
     armstrong_limits = [lim for lim in rems["limits"] if "armstrong" in lim["label"].lower()]
     assert len(armstrong_limits) == 1 and armstrong_limits[0]["value"] == 6300 and armstrong_limits[0]["unit"] == "Pa"
     assert "badge" not in armstrong_limits[0], "Physiological constant must not carry badge='Observed'"
-    assert "straddles" not in json.dumps(rems).lower()
+    rems_dump = json.dumps(rems)
+    assert "straddles" not in rems_dump.lower()
+    assert "180–278 K" not in rems_dump and "190 K nighttime" not in rems_dump
+    assert "119:440" in rems["source"] and "119:1544" not in rems["source"]
+    assert builder.REMS_WEATHER_URL in rems["source_urls"]
     assert not any(
         u.endswith("rems.htm") or "pds-geosciences.wustl.edu" in u for u in rems["source_urls"]
     ), "Broken 404 WUSTL rems.htm link must not be present"
     assert len(rems["source_urls"]) >= 2
 
 
+@pytest.mark.network
 def test_all_urls_reachable() -> None:
     """Verify photo, panorama, and card URLs load (HTTP 200; DOIs verified via doi.org handle API)."""
+    _skip_if_offline()
     stops_fc = _load_json(DATA_DIR / "stops.json")
     rad = _load_json(CARDS_DIR / "rad.json")
     rems = _load_json(CARDS_DIR / "rems.json")
@@ -294,22 +348,26 @@ def test_all_urls_reachable() -> None:
         for url in card.get("source_urls", []):
             source_page_urls.append(url)
 
-    for url in dict.fromkeys(strict_200_urls):
-        status = _head_or_get_status(url)
-        assert status == 200, f"Media URL returned HTTP {status} (expected 200): {url}"
+    try:
+        for url in dict.fromkeys(strict_200_urls):
+            status = _head_or_get_status(url)
+            assert status == 200, f"Media URL returned HTTP {status} (expected 200): {url}"
 
-    for url in dict.fromkeys(source_page_urls):
-        parsed = urllib.parse.urlparse(url)
-        if parsed.netloc == "doi.org":
-            doi_path = parsed.path.lstrip("/")
-            handle_data = builder.fetch_json(f"https://doi.org/api/handles/{doi_path}")
-            assert handle_data.get("responseCode") == 1, f"DOI handle failed resolution: {url}"
-            continue
-        status = _head_or_get_status(url)
-        # www.jpl.nasa.gov returns HTTP 403 Cloudflare bot challenge to non-browser clients; 404/5xx must still fail.
-        if parsed.netloc == "www.jpl.nasa.gov" and status == 403:
-            continue
-        assert status == 200, f"Source URL returned HTTP {status} (expected 200): {url}"
+        for url in dict.fromkeys(source_page_urls):
+            parsed = urllib.parse.urlparse(url)
+            if parsed.netloc == "doi.org":
+                doi_path = parsed.path.lstrip("/")
+                handle_data = builder.fetch_json(f"https://doi.org/api/handles/{doi_path}")
+                assert handle_data.get("responseCode") == 1, f"DOI handle failed resolution: {url}"
+                continue
+            status = _head_or_get_status(url)
+            # www.jpl.nasa.gov returns HTTP 403 Cloudflare bot challenge to non-browser clients; 404/5xx must still fail.
+            if parsed.netloc == "www.jpl.nasa.gov" and status == 403:
+                continue
+            assert status == 200, f"Source URL returned HTTP {status} (expected 200): {url}"
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        _skip_if_offline(exc)
+        raise
 
 
 def main() -> None:
@@ -320,10 +378,17 @@ def main() -> None:
         test_cards_rad_and_rems,
         test_all_urls_reachable,
     )
+    passed = 0
+    skipped = 0
     for fn in tests:
-        fn()
-        print(f"PASS {fn.__name__}")
-    print(f"ALL {len(tests)} CHECKS PASSED.")
+        try:
+            fn()
+            passed += 1
+            print(f"PASS {fn.__name__}")
+        except pytest.skip.Exception as exc:
+            skipped += 1
+            print(f"SKIP {fn.__name__}: {exc}")
+    print(f"COMPLETED {len(tests)} CHECKS ({passed} passed, {skipped} skipped).")
 
 
 if __name__ == "__main__":

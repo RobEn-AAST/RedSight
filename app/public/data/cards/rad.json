@@ -16,14 +16,14 @@
    "unit": "µGy/day",
    "pm": 40,
    "badge": "Observed",
-   "note": "Detector B tissue-equivalent plastic scintillator average over sols 13–300 (Hassler et al. 2014, Table 1)."
+   "note": "Detector E tissue-equivalent plastic scintillator average over sols 13–300 (Hassler et al. 2014, Table 1)."
   },
   {
    "label": "Sept 2017 surface SEP event (absorbed dose in silicon)",
    "value": 418,
    "unit": "µGy (Si)",
    "badge": "Observed",
-   "note": "Largest solar energetic particle event recorded at Mars surface by RAD silicon detector E during 10–13 Sept 2017 (Zeitlin et al. 2018; Berger et al. 2018)."
+   "note": "Largest solar energetic particle event recorded at Mars surface by RAD silicon detector B during 10–13 Sept 2017 (Zeitlin et al. 2018; Cohen & Mewaldt 2018)."
   },
   {
    "label": "Modeled 4-hour Marswalk GCR dose (unshielded)",
@@ -50,7 +50,7 @@
  ],
  "note": "Curiosity RAD is a rover-local dosimeter, not a spatial map across the ops box. SEP peak value (418 µGy) is absorbed dose in silicon, not directly equivalent to mSv effective dose.",
  "claim_boundary": "Context card only — never rendered as a spatial hazard heatmap. Modeled walk dose scales the Observed GCR baseline by excursion duration (Scenario).",
- "source": "Hassler et al. 2014, Science 343:1244797, doi:10.1126/science.1244797; Zeitlin et al. 2018, GRL 45:5860, doi:10.1029/2018GL077760; Berger et al. 2018, Space Weather 16:1714, doi:10.1029/2018SW002006; PDS PPI MSL-M-RAD-2-EDR-V1.0; NASA-STD-3001 Vol 1",
+ "source": "Hassler et al. 2014, Science 343:1244797, doi:10.1126/science.1244797; Zeitlin et al. 2018, GRL 45:5845–5851, doi:10.1029/2018GL077760; Cohen & Mewaldt 2018, Space Weather 16:1616–1623, doi:10.1029/2018SW002006; PDS PPI MSL-M-RAD-2-EDR-V1.0; NASA-STD-3001 Vol 1",
  "source_urls": [
   "https://doi.org/10.1126/science.1244797",
   "https://doi.org/10.1029/2018GL077760",
