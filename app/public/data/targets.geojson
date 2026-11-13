@@ -176,7 +176,7 @@
      "sulfate-unit",
      "survey"
     ],
-    "evidence": "PIA26559",
+    "evidence": "PIA26559 (Mastcam, 2025-05-15…18, site 116)",
     "badge": "Observed",
     "extent_note": "MOCK extent: a ~120 m area drawn around the rover-visited site. The site is real; the outline is a placeholder."
    }
@@ -354,7 +354,7 @@
      "sulfate-unit",
      "survey"
     ],
-    "evidence": "PIA26696",
+    "evidence": "PIA26696 (Mastcam, 2025-11-09…12-07, site 120)",
     "badge": "Observed",
     "extent_note": "MOCK extent: a ~120 m area drawn around the rover-visited site. The site is real; the outline is a placeholder."
    }
@@ -530,7 +530,7 @@
      "sulfate-unit",
      "survey"
     ],
-    "evidence": "MMGIS waypoint",
+    "evidence": "MMGIS waypoint (MSL_waypoints_current.json, sol 5070, site 125, drive 2274)",
     "badge": "Observed",
     "extent_note": "MOCK extent: a ~120 m area drawn around the rover-visited site. The site is real; the outline is a placeholder."
    }
@@ -708,7 +708,7 @@
      "sulfate-unit",
      "survey"
     ],
-    "evidence": "JPL news 2025-06-23",
+    "evidence": "JPL news 2025-06-23 (drilled 2025-06-08; nearest MMGIS waypoint sols 4558–4560)",
     "badge": "Observed",
     "extent_note": "MOCK extent: a ~120 m area drawn around the rover-visited site. The site is real; the outline is a placeholder."
    }
@@ -886,7 +886,7 @@
      "sulfate-unit",
      "survey"
     ],
-    "evidence": "NASA Curiosity blog sols 4689–4694",
+    "evidence": "NASA Curiosity blog sols 4689–4694 ('Monte Grande' hollow drill campaign, Oct 2025)",
     "badge": "Observed",
     "extent_note": "MOCK extent: a ~120 m area drawn around the rover-visited site. The site is real; the outline is a placeholder."
    }
