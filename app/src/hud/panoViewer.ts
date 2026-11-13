@@ -6,13 +6,17 @@ import * as THREE from 'three'
 export interface PanoViewer {
   /** Look direction in degrees along the image (0 = image centre). */
   readonly yawDeg: number
+  /** The three.js scene, for fixed overlays (route drawn on the ground). */
+  readonly scene: THREE.Scene
+  /** Called every frame with the time in seconds (for animated overlays). */
+  onFrame(cb: (tS: number) => void): void
   destroy(): void
 }
 
 export function createPanoViewer(
   container: HTMLElement,
   imageUrl: string,
-  opts: { onReady?: () => void; onError?: (e: unknown) => void; onView?: (yawDeg: number, fovDeg: number) => void } = {},
+  opts: { horizonDeg?: number; onReady?: () => void; onError?: (e: unknown) => void; onView?: (yawDeg: number, fovDeg: number) => void } = {},
 ): PanoViewer {
   const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
@@ -28,7 +32,10 @@ export function createPanoViewer(
 
   let yaw = 0 // radians
   let pitch = 0
-  let maxPitch = 0.3
+  // Photo extent, to keep the view on the picture (pitch limits depend on the zoom).
+  let halfH = 3
+  let R = 10
+  let shift = 0
   let mesh: THREE.Mesh | null = null
   let disposed = false
 
@@ -46,10 +53,12 @@ export function createPanoViewer(
       const h = (2 * Math.PI * r * img.height) / img.width
       const geo = new THREE.CylinderGeometry(r, r, h, 128, 1, true)
       mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: tex, side: THREE.BackSide }))
+      // Put the photo's horizon at eye level (y = 0): mosaics are rarely centred on the horizon.
+      shift = r * Math.tan(THREE.MathUtils.degToRad(opts.horizonDeg ?? 0))
+      mesh.position.y = -shift
       scene.add(mesh)
-      // Don't let the view leave the photo: half the image's vertical angle minus half the camera's view.
-      const halfImg = Math.atan(h / 2 / r)
-      maxPitch = Math.max(0, halfImg - THREE.MathUtils.degToRad(camera.fov / 2))
+      halfH = h / 2
+      R = r
       opts.onReady?.()
     },
     undefined,
@@ -101,18 +110,27 @@ export function createPanoViewer(
   window.addEventListener('keydown', onKey)
 
   let lastYaw = NaN, lastFov = NaN
+  const frameCbs: ((tS: number) => void)[] = []
   renderer.setAnimationLoop(() => {
     if (yaw !== lastYaw || camera.fov !== lastFov) {
       lastYaw = yaw
       lastFov = camera.fov
       opts.onView?.(THREE.MathUtils.radToDeg(yaw), camera.fov)
     }
-    pitch = THREE.MathUtils.clamp(pitch, -maxPitch, maxPitch)
+    const half = THREE.MathUtils.degToRad(camera.fov / 2)
+    const lo = Math.atan((-halfH - shift) / R) + half
+    const hi = Math.atan((halfH - shift) / R) - half
+    pitch = THREE.MathUtils.clamp(pitch, lo, Math.max(lo, hi))
     camera.rotation.set(pitch, yaw, 0, 'YXZ')
+    for (const cb of frameCbs) cb(performance.now() / 1000)
     renderer.render(scene, camera)
   })
 
   return {
+    scene,
+    onFrame(cb) {
+      frameCbs.push(cb)
+    },
     get yawDeg() {
       return THREE.MathUtils.radToDeg(yaw)
     },

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { PlayCircle, ScanEye } from 'lucide-react'
 
 import { PANORAMAS } from '@/hud/panoramas'
@@ -87,6 +87,14 @@ export function MissionReplay() {
   const pano = stopId ? PANORAMAS[stopId] : undefined
   const stop = engine.stops?.find((x) => x.id === stopId)
   const habitat = engine.meta?.habitat?.lonlat as [number, number] | undefined
+  // Lines for the fixed route drawn in the 360 view: the way out, and the way home from the stop
+  // (the fastest-way-home path when the replay switched to it, else the route walked back).
+  const wayOut = useMemo(() => (activeRoute?.coords ?? []) as [number, number][], [activeRoute])
+  const fastFromStop = hud?.fastHome ? activeRoute?.back_fast?.path?.[(activeRoute?.coords.length ?? 1) - 1] : undefined
+  const wayHome = useMemo(
+    () => (fastFromStop?.length ? fastFromStop : wayOut.slice().reverse()) as [number, number][],
+    [fastFromStop, wayOut],
+  )
 
   return (
     <Panel
@@ -127,6 +135,8 @@ export function MissionReplay() {
           stopLonLat={[stop.lon, stop.lat]}
           habitatLonLat={habitat}
           cards={engine.cards}
+          wayOut={wayOut}
+          wayHome={wayHome}
           onClose={closeHud}
         />
       )}

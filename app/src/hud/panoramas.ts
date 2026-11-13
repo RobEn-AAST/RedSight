@@ -9,6 +9,10 @@ export interface StopPanorama {
   source: string
   /** The image's 0° isn't tied to north yet, so the HUD can't point at the habitat on the photo. */
   northCalibrated: boolean
+  /** Compass bearing (°) the viewer faces at start (yaw 0). Estimate until calibrated. */
+  northOffsetDeg: number
+  /** Angle of the horizon above the image's vertical centre (°). Read off the image by eye: estimate. */
+  horizonDeg: number
 }
 
 export const PANORAMAS: Record<string, StopPanorama> = {
@@ -21,6 +25,10 @@ export const PANORAMAS: Record<string, StopPanorama> = {
     taken: 'Mastcam, 291 images, 2025-05-15 to 05-18',
     source: 'https://images.nasa.gov/details/PIA26559',
     northCalibrated: false,
+    // Not verified: starting guess. Align in the viewer with [ and ] against a known landmark.
+    northOffsetDeg: 0,
+    // Distant crater-floor haze sits ~18° above the mosaic's centre (by eye, at the default zoom).
+    horizonDeg: 18,
   },
   // S2 (PIA26696) is not in the NASA Image Library; add it after it is downloaded with approval.
 }

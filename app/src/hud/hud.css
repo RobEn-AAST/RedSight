@@ -97,3 +97,7 @@
   .hud-br { display: none; }
   .hud-ring { width: 110px; height: 110px; }
 }
+.hud-seg { display: inline-flex; border: 1px solid rgba(127, 227, 255, 0.5); }
+.hud-seg button { background: transparent; color: var(--hud); border: 0; padding: 2px 8px; font: inherit; font-size: 10px;
+  letter-spacing: 0.1em; cursor: pointer; }
+.hud-seg button[aria-pressed="true"] { background: #ffd400; color: #1a1400; text-shadow: none; }

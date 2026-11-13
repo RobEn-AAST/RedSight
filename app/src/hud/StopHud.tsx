@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { createPanoViewer } from '@/hud/panoViewer'
+import { createPanoViewer, type PanoViewer } from '@/hud/panoViewer'
+import { createRouteOverlay, type RouteOverlay } from '@/hud/routeOverlay'
 import type { StopPanorama } from '@/hud/panoramas'
 import type { EngineCard } from '@/lib/engineDataContext'
 import {
@@ -115,6 +116,8 @@ export function StopHud({
   stopLonLat,
   habitatLonLat,
   cards,
+  wayOut,
+  wayHome,
   onClose,
 }: {
   pano: StopPanorama
@@ -125,29 +128,85 @@ export function StopHud({
   stopLonLat: LonLat
   habitatLonLat: LonLat
   cards: { rad: EngineCard | null; rems: EngineCard | null }
+  /** Way out (habitat → stop) and the way home from the stop, as lon/lat lines. */
+  wayOut: LonLat[]
+  wayHome: LonLat[]
   onClose: () => void
 }) {
   const hostRef = useRef<HTMLDivElement>(null)
   const tapeRef = useRef<HTMLDivElement>(null)
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const viewerRef = useRef<PanoViewer | null>(null)
+  const overlayRef = useRef<RouteOverlay | null>(null)
+  // Which leg is drawn on the ground: the route to this stop, or the way home from it.
+  const [leg, setLeg] = useState<'to' | 'home'>('to')
+  // Bearing the view faces at start. Unverified estimate; [ and ] rotate the drawn route to align it.
+  const [northDeg, setNorthDeg] = useState(pano.northOffsetDeg)
+  const northRef = useRef(northDeg)
+  const yawRef = useRef(0)
+  const setTape = () => {
+    const heading = (((northRef.current - yawRef.current) % 360) + 360) % 360
+    if (tapeRef.current) tapeRef.current.style.transform = `translateX(${-heading * 4}px)`
+  }
 
   useEffect(() => {
     if (!hostRef.current) return
     const viewer = createPanoViewer(hostRef.current, `${import.meta.env.BASE_URL}${pano.url}`, {
+      horizonDeg: pano.horizonDeg,
       onReady: () => setStatus('ready'),
       onError: () => setStatus('error'),
       // Heading tape follows the view directly (no React re-render per frame).
       onView: (yawDeg) => {
-        if (tapeRef.current) tapeRef.current.style.transform = `translateX(${yawDeg * 4}px)`
+        yawRef.current = yawDeg
+        setTape()
       },
     })
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    viewerRef.current = viewer
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+      if (e.key === '[') setNorthDeg((d) => d - 2)
+      if (e.key === ']') setNorthDeg((d) => d + 2)
+    }
     window.addEventListener('keydown', onKey)
     return () => {
       window.removeEventListener('keydown', onKey)
+      overlayRef.current?.dispose()
+      overlayRef.current = null
+      viewerRef.current = null
       viewer.destroy()
     }
-  }, [pano.url, onClose])
+  }, [pano.url, pano.horizonDeg, onClose])
+
+  // The fixed route on the ground: drawn once per leg (no tracking); only its arrows animate.
+  useEffect(() => {
+    const viewer = viewerRef.current
+    if (!viewer) return
+    const yellow = { color: '#ffd400', opacity: 0.7, widthM: 1.2, arrows: true }
+    const faint = { color: '#7fe3ff', opacity: 0.35, widthM: 0.8, arrows: false }
+    // Arrows run in the direction of travel: toward the stop on the way out, toward the habitat going home.
+    const paths =
+      leg === 'to'
+        ? [{ ...faint, coords: wayHome }, { ...yellow, coords: wayOut }]
+        : [{ ...faint, coords: wayOut }, { ...yellow, coords: wayHome }]
+    const overlay = createRouteOverlay(viewer.scene, viewer.onFrame, {
+      stop: stopLonLat,
+      habitat: habitatLonLat,
+      paths,
+      northOffsetDeg: northRef.current,
+    })
+    overlayRef.current = overlay
+    return () => {
+      overlay.dispose()
+      if (overlayRef.current === overlay) overlayRef.current = null
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leg, wayOut, wayHome, stopLonLat[0], stopLonLat[1], habitatLonLat[0], habitatLonLat[1]])
+
+  useEffect(() => {
+    northRef.current = northDeg
+    overlayRef.current?.setNorthOffset(northDeg)
+    setTape()
+  }, [northDeg])
 
   const tl = timeline
   const arrive = tl.events.find((e) => e.type === 'arrive')
@@ -170,7 +229,11 @@ export function StopHud({
 
   const ticks = useMemo(() => {
     const out: { deg: number; label: string }[] = []
-    for (let d = -540; d <= 540; d += 15) out.push({ deg: d, label: d % 90 === 0 ? `${((d % 360) + 360) % 360}` : '' })
+    const card: Record<number, string> = { 0: 'N', 90: 'E', 180: 'S', 270: 'W' }
+    for (let d = -360; d <= 720; d += 15) {
+      const n = ((d % 360) + 360) % 360
+      out.push({ deg: d, label: d % 45 === 0 ? (card[n] ?? String(n)) : '' })
+    }
     return out
   }, [])
   const marks = [
@@ -190,17 +253,17 @@ export function StopHud({
       <div className="hud-visor" aria-hidden />
       <div className="hud-reticle" aria-hidden />
 
-      {/* Heading tape: degrees from the photo's centre (not north-aligned yet, so marked REL). */}
+      {/* Heading tape: compass heading = start bearing (unverified estimate, so marked ≈) − view yaw. */}
       <div className="hud-tape hud-in" style={{ animationDelay: '0.05s' }} aria-hidden>
         <div ref={tapeRef} className="hud-tape-inner">
           {ticks.map((t) => (
-            <span key={t.deg} className="hud-tick" style={{ left: `calc(50% + ${t.deg * -4}px)` }}>
+            <span key={t.deg} className="hud-tick" style={{ left: `calc(50% + ${t.deg * 4}px)` }}>
               {t.label}
             </span>
           ))}
         </div>
         <span className="hud-tape-caret" />
-        <span className="hud-tape-rel">REL °</span>
+        <span className="hud-tape-rel">{pano.northCalibrated ? 'HDG' : '≈ HDG'}</span>
       </div>
 
       <div className="hud-top hud-in" style={{ animationDelay: '0.1s' }}>
@@ -208,6 +271,10 @@ export function StopHud({
         <span className="hud-title">
           {pano.stopId} · {stopName.toUpperCase()}
           {sols ? ` · SOL ${sols}` : ''}
+        </span>
+        <span className="hud-seg" role="group" aria-label="Route drawn on the ground">
+          <button aria-pressed={leg === 'to'} onClick={() => setLeg('to')}>ROUTE TO {pano.stopId}</button>
+          <button aria-pressed={leg === 'home'} onClick={() => setLeg('home')}>WAY HOME</button>
         </span>
         <button className="hud-close" onClick={onClose} aria-label="Close 360 view">✕</button>
       </div>
@@ -289,7 +356,8 @@ export function StopHud({
         <div className="hud-foot">
           <span className="hud-chip hud-scn">SCENARIO</span> O₂, route and times are modeled estimates, not
           measurements · RAD/REMS: Curiosity rover-local values · Photo: {pano.pia}, {pano.credit}, {pano.taken} ·
-          Real imagery only at stops; moving between stops is a jump.
+          Real imagery only at stops; moving between stops is a jump. · Yellow route: drawn from the route's coordinates onto the photo (flat ground, no hills; photo
+          heading {pano.northCalibrated ? 'aligned' : `not verified, start ≈${northDeg}°, align with [ ]`}), not tracking.
         </div>
       </div>
     </div>
