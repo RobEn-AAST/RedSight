@@ -1,0 +1,98 @@
+import type { LayerCard } from '@/types/layers'
+
+/**
+ * Layer catalog — every entry mirrors a dataset verified against primary
+ * sources on 2026-11-13 (docs/technical-approaches.md §1). The app ships
+ * with NONE of these loaded; cards exist so provenance is inspectable and
+ * the map workspace can honestly report what is pending.
+ */
+export const layerCatalog: LayerCard[] = [
+  {
+    id: 'hirise-optical',
+    name: 'HiRISE optical mosaic',
+    instrument: 'Mars Reconnaissance Orbiter / HiRISE',
+    evidence: 'observed',
+    resolution: '0.25 m/px — Gale block (36×40 km)',
+    status: 'verified-source',
+    sourceName: 'NASA/JPL Mars Trek — curiosity_hirise_mosaic',
+    sourceUrl: 'https://trek.nasa.gov/mars/',
+    note: 'Optical basemap: dune fields, scarps, boulder fields readable by eye.',
+  },
+  {
+    id: 'gale-dem',
+    name: 'Gale DEM (lower Mount Sharp)',
+    instrument: 'HiRISE stereo → DEM mosaic',
+    evidence: 'derived',
+    resolution: '1 m/px, EPSG 104905 footprint',
+    status: 'verified-source',
+    sourceName: 'NASA/JPL Mars Trek — Gale_DEM_SMG_1m (PDS HiRISE DTM product)',
+    sourceUrl: 'https://trek.nasa.gov/mars/',
+    note: 'Planning DEM per research verdict; MOLA (463 m/px) cannot support walk-scale routing.',
+  },
+  {
+    id: 'slope',
+    name: 'Slope (from DEM)',
+    instrument: 'Computed from Gale DEM',
+    evidence: 'derived',
+    resolution: 'planning grid 5–10 m/px (resampled)',
+    status: 'planned',
+    sourceName: 'RedSight engine (offline preprocessing, pending)',
+    sourceUrl: 'https://github.com/RobEn-AAST/RedSight',
+    note: 'Hard-constraint layer ~15° max planning slope — team assumption, configurable.',
+  },
+  {
+    id: 'themis-inertia',
+    name: 'THEMIS thermal inertia (sand proxy)',
+    instrument: 'Mars Odyssey / THEMIS nighttime IR',
+    evidence: 'derived',
+    resolution: '100 m/px, global',
+    status: 'verified-source',
+    sourceName: 'ASU THEMIS / USGS global mosaic',
+    sourceUrl: 'https://themis.asu.edu/',
+    note: 'Low inertia ≈ fine loose material — a sand-likelihood layer, not per-step trafficability.',
+  },
+  {
+    id: 'crism-minerals',
+    name: 'CRISM-derived mineral indicators',
+    instrument: 'MRO / CRISM targeted + mapping',
+    evidence: 'derived',
+    resolution: '~18 m/px targeted · ~200 m/px mapped',
+    status: 'verified-source',
+    sourceName: 'NASA/JPL Mars Trek CRISM layers (e.g. MC18_PolySulfate indicator)',
+    sourceUrl: 'https://trek.nasa.gov/mars/',
+    note: 'Resolves sulfate- and clay-bearing host units; not cm-scale texture like boxwork veins.',
+  },
+  {
+    id: 'geology-sim3292',
+    name: 'Geologic units (SIM 3292)',
+    instrument: 'USGS global geologic map',
+    evidence: 'derived',
+    resolution: '1:20 M — context only',
+    status: 'verified-source',
+    sourceName: 'USGS SIM 3292 (Tanaka et al. 2014)',
+    sourceUrl: 'https://pubs.usgs.gov/sim/3292/',
+    note: 'At Gale the mound incl. boxwork zone maps as unit Htu (verified live via pygeoapi).',
+  },
+  {
+    id: 'rems-weather',
+    name: 'REMS weather (rover-local)',
+    instrument: 'Curiosity REMS',
+    evidence: 'observed',
+    resolution: 'single station, hourly windows',
+    status: 'verified-source',
+    sourceName: 'PDS MSL REMS bundle / CAB INTA-CSIC',
+    sourceUrl: 'https://pds-atmospheres.nmsu.edu/',
+    note: 'Rover-local time series — no spatial weather product exists at walk scale.',
+  },
+  {
+    id: 'rad-radiation',
+    name: 'RAD surface radiation (point)',
+    instrument: 'Curiosity RAD',
+    evidence: 'observed',
+    resolution: 'single roving point — 0.64–0.67 mSv/day GCR average',
+    status: 'verified-source',
+    sourceName: 'PDS PPI MSL RAD (Hassler et al. 2014, Science 1244797)',
+    sourceUrl: 'https://pds-ppi.igpp.ucla.edu/',
+    note: 'The only surface dosimeter on Mars. No spatial radiation dataset exists — any map layer would be SCENARIO.',
+  },
+]

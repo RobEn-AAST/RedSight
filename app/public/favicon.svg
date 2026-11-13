@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- RedSight mark: radar ring + sight dot on station dark -->
+  <rect width="64" height="64" rx="10" fill="#0b0e13"/>
+  <rect x="4" y="4" width="56" height="56" rx="8" fill="none" stroke="#232b36" stroke-width="2"/>
+  <circle cx="32" cy="32" r="17" fill="none" stroke="#e5484d" stroke-width="2.5" opacity="0.9"/>
+  <circle cx="32" cy="32" r="9" fill="none" stroke="#e5484d" stroke-width="1.5" opacity="0.45"/>
+  <circle cx="32" cy="32" r="3.2" fill="#ffb224"/>
+  <path d="M32 32 L46 18" stroke="#ffb224" stroke-width="2" stroke-linecap="round" opacity="0.8"/>
+</svg>
