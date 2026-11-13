@@ -7,6 +7,7 @@ import { LayerPanel } from '@/map/LayerPanel'
 import { MapCanvas } from '@/map/MapCanvas'
 import { RouteCards } from '@/map/RouteCards'
 import { StopPicker } from '@/map/StopPicker'
+import { TurnBackPanel } from '@/turnback/TurnBackPanel'
 import { EmptyState } from '@/ui/EmptyState'
 import { LedDot } from '@/ui/LedDot'
 
@@ -85,6 +86,7 @@ export function MapWorkspace() {
       <div className="flex flex-col gap-4 lg:min-h-0 lg:overflow-y-auto">
         <StopPicker />
         <RouteCards />
+        <TurnBackPanel />
         <LayerPanel
           enabledLayers={enabledLayers}
           onToggleLayer={(id, next) => setLayerChoice((s) => ({ ...s, [id]: next }))}
