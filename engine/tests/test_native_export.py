@@ -37,6 +37,12 @@ def test_synthetic_native_slope_manifest_drives_all_five_stop_exports(tmp_path):
                        dtype="float32", crs=crs, transform=affine, nodata=-9999) as ds:
         ds.write(slopes, 1)
     slope_hash = hashlib.sha256(slope_path.read_bytes()).hexdigest()
+    tiepoint_path = tmp_path / "tiepoint.json"
+    tiepoint_path.write_text('{"residual_m":4.1}\n')
+    review_path = tmp_path / "independent-review.md"
+    review_path.write_text("Independent bounded local visual review.\n")
+    tiepoint_hash = hashlib.sha256(tiepoint_path.read_bytes()).hexdigest()
+    review_hash = hashlib.sha256(review_path.read_bytes()).hexdigest()
     native_manifest = tmp_path / "native.json"
     native_manifest.write_text(json.dumps({
         "native_hard_slope": {
@@ -46,8 +52,32 @@ def test_synthetic_native_slope_manifest_drives_all_five_stop_exports(tmp_path):
             "source_resolution_m": 1.0, "planning_resolution_m": 10.0,
             "source_url": "https://example.invalid/source-dem.tif", "license": "CC0-1.0",
         },
-        "s1_landmark_alignment": {"status": "synthetic-fixture", "pixel_delta": 0},
+        "s1_landmark_alignment": {
+            "status": "bounded_qualitative_local_landmark_pass_moderate_confidence",
+            "feature_id": "K1", "apparent_residual_m": 4.1,
+            "subjective_pick_uncertainty_m": 6.8,
+            "local_path": str(tiepoint_path), "sha256": tiepoint_hash,
+            "verified_evidence_files": [
+                {"role": "tiepoint_json", "path": str(tiepoint_path), "sha256": tiepoint_hash},
+                {"role": "independent_visual_review", "path": str(review_path), "sha256": review_hash},
+            ],
+        },
     }))
+
+    native_dem_path = tmp_path / "primary-native.tif"
+    native_elevation = np.full((300, 300), -3600.0, dtype=np.float32)
+    with rasterio.open(native_dem_path, "w", driver="GTiff", width=300, height=300, count=1,
+                       dtype="float32", crs=crs, transform=from_origin(8_140_000, -280_000, 1, 1),
+                       nodata=-9999) as ds:
+        ds.write(native_elevation, 1)
+    native_dem_hash = hashlib.sha256(native_dem_path.read_bytes()).hexdigest()
+    input_manifest_data = json.loads(input_manifest.read_text())
+    input_manifest_data["native_routing"] = {
+        "artifact": str(native_dem_path), "sha256": native_dem_hash,
+        "bytes": native_dem_path.stat().st_size, "resolution_m": 1.0,
+        "source_url": "https://example.invalid/fixture-native-dem.tif", "license": "CC0-1.0",
+    }
+    input_manifest.write_text(json.dumps(input_manifest_data))
 
     stops = []
     target_cells = [(10, 11), (11, 10), (12, 10), (10, 12), (13, 10)]
@@ -76,7 +106,10 @@ def test_synthetic_native_slope_manifest_drives_all_five_stop_exports(tmp_path):
     assert summary["status"] == "complete"
     assert summary["files_written"] == 15
     assert len(result["route_index"]["routes"]) == 10
-    assert result["manifest"]["s1_landmark_alignment"]["status"] == "synthetic-fixture"
+    assert result["manifest"]["s1_landmark_alignment"]["status"] == "bounded_qualitative_local_landmark_pass_moderate_confidence"
+    assert result["manifest"]["pilot_gates"]["G2"]["status"] == "pass_bounded_qualitative_local_landmark"
+    assert result["manifest"]["pilot_gates"]["G2"]["feature_id"] == "K1"
+    assert result["manifest"]["pilot_gates"]["G2"]["global_registration_established"] is False
     assert result["manifest"]["output_sha256"]["routes/index.json"]
     constants = json.loads((tmp_path / "out/constants.json").read_text())
     assert all("source_url" in item for item in constants.values())
@@ -87,6 +120,14 @@ def test_synthetic_native_slope_manifest_drives_all_five_stop_exports(tmp_path):
             route = json.loads((tmp_path / "out/routes" / f"{stop_id}_{mode}_2_15.json").read_text())
             assert route["constants_hash"] == metadata["constants_hash"]
             assert route["primary_crop_sha256"] == dem_hash
+            assert route["goal_access"]["status"] == "approach_only"
+            assert route["goal_access"]["badge"] == "Derived"
+            assert route["goal_access"]["last_leg_modeled"] is False
+            assert route["goal_access"]["offset_m"] <= 10.0
+            assert route["goal_access"]["endpoint_lonlat"] == route["coords"][-1]
+            assert route["goal_access"]["observed_stop_lonlat"] == route["observed_stop_lonlat"]
+            assert len(route["coords"]) == len(route["cum"]["t_s"])
+            assert len(route["coords"]) == len(route["back"]["o2_l"])
             assert result["manifest"]["output_sha256"][f"routes/{stop_id}_{mode}_2_15.json"] == hashlib.sha256(
                 (tmp_path / "out/routes" / f"{stop_id}_{mode}_2_15.json").read_bytes()
             ).hexdigest()

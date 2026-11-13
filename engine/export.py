@@ -3,6 +3,8 @@
 from datetime import date, datetime
 import hashlib
 import json
+import math
+import resource
 from collections import Counter
 from pathlib import Path
 import platform
@@ -17,12 +19,13 @@ from scipy import __version__ as scipy_version
 from scipy.sparse.csgraph import connected_components
 
 from engine.data.hazard import read_native_hard_slope
+from engine.data.native_routing import NATIVE_ROUTING_MARGIN_M, build_bounded_native_routing_inputs
 from engine.data.raster import read_primary_dem, sha256_file
 from engine.model.constants import read_constants
 from engine.model.grid import build_graph
-from engine.route.arrays import route_arrays
+from engine.model.native_grid import select_access_goal
+from engine.route.native import dijkstra_field as native_dijkstra_field, path_from_field
 from engine.route.pnr import point_of_no_return
-from engine.route.solve import shortest_path
 
 
 MARS_GEOGRAPHIC_CRS = "+proj=longlat +R=3396190 +no_defs"
@@ -321,6 +324,71 @@ def _stop_target_diagnostics(dem, graph, stops, slope_limit_deg):
     return result
 
 
+def _native_access_target_diagnostics(native_inputs, stops, component_labels, habitat_component, slope_limit_deg):
+    native = native_inputs.graph
+    labels = component_labels.reshape(native.shape)
+    result = {}
+    for stop_id in SUPPORTED_STOPS:
+        stop = stops[stop_id]
+        exact_row, exact_col = native_inputs.stop_cells[stop_id]
+        exact_rc = (exact_row, exact_col)
+        exact_slope = float(native.slope_deg[exact_rc]) if np.isfinite(native.slope_deg[exact_rc]) else None
+        exact_walkable = bool(native.walkable[exact_rc])
+        exact_connected = exact_walkable and int(labels[exact_rc]) == int(habitat_component)
+        target_xy = native_inputs.projected_points[stop_id]
+        goal = select_access_goal(
+            native.walkable,
+            labels,
+            component_id=habitat_component,
+            target_xy=target_xy,
+            transform=native.transform,
+            max_offset_m=10.0,
+        )
+        if goal is None:
+            result[stop_id] = {
+                "status": "unavailable",
+                "badge": "Unavailable",
+                "reason": "no habitat-connected native pixel center lies within the 10 m Scenario access bound",
+                "observed_stop_lonlat": stop["lonlat"],
+                "observed_native_cell_rc": [exact_row + native.source_row0, exact_col + native.source_col0],
+                "observed_cell_horn_slope_deg": exact_slope,
+                "observed_cell_walkable": exact_walkable,
+                "observed_cell_connected": bool(exact_connected),
+                "last_leg_modeled": False,
+                "goal_cell": None,
+            }
+            continue
+        goal_row, goal_col = goal["row_col"]
+        endpoint_lonlat = transform(native.crs, MARS_GEOGRAPHIC_CRS, [goal["center_xy"][0]], [goal["center_xy"][1]])
+        if exact_connected:
+            reason = "the source pixel containing the Observed coordinate is walkable and connected; the route ends at its pixel center"
+        elif exact_slope is not None and exact_slope > slope_limit_deg + 1e-10:
+            reason = "the source pixel containing the Observed coordinate exceeds the native Horn slope limit; the route ends at a nearby connected access pixel"
+        elif exact_walkable:
+            reason = "the source pixel containing the Observed coordinate is walkable but disconnected from the existing habitat; no last-leg connection is modeled"
+        else:
+            reason = "native slope support is unavailable at the Observed pixel; the route ends at a nearby connected access pixel"
+        goal_access = {
+            "badge": "Derived",
+            "status": "approach_only",
+            "reason": reason,
+            "observed_stop_lonlat": stop["lonlat"],
+            "endpoint_lonlat": [float(endpoint_lonlat[0][0]), float(endpoint_lonlat[1][0])],
+            "offset_m": goal["offset_m"],
+            "access_bound_m": 10.0,
+            "native_cell_rc": [goal_row + native.source_row0, goal_col + native.source_col0],
+            "observed_native_cell_rc": [exact_row + native.source_row0, exact_col + native.source_col0],
+            "observed_cell_horn_slope_deg": exact_slope,
+            "observed_cell_walkable": exact_walkable,
+            "observed_cell_connected": bool(exact_connected),
+            "same_source_cell_as_observed_stop": [goal_row, goal_col] == [exact_row, exact_col],
+            "last_leg_modeled": False,
+            "goal_cell": [goal_row, goal_col],
+        }
+        result[stop_id] = goal_access
+    return result
+
+
 def build_real_routes(
     *,
     input_manifest,
@@ -389,6 +457,50 @@ def build_real_routes(
         raise ValueError("selected habitat is hard-blocked")
 
     stop_target_diagnostics = _stop_target_diagnostics(dem, graph, stops, c["slope_limit_foot_deg"])
+    native_route_started = perf_counter()
+    native_inputs = build_bounded_native_routing_inputs(
+        manifest_path=input_manifest,
+        manifest=manifest,
+        primary_dem=dem,
+        habitat_lonlat=_cell_lonlat(*habitat, dem),
+        stops=stops,
+        constants=c,
+    )
+    native_graph = native_inputs.graph
+    native_habitat = native_inputs.habitat_cell
+    if not native_graph.walkable[native_habitat]:
+        raise ValueError("existing Scenario habitat maps to a blocked native source pixel")
+    native_habitat_node = native_graph.node(native_habitat)
+    native_component_count, native_component_labels = connected_components(
+        native_graph.time_csr, directed=True, connection="weak"
+    )
+    native_habitat_component = int(native_component_labels[native_habitat_node])
+    native_access_diagnostics = _native_access_target_diagnostics(
+        native_inputs,
+        stops,
+        native_component_labels,
+        native_habitat_component,
+        c["slope_limit_foot_deg"],
+    )
+    native_fields = {
+        objective: native_dijkstra_field(native_graph, start=native_habitat, objective=objective)
+        for objective in ("time", "hazard")
+    }
+    native_graph_diagnostics = {
+        **native_inputs.extent,
+        "source": native_inputs.asset,
+        "resolution_m": native_graph.resolution_m,
+        "slope_limit_deg": c["slope_limit_foot_deg"],
+        "slope_method": "Horn 3x3 maximum native pixel slope, with any nodata-touching neighborhood unavailable",
+        "edge_method": "8-neighbor; diagonal requires both orthogonal pixels walkable; absolute native endpoint-sampled grade at or below the same slope limit",
+        "native_habitat_cell_rc": list(native_graph.global_cell(native_habitat_node)),
+        "native_habitat_component_pixels": int(np.count_nonzero(native_component_labels == native_habitat_component)),
+        "component_count_in_bounded_extent": int(native_component_count),
+        "access_goal_bound_m": 10.0,
+        "stop_access": native_access_diagnostics,
+        "graph_and_fields_runtime_seconds": round(perf_counter() - native_route_started, 3),
+    }
+    sources["native_route_dem"] = native_inputs.asset
 
     budget = c["o2_usable_primary_l"] - max(
         c["reserve_fraction"] * c["o2_usable_primary_l"],
@@ -402,6 +514,17 @@ def build_real_routes(
     exported_files = []
     stale_route_files_removed = []
     habitat_lonlat = _cell_lonlat(*habitat, dem)
+    native_habitat_xy = native_inputs.projected_points["HABITAT"]
+    native_habitat_center = rasterio.transform.xy(native_graph.transform, *native_habitat, offset="center")
+    native_habitat_lonlat = transform(native_graph.crs, MARS_GEOGRAPHIC_CRS, [native_habitat_center[0]], [native_habitat_center[1]])
+    habitat_route_start = {
+        "badge": "Derived",
+        "scenario_habitat_lonlat": habitat_lonlat,
+        "endpoint_lonlat": [float(native_habitat_lonlat[0][0]), float(native_habitat_lonlat[1][0])],
+        "offset_m": math.hypot(native_habitat_center[0] - native_habitat_xy[0], native_habitat_center[1] - native_habitat_xy[1]),
+        "native_cell_rc": list(native_graph.global_cell(native_habitat_node)),
+        "last_leg_modeled": False,
+    }
 
     for stop_id in SUPPORTED_STOPS:
         stop = stops[stop_id]
@@ -417,20 +540,19 @@ def build_real_routes(
                 "file": f"routes/{filename}",
             }
             try:
-                target_diag = stop_target_diagnostics[stop_id]
-                if not graph.valid[stop["cell"]]:
-                    if target_diag["block_reason"] == "native_slope_above_limit":
-                        raise ValueError(
-                            f"stop cell blocked: native Horn max slope {target_diag['native_horn_slope_deg']:.2f}° "
-                            f"exceeds {c['slope_limit_foot_deg']:g}°; endpoint kept at the declared stop, no adjacent-cell substitution"
-                        )
-                    raise ValueError("stop cell blocked: native slope support unavailable; no slope interpolation used")
-                path = shortest_path(graph, start=habitat, goal=stop["cell"], objective=objective)
-                arrays = route_arrays(
-                    graph,
-                    path.nodes,
-                    coordinates=lambda node: _cell_lonlat(*graph.cell(node), dem),
+                target_access = native_access_diagnostics[stop_id]
+                if target_access["status"] != "approach_only":
+                    raise ValueError(target_access["reason"])
+                path = path_from_field(
+                    native_graph,
+                    start=native_habitat,
+                    goal=tuple(target_access["goal_cell"]),
+                    objective=objective,
+                    distances=native_fields[objective][0],
+                    predecessors=native_fields[objective][1],
+                    constants=c,
                 )
+                arrays = path.arrays
                 pnr = point_of_no_return(
                     arrays["cum"]["o2_l"],
                     arrays["back"]["o2_l"],
@@ -450,16 +572,40 @@ def build_real_routes(
                     "pnr_index": pnr.pnr_index,
                     "constants_hash": constants_hash,
                     "habitat_cell_rc": list(habitat),
+                    "habitat_native_cell_rc": list(native_graph.global_cell(native_habitat_node)),
+                    "habitat_access": habitat_route_start,
                     "goal_cell_rc": list(stop["cell"]),
+                    "goal_native_cell_rc": target_access["native_cell_rc"],
+                    "goal_access": {key: value for key, value in target_access.items() if key != "goal_cell"},
+                    "observed_stop_lonlat": stop["lonlat"],
                     "objective_cost": path.objective_cost,
                     "distance_m": float(sum(item["cost_terms"]["distance_m"] for item in arrays["seg"])),
                     "primary_crop_sha256": dem.local_crop_sha256,
-                    "model_note": f"Scenario: {slope_method}; directed edge grades use average-resampled mean elevations; thermal terrain factor is 1.0, with no THEMIS sand cost or sample pickup load in this base 15 kg route bucket.",
+                    "model_note": (
+                        f"Scenario: routes use the primary native DTM at {native_graph.resolution_m:.6f} m spacing, "
+                        f"Horn 3x3 max slope at or below {c['slope_limit_foot_deg']:g}°, and directed grades between "
+                        "native source-pixel centers. Fastest or lowest-modeled-hazard optimum is limited to the "
+                        f"documented {NATIVE_ROUTING_MARGIN_M:g} m analysis corridor; terrain factor is 1.0, with no "
+                        "THEMIS sand cost or sample pickup load in this base 15 kg route bucket. Endpoint is a Derived "
+                        "approach goal; no last leg to the Observed stop is modeled."
+                    ),
                 }
                 _write_json(routes_dir / filename, route_payload)
                 exported_files.append(routes_dir / filename)
-                record.update({"total_s": arrays["total_s"], "pnr_index": pnr.pnr_index, "status": "routed"})
-                route_statuses[route_id] = {"status": "routed", "time_s": path.time_s, "objective_cost": path.objective_cost}
+                record.update({
+                    "total_s": arrays["total_s"],
+                    "pnr_index": pnr.pnr_index,
+                    "status": "routed",
+                    "goal_access_status": target_access["status"],
+                    "goal_access_offset_m": target_access["offset_m"],
+                })
+                route_statuses[route_id] = {
+                    "status": "routed",
+                    "time_s": path.time_s,
+                    "objective_cost": path.objective_cost,
+                    "goal_access_status": target_access["status"],
+                    "goal_access_offset_m": target_access["offset_m"],
+                }
             except ValueError as exc:
                 if _remove_stale_route_payload(routes_dir / filename):
                     stale_route_files_removed.append(f"routes/{filename}")
@@ -495,6 +641,12 @@ def build_real_routes(
             "slope_aggregation": slope_method,
             "native_slope_valid_cells": int(native_slope.valid.sum()),
             "native_slope_valid_fraction": float(native_slope.valid.mean()),
+            "route_grid_resolution_m": native_graph.resolution_m,
+            "route_grid_shape_hw": list(native_graph.shape),
+            "route_grid_walkable_pixels": int(native_graph.walkable.sum()),
+            "route_corridor_margin_m": NATIVE_ROUTING_MARGIN_M,
+            "access_goal_bound_m": 10.0,
+            "native_route_extent": native_inputs.extent,
         },
         "habitat": {"lonlat": habitat_lonlat, "row_col": list(habitat), "badge": "Scenario", "note": habitat_note},
         "build_date": date.today().isoformat(),
@@ -514,12 +666,34 @@ def build_real_routes(
     }
     hashed_outputs.update({str(path.relative_to(output_dir)): path for path in exported_files})
     output_hashes = {name: sha256_file(path) for name, path in sorted(hashed_outputs.items())}
+    native_graph_diagnostics["process_peak_rss_bytes"] = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024)
     build_completed = datetime.now(ZoneInfo("Africa/Cairo"))
     build_runtime = perf_counter() - build_started_mono
     acquisition = manifest.get("acquisition_timing", {})
     pilot_timing = _pilot_timing(acquisition, build_started, build_completed, build_runtime)
     routed_count = sum(value["status"] == "routed" for value in route_statuses.values())
     unreachable_ids = [key for key, value in route_statuses.items() if value["status"] != "routed"]
+    alignment_roles = {
+        item.get("role")
+        for item in alignment_evidence.get("verified_files", [])
+        if isinstance(item, dict)
+    } if isinstance(alignment_evidence, dict) else set()
+    alignment_is_bounded_local_pass = (
+        isinstance(alignment_evidence, dict)
+        and alignment_evidence.get("status") == "bounded_qualitative_local_landmark_pass_moderate_confidence"
+        and alignment_evidence.get("verified_local_sha256")
+        and {"tiepoint_json", "independent_visual_review"}.issubset(alignment_roles)
+    )
+    g2_gate = {
+        "status": "pass_bounded_qualitative_local_landmark" if alignment_is_bounded_local_pass else "partial_visual_only",
+        "scope": "one local qualitative landmark tie; no global or calibrated registration claim",
+        "feature_id": alignment_evidence.get("feature_id") if isinstance(alignment_evidence, dict) else None,
+        "apparent_pick_delta_m": alignment_evidence.get("apparent_residual_m") if isinstance(alignment_evidence, dict) else None,
+        "subjective_pick_uncertainty_m": alignment_evidence.get("subjective_pick_uncertainty_m") if isinstance(alignment_evidence, dict) else None,
+        "uncertainty_calibrated": False,
+        "global_registration_established": False,
+        "evidence": alignment_evidence,
+    }
     pilot_gates = {
         "G1": {
             "status": "pass" if dem.license and native_slope.license else "partial",
@@ -528,17 +702,16 @@ def build_real_routes(
             "primary_crop_sha256_verified": True,
             "native_slope_cache_sha256_verified": True,
         },
-        "G2": {
-            "status": "partial_visual_only",
-            "evidence": alignment_evidence,
-            "quantitative_tiepoint_residual": "unavailable",
-        },
+        "G2": g2_gate,
         "G3": {
-            "status": "pass" if not unreachable_ids else "partial",
+            "status": "partial_approach_only" if not unreachable_ids else "partial",
             "routed_stop_modes": routed_count,
             "unreachable_stop_modes": unreachable_ids,
             "native_slope_mask_enforced": True,
             "pnr_arrays_checked": True,
+            "exact_observed_arrival_claimed": False,
+            "approach_only_stop_ids": [stop_id for stop_id, item in native_access_diagnostics.items()
+                                       if item["status"] == "approach_only"],
         },
         "G4": {"status": pilot_timing["g4_status"], "timing": pilot_timing},
     }
@@ -547,13 +720,14 @@ def build_real_routes(
         "engine": "RedSight Python NumPy rasterio SciPy sparse Dijkstra",
         "engine_commit": _git_head(Path(__file__).resolve().parents[1]),
         "build_date": date.today().isoformat(),
-        "command": "python3 -m engine build --input-manifest <manifest-with-native-hazard> --constants <constants.json> --stops <stops.json> --out <app/public/data>",
+        "command": "python3 -m engine build --input-manifest <manifest-with-native-routing-and-hazard> --constants <constants.json> --stops <stops.json> --out <app/public/data>",
         "inputs": sources,
         "s1_landmark_alignment": alignment_evidence,
         "stops_sha256": sha256_file(stops_path),
         "constants_sha256": constants_hash,
         "output_sha256": output_hashes,
-        "analysis_grid": {"rows": dem.height, "columns": dem.width, "cell_size_m": dem.resolution_m, "cell_source": "average-resampled DTM mean elevations for directional energy; separate checked Horn slope aggregate for hard mask"},
+        "analysis_grid": {"rows": dem.height, "columns": dem.width, "cell_size_m": dem.resolution_m, "cell_source": "average-resampled primary DTM context grid and conservative coarse hazard layer"},
+        "routing_grid": native_graph_diagnostics,
         "hard_slope_limit_deg": c["slope_limit_foot_deg"],
         "slope_hard_mask_method": slope_method,
         "habitat": {"row_col": list(habitat), "lonlat": habitat_lonlat, "badge": "Scenario", "selection_note": habitat_note},
@@ -561,13 +735,16 @@ def build_real_routes(
         "runtime": {"python": platform.python_version(), "numpy": np.__version__, "rasterio": rasterio.__version__, "scipy": scipy_version},
         "route_status": route_statuses,
         "stale_route_files_removed": stale_route_files_removed,
-        "stop_target_cells": stop_target_diagnostics,
+        "coarse_stop_cell_diagnostics": stop_target_diagnostics,
+        "native_route_goal_access": native_access_diagnostics,
         "pilot_gates": pilot_gates,
         "pilot_timing": pilot_timing,
         "limitations": [
             "The primary crop covers 78.2% of the 600x600 planning grid; complementary-only cells remain blocked.",
             "The overlapping companion DTM differs substantially from the primary scene; its cells are excluded instead of applying an unsupported vertical correction.",
-            "Native Horn slope is aggregated to approximately 9.88m planning cells; features below the source resolution and cells with unavailable native slope support remain unavailable.",
+            "Routes use source-pixel centers at native resolution inside the documented 250m-expanded corridor; fastest and lowest-modeled-hazard results are corridor-limited optima, not unrestricted terrain optima.",
+            "Route endpoints are Derived approach-only pixel centers within at most 10m of Observed stop coordinates; no last leg is modeled and no exact arrival claim is made.",
+            "The approximately 9.88m maximum-slope aggregate remains a conservative context layer; a native traversable path can cross a planning cell whose neighboring source pixels exceed the threshold.",
             "No THEMIS thermal-inertia raster was supplied; the sand/terrain multiplier remains 1.0 and the lowest-hazard objective reflects slope only.",
             "Collected sample mass is not included in the base 2-crew, 15kg route bucket; it must be modeled in a separately agreed sample/load variant.",
             "Pandolf and the piecewise walking-speed function are Scenario transfers to Mars; values are estimates, not physiological measurements.",

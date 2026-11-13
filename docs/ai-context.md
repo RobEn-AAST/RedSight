@@ -15,9 +15,10 @@ verified green** (2026-11-13, web-foundation worker + resumed web-copilot worker
 React+Vite+TS mission console (mission setup per plan §8, map/stops/routes/provenance/HUD workspaces
 with honest engine-data-absent states, copilot panel in not-configured state) — build/lint/typecheck
 pass and the full flow was browser-tested with zero console errors (verification record:
-[`web-foundation.md`](web-foundation.md) §7). The offline engine now supplies a real-data partial
-payload: S3 routes in both supported modes and eight explicit no-route stop/mode outcomes at the
-native 15° maximum-slope limit.
+[`web-foundation.md`](web-foundation.md) §7). The offline engine now supplies all ten fastest/lowest-modeled-
+hazard route files over the primary native DTM at the unchanged 15° limit. Endpoints are Derived approach
+pixels within a 10 m bound; the route contract keeps Observed stop coordinates separate and models no final leg.
+G3 remains labeled partial/approach-only.
 The ignored local pilot cache is not included in Git; build inputs, assumptions, and limits are
 documented in [`../engine/README.md`](../engine/README.md). MapLibre tiles and web integration remain
 pending (see [`web-foundation.md`](web-foundation.md) §1–§2, §6).

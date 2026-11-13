@@ -12,7 +12,7 @@ has landed; `_mock/make-mock.mjs` overwrites every data file.
 | `constants.json` | Ali | real file; stable keys and descriptive `source` retained with additive `source_url` for every constant |
 | `layers.json` | Youssef | layer list + sources; `available:false` until tiles exist |
 | `stops.json` | Ayman | positions (§6, §8); photos + science text TODO |
-| `routes/index.json`, `routes/{stop}_{mode}_{crew}_{load}.json` | Ali | fastest + lowest-modeled-hazard outcome for each of S1, S2, S3, D1 and D2 (crew 2, 15 kg); blocked targets have an explicit no-route status |
+| `routes/index.json`, `routes/{stop}_{mode}_{crew}_{load}.json` | Ali | fastest + lowest-modeled-hazard outcome for each of S1, S2, S3, D1 and D2 (crew 2, 15 kg); each route has a separate Derived approach endpoint and the Observed stop coordinate remains in `stops.json` |
 | `hazards.geojson` | Ali | primary-DTM nodata, unavailable native slope support and native Horn slope hard masks |
 | `engine-build-manifest.json` | Ali | input/output hashes, source/licence, seam/alignment evidence, G1–G4 status, timing, model and route outcomes |
 | `cards/rad.json`, `cards/rems.json` | Ayman | RAD dose + source, REMS pressure range |
@@ -34,7 +34,9 @@ has landed; `_mock/make-mock.mjs` overwrites every data file.
 
 | Field | Meaning |
 |---|---|
-| `coords` | `[[lon, lat], …]` habitat → stop (N points), CRS `+proj=longlat +R=3396190` |
+| `coords` | `[[lon, lat], …]` from the Scenario habitat's native source-pixel center to the Derived route access endpoint (N points), CRS `+proj=longlat +R=3396190` |
+| `observed_stop_lonlat` | Original Observed coordinate from `stops.json`; it is not appended to `coords` |
+| `goal_access` | `{badge: "Derived", status: "approach_only", observed_stop_lonlat, endpoint_lonlat, offset_m, access_bound_m, native_cell_rc, reason, last_leg_modeled: false}`. Keep the Observed stop marker separate from the route endpoint; do not draw a last-leg segment or claim exact arrival. |
 | `seg[]` | N−1 segments: `t_s`, `o2_l` (per crew member), `slope_deg`, `cost_terms` |
 | `cum.t_s`, `cum.o2_l` | cumulative from the habitat to each point (N values, non-decreasing) |
 | `back.t_s`, `back.o2_l` | time / O₂ to walk **home from** each point (return field sampled on the route) |
@@ -49,27 +51,34 @@ arrays. Current replay invocation must pass capacity, reserve, margin and defaul
 `[1, 1]` from constants/settings. `total_s` remains outbound + return time. Return arrays describe the
 same route geometry walked in reverse, with index 0 at the habitat and the final index at the stop.
 
-**Native terrain result:** the primary mean-elevation DEM is 600×600 at ~9.879 m/cell; its source is a
-1.0117468 m DTM. The separate Horn 3×3 maximum-slope grid is computed at native spacing and aggregated
-to each planning-cell center. Cache SHA-256:
+**Terrain and route grids:** the primary mean-elevation context DEM is 600×600 at ~9.879 m/cell.
+Routes use a bounded native 1.0117468 m primary-DTM graph. The separate Horn 3×3 maximum-slope grid
+aggregated to planning cells remains a conservative context/hazard layer. Cache SHA-256:
 `0540b673cdeb5e297a6d712d1e94792bcc6d186820d1ae19e06b2f52d5b35f0e`; 281,227 cells have valid slope,
 and 191,612 valid cells exceed the 15° working mask. No slope values are filled. The companion DTM
 has a +52.64 m median offset on overlap, so complementary-only cells remain unavailable and are not
 blended into routes.
 
-**Stop outcome under the native mask:** the exact cells for S1/S2/D1/D2 have maximum native slopes of
-21.82°/31.89°/26.29°/29.22° and are unreachable under the configured 15° threshold. S3 is 9.59° and
-has both routes. All five IDs and all ten stop/mode outcomes remain in the index; the eight blocked
-outcomes state their reason. Nearest walkable cells are diagnostic only, never substituted as route
-goals. The Scenario habitat is row 422, col 312 (`137.3870833°E, −4.8204167°`), selected in the S3
-component after no original north/downslope candidate connected to any walkable stop.
+**Stop outcome:** all five stops have both route modes in the index. Native access offsets are S1
+0.34 m, S2 1.66 m, S3 0.47 m, D1 0.65 m and D2 8.26 m. S2's exact source pixel has a 16.09° Horn
+slope and is blocked; D2's exact source pixel is walkable but disconnected from the existing habitat
+component. Routes end at the selected connected access pixels within the 10 m Scenario bound. No
+route includes a last leg from that endpoint to the Observed coordinate. The existing Scenario
+habitat remains row 422, col 312 (`137.3870833°E, −4.8204167°`); it maps to native source pixel
+[4126, 3051].
 
-**Pilot evidence:** G1 pass; G2 partial visual alignment only (major ridge/trough patterns co-locate,
-but no metric tie point or sub-meter residual); G3 partial because four exact target cells are hard
-blocked; G4 pass on a 1 h 27 min 1.7 s lower-bound wall interval from the first recorded STAC response
-to final native-mask output, under the 3 h threshold. The route build itself took 23.09 s. The first
-request began slightly before the first recorded response. Full timing, S1 evidence files and their
-hashes are in `engine-build-manifest.json`.
+Fastest and lowest-modeled-hazard routes are minima only inside the 250 m-expanded source-data
+corridor; they are not global terrain optima. G3 remains `partial_approach_only`, since these outputs
+do not claim exact arrival at every Observed stop. G2 passes as one bounded qualitative local tie at
+moderate confidence: K1 has a 4.10 m apparent pick difference below a subjective, uncalibrated
+±6.84 m visual-pick estimate. This is not global or calibrated registration.
+
+**Pilot evidence:** G1 pass; G2 bounded local qualitative pass with moderate confidence; G3
+partial/approach-only; G4 failed on the latest end-to-end interval because first recorded STAC
+response through native-route output exceeded the 3 h threshold. The earlier 1 h 27 min interval is
+historical and ended with the prior coarse-mask build. Current timestamps, K1 tie-point record,
+independent review, file hashes and runtime are in `engine-build-manifest.json` and the ignored
+`data/raw/engine-pilot/evidence/g2-closure/` cache.
 
 No THEMIS thermal raster was supplied; route terrain factor is 1.0, so lowest-hazard cost currently
 represents modeled slope exposure only. Sample pickup mass is not included in the base 15 kg route

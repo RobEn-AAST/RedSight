@@ -174,8 +174,23 @@ def read_native_hard_slope(manifest_path, dem):
             if not evidence_file.is_file():
                 raise FileNotFoundError(f"S1 alignment evidence file missing: {evidence_file}")
             verified_files.append({"role": key, "path": str(evidence_file), "sha256": sha256_file(evidence_file)})
+        for item in alignment.get("verified_evidence_files", []):
+            if not isinstance(item, dict) or not item.get("path") or not item.get("sha256"):
+                raise ValueError("verified alignment evidence entries require path and SHA-256")
+            evidence_file = Path(item["path"])
+            if not evidence_file.is_absolute():
+                evidence_file = manifest_path.parent / evidence_file
+            evidence_file = evidence_file.resolve()
+            if not evidence_file.is_file():
+                raise FileNotFoundError(f"S1 alignment evidence file missing: {evidence_file}")
+            if item.get("bytes") is not None and evidence_file.stat().st_size != int(item["bytes"]):
+                raise ValueError("S1 alignment evidence byte size does not match its manifest")
+            evidence_hash = sha256_file(evidence_file)
+            if evidence_hash.lower() != str(item["sha256"]).lower().removeprefix("sha256:"):
+                raise ValueError("S1 alignment evidence checksum does not match its manifest")
+            verified_files.append({"role": item.get("role", "evidence"), "path": str(evidence_file), "sha256": evidence_hash})
         if verified_files:
-            alignment = {**alignment, "verified_files": verified_files}
+            alignment = {**alignment, "verified_files": [*alignment.get("verified_files", []), *verified_files]}
     evidence_path = None
     expected_evidence_hash = None
     if isinstance(alignment, dict):

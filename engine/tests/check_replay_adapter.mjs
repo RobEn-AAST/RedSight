@@ -7,6 +7,11 @@ const dataDir = path.resolve(process.argv[2] ?? 'app/public/data');
 const constants = JSON.parse(fs.readFileSync(path.join(dataDir, 'constants.json'), 'utf8'));
 const value = (key) => constants[key].value;
 const index = JSON.parse(fs.readFileSync(path.join(dataDir, 'routes/index.json'), 'utf8'));
+const stopsPath = fs.existsSync(path.join(dataDir, 'stops.json'))
+  ? path.join(dataDir, 'stops.json')
+  : path.resolve('app/public/data/stops.json');
+const stops = JSON.parse(fs.readFileSync(stopsPath, 'utf8'));
+const stopCoordinates = new Map(stops.features.map((feature) => [feature.properties.id, feature.geometry.coordinates.slice(0, 2)]));
 const capacityL = value('o2_usable_primary_l');
 let checked = 0;
 let unreachable = 0;
@@ -27,6 +32,16 @@ for (const entry of index.routes) {
   assert.equal(route.cum.o2_l.length, n, `${entry.id} outbound O₂`);
   assert.equal(route.back.t_s.length, n, `${entry.id} return times`);
   assert.equal(route.back.o2_l.length, n, `${entry.id} return O₂`);
+  assert.equal(route.goal_access.status, 'approach_only', `${entry.id} endpoint status`);
+  assert.equal(route.goal_access.badge, 'Derived', `${entry.id} endpoint badge`);
+  assert.equal(route.goal_access.last_leg_modeled, false, `${entry.id} must not invent a last leg`);
+  assert.ok(route.goal_access.offset_m <= route.goal_access.access_bound_m, `${entry.id} access offset bound`);
+  assert.deepEqual(route.observed_stop_lonlat, stopCoordinates.get(route.stop), `${entry.id} Observed stop coordinate`);
+  assert.deepEqual(route.goal_access.observed_stop_lonlat, route.observed_stop_lonlat, `${entry.id} access metadata stop coordinate`);
+  assert.deepEqual(route.goal_access.endpoint_lonlat, route.coords[n - 1], `${entry.id} endpoint matches route geometry`);
+  assert.equal(entry.goal_access_status, route.goal_access.status, `${entry.id} index endpoint status`);
+  assert.ok(Math.abs(entry.goal_access_offset_m - route.goal_access.offset_m) < 1e-9,
+    `${entry.id} index endpoint offset`);
   assert.ok(route.pnr_index >= -1 && route.pnr_index < n, `${entry.id} PNR index must be in range`);
   const timeline = buildTimeline(route, {
     capacityL,

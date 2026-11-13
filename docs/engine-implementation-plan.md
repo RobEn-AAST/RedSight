@@ -180,3 +180,23 @@ resolution. No THEMIS raster was included; terrain factor stays 1.0, so the lowe
 slope-only. The base 2-crew, 15 kg route bucket still does not add sample pickup mass. The native cache
 retains its upstream COG ETag and states that the full remote COG SHA-256 was not computed; local crop,
 native-cache, manifest, ortho and evidence-image hashes are recorded separately.
+
+## 2026-11-13 closure update
+
+The coarse-cell reachability result above is historical and has been superseded for route generation by
+the bounded native-pixel graph documented in [`../engine/README.md`](../engine/README.md): all ten
+fastest/lowest-modeled-hazard outcomes now have Derived approach-only endpoints within 10 m, with the
+existing habitat and unchanged 15° maximum. S2's exact source pixel is 16.09°; D2's exact pixel is
+walkable but disconnected. No last leg to either Observed stop is modeled, and G3 remains
+`partial_approach_only`.
+
+G2 is now **PASS for one bounded qualitative local landmark tie at moderate confidence**. The independent
+review matched K1 in the wider ortho and native-DTM hillshade, with an apparent 4.10 m pick difference
+below the subjective ±6.84 m estimate. That estimate is not calibrated and the result does not establish
+global, subpixel, or metric registration. The ignored source evidence index is
+`data/raw/engine-pilot/evidence/g2-closure/g2_wider_landmark_artifacts.json`; the independent review is
+`data/raw/engine-pilot/evidence/g2-closure/independent-visual-review.md`.
+
+The latest end-to-end pilot interval from the first recorded STAC response through native-route output
+is over three hours, so current G4 is **failed** despite the historical earlier build interval being
+under the threshold. Full recorded timestamps and scope are in the final `engine-build-manifest.json`.
