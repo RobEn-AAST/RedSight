@@ -27,6 +27,9 @@ export function createReplay(map, opts) {
 
   addLayers();
   const ui = buildPanel(opts.panelContainer ?? map.getContainer());
+  // Docked panel lives off the map; a small bar over the map keeps play, clock and O2 in view while it runs.
+  const hud = opts.panelContainer && opts.mapHud !== false ? buildHud(map.getContainer()) : null;
+  let hudMsgUntil = 0;
   render();
 
   function build() { return buildTimeline(route, model); }
@@ -85,6 +88,14 @@ export function createReplay(map, opts) {
       + (fastNow ? (s.phase === "back" ? " (fastest way)" : " · return: fastest way") : "");
     ui.scrub.value = tl.totalS > 0 ? String((t / tl.totalS) * 1000) : "0";
     ui.play.textContent = playing ? "❚❚" : "▶";
+    if (hud) {
+      hud.play.textContent = playing ? "❚❚" : "▶";
+      hud.clock.textContent = `T+${formatClock(t)}`;
+      hud.o2.textContent = `O₂ ${pct(left, C)}`;
+      hud.fill.style.width = `${(left / C) * 100}%`;
+      hud.fill.dataset.level = ui.fill.dataset.level;
+      if (performance.now() > hudMsgUntil) hud.msg.textContent = ui.phase.textContent;
+    }
     ui.summary.textContent = t >= tl.totalS && tl.totalS > 0 ? arrivalText() : "";
     ui.note.textContent = tl.backAssumed ? " Return cost assumed equal to the way out (engine back data missing)." : "";
     if (playing) fireEvents();
@@ -108,7 +119,22 @@ export function createReplay(map, opts) {
     }
     firedUpTo = t;
   }
+  function buildHud(container) {
+    const el = document.createElement("div");
+    el.className = "replay-hud";
+    el.innerHTML = `<button class="replay-hud-play" aria-label="Play or pause the replay">▶</button>
+      <span class="replay-hud-clock"></span>
+      <span class="replay-hud-tank"><span class="replay-hud-fill"></span></span>
+      <span class="replay-hud-o2"></span>
+      <span class="replay-hud-msg" aria-live="polite"></span>`;
+    container.appendChild(el);
+    const q = (c) => el.querySelector(c);
+    const h = { el, play: q(".replay-hud-play"), clock: q(".replay-hud-clock"), fill: q(".replay-hud-fill"), o2: q(".replay-hud-o2"), msg: q(".replay-hud-msg") };
+    h.play.onclick = () => (playing ? pause() : play());
+    return h;
+  }
   function pushLog(e) {
+    if (hud) { hud.msg.textContent = e.label; hud.el.dataset.type = e.type; hudMsgUntil = performance.now() + 4000; }
     log.unshift(e);
     log.length = Math.min(log.length, 4);
     ui.log.innerHTML = log.map((x) => `<li data-type="${x.type}"><b>T+${formatClock(x.t)}</b> ${x.label}</li>`).join("");
@@ -222,6 +248,7 @@ export function createReplay(map, opts) {
       pause();
       voice.setEnabled(false);
       ui.el.remove();
+      hud?.el.remove();
       for (const id of Object.values(SRC)) { if (map.getLayer(id)) map.removeLayer(id); if (map.getSource(id)) map.removeSource(id); }
     },
   };
