@@ -194,6 +194,8 @@ export function EngineDataProvider({ children }: { children: ReactNode }) {
         preview: parsePreview(preview),
         targets: parseTargets(targets),
         planIndex: parsePlanIndex(planIndex),
+        planIndexMock: isMock(planIndex),
+        routeIndexMock: isMock(routeIndex),
         mock: results.some(isMock),
         probed: true,
       })

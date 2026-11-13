@@ -67,6 +67,18 @@ export type EngineConstants = Record<string, EngineConstant>
 
 export type EngineRouteMode = 'fastest' | 'safest'
 
+export interface EngineGoalAccess {
+  badge: 'Derived'
+  status: 'approach_only'
+  observed_stop_lonlat: [number, number]
+  endpoint_lonlat: [number, number]
+  offset_m: number
+  access_bound_m: number
+  native_cell_rc: [number, number]
+  reason: string
+  last_leg_modeled: false
+}
+
 export interface EngineRouteIndexEntry {
   id: string
   stop: string
@@ -89,8 +101,12 @@ export interface EngineRoute {
   /** Usable O2 per crew member after reserve, litres. */
   budget_l: number
   constants_hash: string
-  /** [[lon, lat], …] habitat → stop, N points. */
+  /** [[lon, lat], …] habitat → exported route endpoint, N points. */
   coords: [number, number][]
+  /** Present when the route ends at a Derived access point short of the Observed stop. */
+  goal_access?: EngineGoalAccess
+  /** Observed stop coordinate, kept separate from coords when goal_access is present. */
+  observed_stop_lonlat?: [number, number]
   /** N−1 segments. */
   seg: {
     t_s: number
@@ -184,6 +200,9 @@ export interface PlanMember {
   label: string
   targets: string[]
   coords: [number, number][]
+  /** Preserve route endpoint semantics when a legacy engine route is wrapped as a plan member. */
+  goal_access?: EngineGoalAccess
+  observed_stop_lonlat?: [number, number]
   legs: PlanLeg[]
   seg: { t_s: number; o2_l: number; slope_deg: number; distance_m: number }[]
   cum: { t_s: number[]; o2_l: number[] }
@@ -239,6 +258,8 @@ export interface EngineDataState {
   preview: PreviewBasemap | null
   targets: PlanTarget[] | null
   planIndex: PlanIndexEntry[] | null
+  planIndexMock: boolean
+  routeIndexMock: boolean
   /** true when any loaded file carries the `_mock` flag. */
   mock: boolean
   /** true once the initial load finished (found or not). */
@@ -256,6 +277,8 @@ export const emptyEngineData: EngineDataState = {
   preview: null,
   targets: null,
   planIndex: null,
+  planIndexMock: false,
+  routeIndexMock: false,
   mock: false,
   probed: false,
 }
