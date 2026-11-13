@@ -47,7 +47,7 @@ official "no pre-work" rule; build happens inside the event window).
   the automatic switch to the fastest return when O₂ is low are Tier 1 (D22, demo-focus-plan §9). Crew setup (pair, body mass, load, samples) is
   Tier 1 (D19); rover-vs-foot mode is the first Tier 2 item (D20); drill-site stops (D21). Display
   formats are all optional; no fixed number is required (demo-focus-plan §1b). The challenge-text
-  traceability table is demo-focus-plan §1c. Judge-criteria ideas and the 60-second demo script: §17 (D23).
+  traceability table is demo-focus-plan §1c. Judge-criteria ideas and the 60-second demo script: §17 (D23). Radio coverage / radio-shadow layer is Tier 1 (D24, §9b); relays Tier 2.
 - **Architecture:** web-first static 2D planner (MapLibre + precomputed tiles/JSON), Python engine
   offline; three.js 3D/HUD as 48 h extension (Approach 1, technical-approaches §4; reinforced by the
   independent review V2/F2: scipy Dijkstra field core, hand-written A* only as interactive/oracle).

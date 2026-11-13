@@ -51,7 +51,7 @@ and no specific number of formats is required.** Our plan covers three with one 
 | "help a human explorer plan and carry out a successful Marswalk… conducting… science" | **Must** (core) | Science stops → modeled route → turn-back point | 1 |
 | "identifying some scientific goals… boxwork… Mount Sharp region" | Example | Boxwork stops + Curiosity drill sites (§6, §8) | 1 |
 | "at least three kinds of data" | Recommended | 6 types (§7) | 1 |
-| "consider what information might help a crew move safely… radiation… space weather data" | Recommended | RAD card + SEP scenario note (no spatial map: Unavailable) | 1 |
+| "consider what information might help a crew move safely… radiation… space weather data" | Recommended | RAD card + SEP scenario note (no spatial map: Unavailable); radio-coverage layer + blackout minutes (§9b) | 1 |
 | "wearing spacesuits and possibly carrying scientific equipment and other supplies. Consider how this might impact their mobility" | Recommended | Crew setup: body mass, load, samples, suit factor (§8) | 1 |
 | "if possible, include a route map… avoiding significant obstacles such as large rock formations" | Recommended | Slope-blocked routes; step/rock limits stated (§8) | 1 |
 | Habitat display / tablet / helmet HUD / other | Optional | Station + tablet (1), HUD (2), Vision Pro (3) | 1–3 |
@@ -81,6 +81,7 @@ and no specific number of formats is required.** Our plan covers three with one 
 | B3 | Fastest + safest routes per stop, precomputed (scipy Dijkstra field, review F2) | Routes never cross a >15° cell (asserted in the engine) |
 | B4 | **Turn-back slider**: budget → PNR marker moves along the route | Marker moves toward the habitat as the budget drops |
 | B4b | **Return-budget zones + automatic switch to the fastest way home** (§9): map shading for "any return OK / fastest return only / beyond turn-back", a "don't go beyond" boundary line, hazard no-go overlay, and a "walk along the route" slider that switches the recommended return to fastest when O₂ gets low | Zones shrink as budget drops; the recommendation switches at the computed point; never recommends a return that doesn't fit the budget |
+| B4c | **Radio coverage layer** (§9b): where the crew can reach the habitat by direct radio line of sight and where ridges cause a radio shadow; per-route "% out of contact" and "longest blackout (min)"; lowest-hazard route prefers covered ground | Layer matches the DEM viewshed; blackout numbers appear on each route card |
 | B5 | Provenance card on every layer and number (Observed / Derived / Scenario) | No visible layer or number without a card |
 | B6 | RAD + REMS context **cards** (not map layers) | Cards cite their PDS sources |
 | B6b | **Crew setup panel** (§8): crew of 1 or 2 (default 2, buddy rule), body mass, carried load, sample mass picked up per stop; time/O₂/turn-back recompute | Changing mass/load/crew changes O₂ and the turn-back point monotonically |
@@ -95,6 +96,7 @@ and no specific number of formats is required.** Our plan covers three with one 
 | E1 | 360° view at stops from real NASA panoramas (PIA26559, PIA26696) | §10 |
 | E2 | HUD overlay on the 360 view | §10 |
 | E3 | Resubmit with E0–E2 + updated slides | Only if the Lead confirms post-judging edits count |
+| E5 | **Relays:** rover or buddy as a radio relay (amber "contact via relay" zone); suggested drop point for a portable relay beacon that covers the most of the route | §9b |
 | E4 | Printable **cuff card** (Apollo-style wrist checklist) + shareable plan link; daylight window; uncertainty bands | §17 |
 
 ### Tier 3 — Bonus (only after Tier 2 works on a normal browser)
@@ -107,7 +109,7 @@ and no specific number of formats is required.** Our plan covers three with one 
 
 ### Not in this hackathon
 
-AI assistant · robot helpers beyond the rover-carries-samples option · splitting the pair onto different routes · in-browser re-routing (JS A\*) · comms line-of-sight · storm
+AI assistant · robot helpers beyond the rover-carries-samples option · splitting the pair onto different routes · in-browser re-routing (JS A\*) · orbiter relay-pass schedule (Unavailable) · storm
 re-route · spatial radiation/weather maps (**Unavailable**: never shown as maps) · street view *between*
 stops (no such imagery exists).
 
@@ -131,8 +133,9 @@ normal browser.
  │ 4 scipy Dijkstra fields per crew/load bucket:                         │
  │     Out_fast (from habitat), Back_fast, Back_safest (to habitat)      │
  │ 5 paths to stops × {fastest, safest} + time/O2 (Pandolf + κ)          │
- │ 6 [T2] rover grid: slope 20°, step 0.3 m, sand, width → park points   │
- │ 7 tiles (gdal2tiles z10–16)                                           │
+ │ 6 radio coverage: viewshed from habitat mast → radio-shadow mask      │
+ │ 7 [T2] rover grid: slope 20°, step 0.3 m, sand, width → park points   │
+ │ 8 tiles (gdal2tiles z10–16)                                           │
  │   constants.json ← every number + source + badge                      │
  └───────────────────────┬───────────────────────────────────────────────┘
                          ▼  static files only (contract §15)
@@ -141,6 +144,7 @@ normal browser.
  │      │                                    │                           │
  │  crew setup (1–2, mass, load, samples) → picks precomputed bucket     │
  │  turn-back slider + zones (green/amber/red) + "don't go beyond" line  │
+ │  radio layer: in contact / radio shadow + longest blackout per route  │
  │  walk-along slider → auto-switch to fastest return when O2 low        │
  │  photo pins (real sols)    source cards    RAD / REMS context cards   │
  │ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ Tier 1 (base) above · Tier 2/3 below ─ ─ ─ ─ ─ ─ │
@@ -337,6 +341,52 @@ constraint), but if the user drags a custom point there, the tooltip gives the r
 shrinks zones; the switch point on a route is monotone in B; the recommended return always satisfies
 `R(x) ≥ Back(x)` until state 3; pair mode never shows a later turn-back than either member alone.
 
+## 9b. Radio coverage: where the crew loses contact (Tier 1 layer B4c; relays Tier 2 E5)
+
+**Why it matters:** surface radios (helmet ↔ habitat) work by **line of sight**. On Mars the crew can't lean
+on Earth: a one-way signal takes up to ≈22 min (§17). So the habitat is the crew's nearest help,
+and every ridge, butte or boxwork wall between them is a place where nobody can hear a call for help.
+Apollo crews solved this with a relay on the rover (the LCRU sent voice and TV straight to Earth, so
+Apollo 15 kept contact 7 km from the LM with no line of sight to it). That direct-to-Earth fallback
+doesn't work on Mars, so local coverage has to be planned.
+
+**Is it range or terrain?** Derived arithmetic on a smooth Mars sphere (R = 3,389.5 km): radio horizon
+d = √(2Rh) gives ≈8.2 km for a 10 m habitat mast (Scenario height) plus ≈3.7 km for a 2 m helmet antenna,
+≈11.9 km in total, about twice our 6 km box. **So inside our box the limit is terrain, not distance.**
+Radio range from transmit power is not modeled (**Unavailable**: no crew radio spec exists); the card says so.
+
+**Engine (≈1–1.5 h):**
+1. `gdal_viewshed` on the projected planning DEM from the habitat point, observer height = mast height,
+   target height = 2 m (helmet antenna), `-cc 1.0` (no refraction, non-Earth body) and the Mars CRS, so the
+   curvature uses the Mars radius. Output: coverage mask (1 = line of sight to the habitat).
+2. Per route: % of time in radio shadow, **longest continuous blackout in minutes** (from the per-segment
+   times), and where it starts.
+3. Lowest-hazard route mode adds a cost penalty for shadow cells (Team choice weight); fastest mode
+   ignores coverage but still reports it.
+
+**Map + cards:**
+
+| Layer state | Meaning | Style |
+|---|---|---|
+| In contact | Direct line of sight to the habitat mast | no tint (or light blue) |
+| Contact via relay *(Tier 2)* | No line of sight to the habitat, but line of sight to the rover/buddy that sees the habitat | amber hatch |
+| Radio shadow | Neither | grey-violet hatch, tooltip "ridge blocks the habitat" |
+
+Route card line: "Out of contact 18% of the walk; longest blackout 12 min near stop 2". Warning (Scenario
+threshold, Team choice): any continuous blackout over **10 min** is flagged, and the walk-along slider (§9)
+shows "radio shadow ahead".
+
+**Tier 2 relays (E5):** a second viewshed from the rover park point (rover = relay, as on Apollo) and from
+the buddy's position on the route; plus a "drop a relay beacon here" suggestion: test ~50 candidate points
+on high ground and pick the one that covers the most of the route's shadow minutes (one viewshed each, a
+few seconds per run).
+
+**Honesty labels:** coverage = **Derived** from the DEM (1 m DEM resampled to the 10 m grid can miss small
+walls and won't model diffraction or reflections, so real coverage can be a bit better or worse);
+blackout minutes = **Scenario** (they inherit the walking-speed model). Orbiter relay passes
+(MRO, Odyssey, TGO) also give contact windows, but no future pass schedule for a crewed site exists, so
+they're **Unavailable** and not drawn.
+
 ## 10. Tier 2 — 360° view at stops + HUD (Optional per the challenge; Team choice; after Tier 1)
 
 The challenge itself suggests both a helmet HUD and point-of-view images "so the astronaut knows what to
@@ -400,7 +450,7 @@ credits in `data/PROVENANCE.md`. Building the viewer waits until Tier 1 is submi
 | +11 → Sat 09:00 | Fix bugs, freeze data | Deploy (upload build), test logged-out on phone + laptop | Screenshots into slides; **submit at 09:00** |
 
 If the pilot fails G1–G4 by +3 h: switch DEM per the F3 ladder, drop to 2 stops and 1 load bucket, and keep
-the schedule. Cut order if late: walk-along slider → crew buckets (fix at 2 × 15 kg) → CRISM layer. The
+the schedule. Cut order if late: radio relays stay Tier 2 anyway → walk-along slider → radio blackout stats (keep the coverage layer) → crew buckets (fix at 2 × 15 kg) → CRISM layer. The
 turn-back slider and zones are the last things to cut.
 
 ## 14. Slide outline (7 slides, English, team + member names + challenge on slide 1)
@@ -427,6 +477,7 @@ these files.
 | `stops.json` | GeoJSON points: name, evidence, sol(s), waypoint lon/lat, approx flag, photos[], panorama?, science text, badge | data owner → app |
 | `routes/{stop}_{mode}_{crew}_{load}.json` | polyline, per-segment `{t, o2, slope, cost_terms}`, cumulative tables, PNR index, budget used, mode, constants hash | engine → app |
 | `fields/{crew}_{load}_{field}.png` | `Out_fast`, `Back_fast`, `Back_safest` as 16-bit PNG (O₂ in 0.1 L units) on the planning grid | engine → app (zones = threshold only) |
+| `fields/coverage.png` + `coverage.json` | 8-bit mask (0 shadow / 1 habitat LOS / 2 relay LOS in Tier 2) on the planning grid; mast height, target height, CRS used | engine → app |
 | `hazards.geojson` | hard-blocked areas with reason codes (`slope`, `nodata`, `edge`; Tier 2 adds `rover_step`, `rover_sand`, `rover_width`) | engine → app |
 | `cards/rad.json`, `cards/rems.json` | context-card values + source + date range | data owner → app |
 
@@ -440,8 +491,9 @@ crew 2 × 15 kg.
 2. Raising load or sample mass raises modeled O₂ and moves the turn-back point toward the habitat.
 3. Zones are nested and shrink when the budget drops; the "don't go beyond" line moves inward (§9).
 4. On the walk-along slider, the recommendation switches to fastest exactly where `R(x) < Back_safest(x)`.
-5. (Tier 2) every rover-mode route avoids rover-blocked cells; each blocked area shows its reason code.
-6. (Tier 2) mixed plan: walking leg + walkback-to-habitat O₂ check both shown at the park point.
+5. Coverage mask equals a direct `gdal_viewshed` rerun on the same DEM; route blackout minutes equal the sum of segment times inside shadow cells (§9b).
+6. (Tier 2) every rover-mode route avoids rover-blocked cells; each blocked area shows its reason code.
+7. (Tier 2) mixed plan: walking leg + walkback-to-habitat O₂ check both shown at the park point.
 
 ## 17. More ideas aimed at the judging criteria (searched 2026-11-13; Team choice)
 
@@ -513,6 +565,12 @@ and watch the zones shrink → walk-along until the switch to the fastest return
 - McBrayer, Chai, Judd (NASA Langley), *Communication Delays, Disruptions, and Blackouts for Crewed Mars Missions*,
   ASCEND 2022, NTRS 20220013418: https://ntrs.nasa.gov/citations/20220013418 (max one-way ≈22 min; 15–21 min for long stays)
 - Apollo cuff checklists (heading/distance per traverse leg): https://www.nasa.gov/history/alsj/a17/cuff17.html
+- Apollo LCRU (Lunar Communications Relay Unit) relayed voice/TV from the rover to Earth: NASA NTRS 19710030222,
+  https://ntrs.nasa.gov/citations/19710030222 · ALSJ, Apollo 15 contact with no line of sight to the LM:
+  https://nasa.gov/history/alsj/alsj-JamesBurns.html
+- NASA Mars Relay Network: https://science.nasa.gov/mars/mars-relay-network/
+- GDAL `gdal_viewshed` (observer/target height, curvature coefficient, projected CRS required):
+  https://gdal.org/en/stable/programs/gdal_viewshed.html
 - WebXR on visionOS. Apple Developer Forums (WebKit supports `immersive-vr`; AR module unsupported):
   https://developer.apple.com/forums/thread/743655 · https://developer.apple.com/forums/thread/756850 ·
   default-on in visionOS 2 (secondary report): https://roadtovr.com/visionos-2-webxr-support-vision-pro/

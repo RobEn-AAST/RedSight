@@ -40,6 +40,8 @@ simulated.
   time and O2 from a cited metabolic model; **turn-back marker**, green/amber/red **return zones**, a
   **"don't go beyond" line**, and an automatic switch to the fastest way home when modeled O2 runs low — all
   *scenario estimates*, never a safety guarantee.
+- **Radio coverage** — where ridges block line of sight to the habitat (radio shadow), with the longest
+  blackout per route; relays via rover/buddy come in Tier 2.
 - **Provenance inspector** — every layer and model constant shows its NASA source, resolution, date, and an
   **Observed / Derived / Scenario** badge. RAD radiation and REMS weather appear as rover-local context cards.
 
