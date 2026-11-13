@@ -43,9 +43,11 @@ def point_of_no_return(
         raise ValueError("reserve minutes must be finite and non-negative")
     if not math.isfinite(walkback_o2_lpm) or walkback_o2_lpm < 0:
         raise ValueError("walkback O₂ rate must be finite and non-negative")
-    if not math.isfinite(return_margin) or return_margin <= 0:
-        raise ValueError("return margin must be positive and finite")
+    if not math.isfinite(return_margin) or not 1.0 <= return_margin <= 1.5:
+        raise ValueError("return margin must be finite and within the constants range [1, 1.5]")
     reserve = max(reserve_fraction * capacity_l, reserve_minutes * walkback_o2_lpm)
+    if not math.isfinite(reserve) or reserve >= capacity_l:
+        raise ValueError("reserve must be finite and leave positive usable capacity")
     budget = capacity_l - reserve
     factor = max(factors)
     pnr = -1

@@ -163,3 +163,22 @@ def test_pnr_rejects_decreasing_same_path_home_costs():
             reserve_fraction=0.0, reserve_minutes=0, walkback_o2_lpm=0,
             return_margin=1.2, member_factors=[1.0, 1.0],
         )
+
+
+@pytest.mark.parametrize("margin", [0.5, 1.6, float("nan"), float("inf")])
+def test_pnr_rejects_margin_outside_scenario_range(margin):
+    with pytest.raises(ValueError, match="return margin"):
+        point_of_no_return(
+            [0.0, 1.0], [0.0, 1.0], capacity_l=100.0,
+            reserve_fraction=0.2, reserve_minutes=0, walkback_o2_lpm=0,
+            return_margin=margin, member_factors=[1.0],
+        )
+
+
+def test_pnr_rejects_reserve_that_consumes_the_full_capacity():
+    with pytest.raises(ValueError, match="leave positive usable capacity"):
+        point_of_no_return(
+            [0.0], [0.0], capacity_l=100.0,
+            reserve_fraction=0.2, reserve_minutes=100, walkback_o2_lpm=1.0,
+            return_margin=1.2, member_factors=[1.0],
+        )

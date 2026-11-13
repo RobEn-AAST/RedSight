@@ -1,8 +1,8 @@
 # RedSight engine implementation plan (Ali)
 
-**Status:** Gate A implementation plan, 2026-11-13. This plan follows the existing team choices and
-does not change the app data contract. The engine is a Python/NumPy/SciPy offline producer; outputs are
-Scenario estimates unless a field is directly observed.
+**Status:** Gate A complete and real-data route build implemented, 2026-11-13. This plan follows the
+existing team choices and does not change the app data contract. The engine is a Python/NumPy/SciPy
+offline producer; outputs are Scenario estimates unless a field is directly observed.
 
 ## Scope and sequence
 
@@ -123,3 +123,34 @@ after the input manifest and operator handoff are settled.
   accessed 2026-11-13; selected by the existing architecture review for indexed directed cost fields.
 - Mars walking speed shape and the 15° working foot threshold: [routing-options F5 and model section](research/routing-options.md),
   updated 2026-11-13. The piecewise speed curve is an explicit team Scenario assumption.
+
+## Real-data pilot evidence (2026-11-13)
+
+The input handoff is `/tmp/redsight-engine-pilot-inputs.json`; its primary crop hash is
+`0ac559b00024056c70532096dee86c4a9a5bf6202e5bb2d37ed07543d317c963`, mosaic hash is
+`07fbcfbff4741ba43d8450bd56f436e00e2d28e326fa84f1155dfb389c50c79c`, and ortho-context crop hash is
+`a3f2e3d7f6f12299306cf61c753db808dc461ab4577b1eb10db769186615f794`. The primary and companion DTM
+products are the [USGS HiRISE DTEEC_019698_1750_019988_1750_U01](https://astrogeo-ard.s3-us-west-2.amazonaws.com/mars/mro/hirise/controlled/dtm/ESP_019698_1750_ESP_019988_1750/DTEEC_019698_1750_019988_1750_U01.tif)
+and [DTEEC_009149_1750_009294_1750_U01](https://astrogeo-ard.s3-us-west-2.amazonaws.com/mars/mro/hirise/controlled/dtm/PSP_009149_1750_PSP_009294_1750/DTEEC_009149_1750_009294_1750_U01.tif)
+respectively (CC0-1.0; source handoff access date 2026-11-13).
+
+Observed input facts: the primary average-resampled crop is 600×600 at about 9.879 m/cell, has 78.21%
+valid primary coverage, and all five stop cells are valid. Its overlap with the companion product has
+224,180 cells; companion-minus-primary height difference is +52.64 m median, 131.61 m absolute p90,
+and 213.83 m maximum absolute. The build therefore excludes complementary-only cells instead of
+blending the offset into routes, slope, or elevation; the full proposed ops box remains in `meta.json`
+and excluded cells are represented in `hazards.geojson`.
+
+Derived route evidence: the chosen Scenario habitat is `[274, 269]` (`137.3799167°E, −4.7957500°`),
+selected on the primary DEM 150–600 m north/downslope of S1 in the component that reaches all five
+stops. The offline build produced 10 routes (fastest and lowest-modeled-hazard for S1, S2, S3, D1,
+D2); every route has finite positive segments, raw cumulative per-member O₂, directed same-geometry
+return costs, a D27 PNR index, and `total_s` as round-trip time. Exact per-route values and provenance
+are in `app/public/data/routes/` and `app/public/data/engine-build-manifest.json`.
+
+Important boundary: slope uses the maximum of eight neighboring gradients on the mean-elevation
+~9.88 m planning cells. It is not a native 1 m maximum and cannot detect sub-cell scarps. No THEMIS
+thermal raster was included; terrain factor stays 1.0, so the lowest-hazard score is slope-based only.
+The native 1.01 m source resolution is recorded as provenance, not represented as the resolution of
+the route constraints. The 512 m ortho crop has 100% valid pixels and is retained as context; this
+build does not claim a visual landmark alignment review.
