@@ -7,9 +7,11 @@ turn-back point, and walk home, while an O₂ gauge drains. Pure logic is in `re
 ```js
 import { createReplay } from "./replay/replay.js";
 import "./replay/replay.css";
-const replay = createReplay(map, { route, budgetL: 90, onEvent: (e) => {/* voice callouts later */} });
+const replay = createReplay(map, { route, capacityL: 385, memberFactors: [1, 1.08], voice: false, onEvent: (e) => {} });
 replay.play();
-replay.setBudget(60);   // Jana's turn-back slider calls this
+replay.setBudget(200);   // Jana's turn-back slider: usable budget (capacity − reserve)
+replay.setCapacity(300); // or the full tank; reserve recomputed
+replay.drill(2, "Suit leak"); // contingency from the current moment
 replay.setRoute(other); // route card A/B switch (Yassin)
 ```
 
@@ -27,8 +29,8 @@ the top-left slider stands in for Jana's turn-back slider). **Voice:** 🔇/🔊
 | `budget_l` | default usable O₂ budget per member (after reserve) |
 | `stop`, `stop_name`, `mode`, `crew`, `load_kg`, `badge` | labels |
 
-Turn-back rule (threshold only, no modeling in the browser): the crew keeps walking while
-`cum.o2_l[i] + back.o2_l[i] ≤ budget`; the exact turn spot is interpolated inside the crossing segment.
+O₂ model and notifications: [`docs/demo-focus-plan.md`](../../../docs/demo-focus-plan.md) §9c. Turn rule (threshold only):
+keep walking while `f × (cum.o2_l + m × back.o2_l) ≤ C − R`; the crew gets home with the reserve intact.
 Return leg = the same path reversed (lite). Mock routes live in `app/public/data/routes/` (see that folder's README).
 
 ## Next (if time)

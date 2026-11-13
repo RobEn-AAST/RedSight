@@ -29,5 +29,10 @@ export function calloutFor(e) {
     return: "Heading home.",
     home: "Back at the habitat.",
     "no-go": "Budget too small to leave.",
+    "forced-return": "Contingency. Return now by the fastest way home.",
+    drill: `${e.label}. Oxygen use up.`,
+    reserve: "Warning. Into the oxygen reserve.",
+    emergency: "Primary oxygen empty. Switch to emergency supply.",
+    status: `Oxygen ${e.pct} percent. Home needs ${e.homePct}. Spare ${Math.max(0, e.marginPct)}.`,
   }[e.type] ?? e.label;
 }

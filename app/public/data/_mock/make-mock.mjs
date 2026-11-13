@@ -37,6 +37,11 @@ write("constants.json", {
   body_mass_kg: c(82, "kg", "NASA ICES-2026-127 example (180 lbm)", "Scenario", [43, 110]),
   carried_load_kg: c(15, "kg", "Team default", "Scenario", [0, 40]),
   sample_mass_per_stop_kg: c(2, "kg", "Team default", "Scenario", [0, 10]),
+  reserve_minutes: c(30, "min", "Apollo traverse planning: walkback capacities after a 30-minute consumables reserve", "Scenario"),
+  walkback_o2_lpm: c(1.22, "L/min", "Apollo walkback planning rate 1440 BTU/h ≈ 422 W × 2.9 mL/min/W", "Derived"),
+  return_cost_margin: c(1.2, "×", "Team choice: plan the way home 20 % more expensive than expected", "Scenario", [1, 1.5]),
+  emergency_supply_min: c(30, "min", "EMU secondary oxygen pack (backup, never planned)", "Observed"),
+  o2_status_step: c(0.1, "fraction of tank", "Team choice: status callout every 10 % (5 % option)", "Scenario", [0.05, 0.1]),
   radio_mast_height_m: c(10, "m", "Team assumption", "Scenario"),
   blackout_warn_min: c(10, "min", "Team assumption", "Scenario"),
 });
