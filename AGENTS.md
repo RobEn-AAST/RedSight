@@ -26,6 +26,11 @@ style rules come from the outer AGENTS files; this file adds only what is specif
 - The team plan is direction, not a spec: search the web for the current best way to build the part,
   then build it. Keep the data contract (`docs/demo-focus-plan.md` §15) and `constants.json` as the only
   shared interfaces; contract changes are announced to the team first.
+- **Start of every session:** read the person's row **and their line in team-plan §4c** (latest status, next
+  steps, and anything the integration owner changed in their area), then merge the latest `origin/main` into
+  their branch before editing.
+- **Before every PR:** `cd app && npm run build && npm run lint`; if `app/public/data/` changed, also
+  `npm run check:data` (0 errors). Before submission: `npm run check:data -- --final`.
 - Commit and push to the person's own branch and open a PR. **Only Marwan (integration owner) merges to
   `main`.** The scope guard above still applies: anything outside the person's row needs their explicit
   direction.

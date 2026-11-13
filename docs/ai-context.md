@@ -15,8 +15,11 @@ verified green** (2026-11-13, web-foundation worker + resumed web-copilot worker
 React+Vite+TS mission console (mission setup per plan §8, map/stops/routes/provenance/HUD workspaces
 with honest engine-data-absent states, copilot panel in not-configured state) — build/lint/typecheck
 pass and the full flow was browser-tested with zero console errors (verification record:
-[`web-foundation.md`](web-foundation.md) §7). Engine data, MapLibre tiles and route math are still
-pending (see [`web-foundation.md`](web-foundation.md) §1–§2, §6).
+[`web-foundation.md`](web-foundation.md) §7). **Update 2026-11-13 evening:** `main` also has the MapLibre map,
+stop picker, route cards, turn-back slider, source cards, real stops/photos/RAD/REMS cards and Mission Replay
+(slider-linked, automatic switch to the fastest way home). Routes are still **mock**, tiles are one preview
+image: engine (Ali) and tiles (Youssef) pending. Per-person status and next steps: [`team-plan.md`](team-plan.md) §4c.
+Data checker: `cd app && npm run check:data`.
 
 ## 2. Document map (read order for a new agent)
 

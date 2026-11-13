@@ -104,10 +104,38 @@ after submission (team decision needed to go further).
 - `budget_l` = capacity − reserve = 385 − max(0.25 × 385, 30 × 1.22) ≈ **289 L**. To change capacity or
   reserve, edit `constants.json`, not only the route files. Keep `constants.json` key names stable.
 - Exact file fields and the mock files to replace: [`app/public/data/README.md`](../app/public/data/README.md).
+- **New optional field `back_fast`** on lowest-hazard routes (added 2026-11-13): the fastest way home from each
+  point (`t_s`, `o2_l`, `path`, `via`), i.e. your `Back_fast` field sampled on the route plus the path it
+  follows. With it, the replay and the turn-back slider switch to the fastest return when O₂ gets low (§9).
+  Without it nothing breaks; there is just no switch. Its time must never exceed `back.t_s` at the same point.
 
 **Everyone on the app side:** build against the mock files in `app/public/data/` (all `"_mock": true`)
-until the real ones land. Mission Replay is ready to plug in: `createReplay(map, { route })`, docs in
-[`app/src/replay/README.md`](../app/src/replay/README.md).
+until the real ones land. Mission Replay is already in the map workspace (`app/src/replay/MissionReplay.tsx`);
+docs in [`app/src/replay/README.md`](../app/src/replay/README.md).
+
+## 4c. Status + what to do next, per person (updated 2026-11-13 evening, Marwan)
+
+**Before every session (all six):** `git checkout <your branch> && git merge origin/main` (after
+`git fetch`), so you build on what's merged. **Before every PR:** `cd app && npm run build && npm run lint`,
+and if you changed anything in `app/public/data/`: `npm run check:data` (0 errors needed). Open the PR to
+`main`; Marwan merges.
+
+**On `main` now:** Yassin's MapLibre map + stop picker + route cards, Jana's turn-back slider + source cards,
+Ayman's stops + photos + RAD/REMS cards, Mission Replay (linked to the slider, automatic switch to the
+fastest way home, map bar, Earth-delay note), the data checker, and drafts for slides, demo script, project
+page and UI audit in [`submission/`](submission/). **Routes are still mock; tiles are one preview image.**
+
+| Person | Status | Next (in order) | Changed by Marwan in your area (pull it) |
+|---|---|---|---|
+| **Ali** | Nothing pushed yet: **critical path** | 1. Pilot gate: DEM opens, slope sane, one real route. 2. Real `constants.json`, `meta.json` (habitat), routes for all stops, both modes, in the contract shape. 3. `back_fast` on lowest-hazard routes (note above). 4. `npm run check:data` → PR | none (route format: `back_fast` added as optional) |
+| **Youssef** | Nothing pushed yet: **critical path** | 1. HiRISE ortho + DTM download. 2. Tiles into `app/public/data/tiles/<layer>/{z}/{x}/{y}.png` and set `"available": true` in `layers.json` (the checker fails if tiles are missing). 3. `data/PROVENANCE.md`. 4. If time: radio-coverage mask | none |
+| **Yassin** | Map, stop picker, route cards merged | 1. **Deploy** `main` to the public URL; test it logged out on phone + laptop (pool item 5). 2. If time: shareable plan link | `App.tsx` + `index.html` footer wording (banned "certified" removed); `lib/engineData.tsx` reads stop photos given as objects with `url`; `MapWorkspace.tsx` mounts `<MissionReplay />`; `planStore`/`planContext` hold the shared O₂ budget (`o2BudgetL`) |
+| **Ayman** | Stops, photos, cards merged | 1. Check your stop cards on `main` now show photos. 2. Judge extras (§17): Curiosity's real path overlay, EVA dose card | the app now reads your photo objects; `make-mock.mjs` never overwrites your files (they have no `_mock` flag) |
+| **Jana** | Turn-back slider + source cards merged | 1. Zones layer + "don't go beyond" line (§9). 2. Crew preset toggle (§8) | `turnback.ts`: the turn-back uses the cheaper of the route's own way home and `back_fast` (`wayHome()`), same rule as the replay; your slider's budget now lives in the plan store (`usePlan().o2BudgetL`), so the replay follows it. Tests 8/8 |
+| **Marwan** | Integration + replay + delivery drafts | Merge PRs as they come; rehearse the demo; retake screenshots on real data; re-run the UI audit on the deployed URL | — |
+
+**Still unowned:** delivery pool item 1 (ask the Local Lead: cutoff, who submits) and item 7 (demo
+GIF/recording). Item 8 (submit) after the Local Lead answers.
 
 ## 5. Recommendations from the web search (starting points, verify as you go)
 
