@@ -168,7 +168,7 @@
   },
   "constants_sha256": "e61ace2f4e1707344bc6880f3b63d5709be299bb709a9fe660723f31c0504455",
   "engine": "RedSight Python NumPy rasterio SciPy sparse Dijkstra",
-  "engine_commit": "12e08257b8e895a4fb3f98f5e30a35997e20b53b",
+  "engine_commit": "047a3941692526b986f14849af03581fdab31e8f",
   "habitat": {
     "badge": "Scenario",
     "lonlat": [
@@ -186,7 +186,7 @@
     "manifest_sha256": "60a84ed4f14f19e32ef7e414fbc4d8cb5aac73385bdf57a2ec8f02286d3f3c43",
     "mosaic_reference": {
       "local_path": "/tmp/redsight-pilot-inputs/raw/D11_mosaic_10m.tif",
-      "sha256": "07fbcfbff4741ba43d8450bd56f436e00e2d28e326fa84f1155dfb389c50c79c",
+      "local_sha256": "07fbcfbff4741ba43d8450bd56f436e00e2d28e326fa84f1155dfb389c50c79c",
       "shape_hw": [
         600,
         600
@@ -197,21 +197,22 @@
     "ortho_context": {
       "extent": "512m square centered at S1",
       "license": "CC0-1.0",
+      "local_crop_sha256": "a3f2e3d7f6f12299306cf61c753db808dc461ab4577b1eb10db769186615f794",
       "local_path": "/tmp/redsight-pilot-inputs/raw/ESP_019698_RED_A_01_ORTHO_S1_512m.tif",
-      "sha256": "a3f2e3d7f6f12299306cf61c753db808dc461ab4577b1eb10db769186615f794",
       "source_url": "https://astrogeo-ard.s3-us-west-2.amazonaws.com/mars/mro/hirise/controlled/dtm/ESP_019698_1750_ESP_019988_1750/ESP_019698_1750_RED_A_01_ORTHO.tif",
       "used_for_routing": false,
       "valid_pixel_percent": 100.0
     },
     "route_dem": {
       "license": "CC0-1.0",
+      "local_crop_sha256": "0ac559b00024056c70532096dee86c4a9a5bf6202e5bb2d37ed07543d317c963",
       "local_path": "/tmp/redsight-pilot-inputs/raw/DTEEC_019698_1750_D11_10m.tif",
       "resolution_m": [
         9.879116253883888,
         9.879116253884277
       ],
       "role": "primary DTM only; retained native coverage mask",
-      "sha256": "0ac559b00024056c70532096dee86c4a9a5bf6202e5bb2d37ed07543d317c963",
+      "source_asset_sha256": "not computed; the full COG was not retained after HTTP range reads",
       "source_url": "https://astrogeo-ard.s3-us-west-2.amazonaws.com/mars/mro/hirise/controlled/dtm/ESP_019698_1750_ESP_019988_1750/DTEEC_019698_1750_019988_1750_U01.tif",
       "total_cells": 360000,
       "valid_cells": 281563,

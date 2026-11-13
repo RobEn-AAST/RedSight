@@ -252,12 +252,12 @@
     269
   ],
   "id": "D1_fastest_2_15",
-  "input_sha256": "0ac559b00024056c70532096dee86c4a9a5bf6202e5bb2d37ed07543d317c963",
   "load_kg": 15.0,
   "mode": "fastest",
   "model_note": "Scenario: 10 m mean-elevation slopes and thermal terrain factor 1.0; no sub-cell scarp, THEMIS sand cost, or sample pickup load is included in this base 15 kg route bucket.",
   "objective_cost": 748.8707653944999,
   "pnr_index": 27,
+  "primary_crop_sha256": "0ac559b00024056c70532096dee86c4a9a5bf6202e5bb2d37ed07543d317c963",
   "seg": [
     {
       "cost_terms": {
