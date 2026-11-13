@@ -1,36 +1,26 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, MotionConfig } from 'motion/react'
-import {
-  ClipboardList,
-  Map as MapIcon,
-  GitBranch,
-  FileSearch,
-  ScanEye,
-  Bot,
-  Menu,
-} from 'lucide-react'
+import { ClipboardList, Map as MapIcon, FileSearch, Menu } from 'lucide-react'
 
 import { MissionProvider } from '@/lib/missionStore'
 import { useMission } from '@/lib/useMission'
-import { useMediaQuery } from '@/lib/useMediaQuery'
 import { EngineDataProvider } from '@/lib/engineData'
 import { MissionWorkspace } from '@/mission/MissionWorkspace'
 import { MapWorkspace } from '@/map/MapWorkspace'
-import { RoutesWorkspace } from '@/routes/RoutesWorkspace'
 import { ProvenancePanel } from '@/provenance/ProvenancePanel'
-import { HudWorkspace } from '@/hud/HudWorkspace'
-import { CopilotDock } from '@/copilot/CopilotDock'
+import { PlanProvider } from '@/map/planStore'
 import { LedDot } from '@/ui/LedDot'
 import { KeyHint } from '@/ui/KeyHint'
 import { EvidenceBadge } from '@/ui/Badge'
 import { cn } from '@/lib/cn'
 
+// Tier 1 workspaces only. The routes text page is replaced by the route cards
+// on the map; HUD (Tier 2) and the copilot (out of this hackathon, D12) stay
+// in the repo but are not mounted until Tier 1 has shipped.
 const WORKSPACES = [
   { id: 'mission', label: 'Mission', icon: ClipboardList },
   { id: 'map', label: 'Map', icon: MapIcon },
-  { id: 'routes', label: 'Routes', icon: GitBranch },
   { id: 'provenance', label: 'Provenance', icon: FileSearch },
-  { id: 'hud', label: 'HUD', icon: ScanEye },
 ] as const
 
 type WorkspaceId = (typeof WORKSPACES)[number]['id']
@@ -119,10 +109,6 @@ function ClockBlock() {
 function Console() {
   const { state } = useMission()
   const [ws, setWs] = useState<WorkspaceId>('mission')
-  const [copilotOpen, setCopilotOpen] = useState(false)
-  // Exactly one CopilotDock may be mounted at a time: the dock at ≥xl, the
-  // drawer below it. Both at once would duplicate #copilot-input ids.
-  const isDesktopXl = useMediaQuery('(min-width: 1280px)')
   const prevStatus = useRef(state.status)
 
   // Power-on moment: confirming the mission carries the operator to the map.
@@ -133,7 +119,7 @@ function Console() {
     prevStatus.current = state.status
   }, [state.status, ws])
 
-  // Console keyboard shortcuts: 1–5 switch workspaces, C focuses the copilot.
+  // Console keyboard shortcuts: number keys switch workspaces.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null
@@ -149,19 +135,11 @@ function Console() {
       const idx = Number.parseInt(e.key, 10)
       if (idx >= 1 && idx <= WORKSPACES.length) {
         setWs(WORKSPACES[idx - 1].id)
-      } else if (e.key === 'c' || e.key === 'C') {
-        if (isDesktopXl) {
-          requestAnimationFrame(() => document.getElementById('copilot-input')?.focus())
-        } else {
-          setCopilotOpen(true) // drawer autofocuses its input on mount
-        }
-      } else if (e.key === 'Escape') {
-        setCopilotOpen(false)
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [isDesktopXl])
+  }, [])
 
   const active = WORKSPACES.find((w) => w.id === ws)
 
@@ -270,9 +248,7 @@ function Console() {
               >
                 {ws === 'mission' && <MissionWorkspace />}
                 {ws === 'map' && <MapWorkspace />}
-                {ws === 'routes' && <RoutesWorkspace />}
                 {ws === 'provenance' && <ProvenancePanel />}
-                {ws === 'hud' && <HudWorkspace />}
               </motion.div>
             </AnimatePresence>
           </main>
@@ -284,59 +260,12 @@ function Console() {
               certified safety system</span>.
             </p>
             <div className="ml-auto hidden items-center gap-4 md:flex">
-              <KeyHint combo="1–5" action="workspaces" />
-              <KeyHint combo="C" action="copilot" />
+              <KeyHint combo={`1–${WORKSPACES.length}`} action="workspaces" />
             </div>
-            <button
-              type="button"
-              onClick={() => setCopilotOpen(true)}
-              className="label-console flex items-center gap-2 border border-seam-lit px-3 py-2 text-ink-dim hover:border-signal/60 hover:text-signal lg:hidden"
-            >
-              <Bot size={14} aria-hidden /> Copilot
-            </button>
           </footer>
         </div>
 
-        {/* Copilot dock (desktop ≥xl) — the drawer below replaces it under xl,
-            so only one #copilot-input exists at any viewport. */}
-        {isDesktopXl && (
-          <aside className="w-80 flex-none border-l border-seam p-3" aria-label="Copilot">
-            <div className="h-full min-h-0 w-full">
-              <CopilotDock />
-            </div>
-          </aside>
-        )}
       </div>
-
-      {/* Copilot drawer (below xl — the dock above takes over at ≥xl) */}
-      <AnimatePresence>
-        {copilotOpen && !isDesktopXl && (
-          <>
-            <motion.div
-              key="scrim"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              className="fixed inset-0 z-40 bg-void/70 backdrop-blur-[2px]"
-              onClick={() => setCopilotOpen(false)}
-              aria-hidden
-            />
-            <motion.div
-              key="drawer"
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
-              className="fixed inset-x-0 bottom-0 z-50 mx-auto h-[75dvh] max-w-xl p-3"
-              role="dialog"
-              aria-label="Copilot"
-            >
-              <CopilotDock onClose={() => setCopilotOpen(false)} autoFocusInput />
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
     </div>
   )
 }
@@ -346,7 +275,9 @@ export default function App() {
     <MotionConfig reducedMotion="user">
       <EngineDataProvider>
         <MissionProvider>
-          <Console />
+          <PlanProvider>
+            <Console />
+          </PlanProvider>
         </MissionProvider>
       </EngineDataProvider>
     </MotionConfig>
