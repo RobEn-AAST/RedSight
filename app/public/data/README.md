@@ -12,6 +12,7 @@ has landed; `_mock/make-mock.mjs` overwrites every data file.
 | `constants.json` | Ali | real file; stable keys and descriptive `source` retained with additive `source_url` for every constant |
 | `layers.json` | Youssef | layer list + sources; `available:false` until tiles exist |
 | `stops.json` | Ayman | real (no `_mock`): 5 stops from live MMGIS waypoints, per-sol/per-instrument NASA raw photos, PIA26559 / PIA26696 metadata, sourced science text & cards |
+| `curiosity_path.geojson` | Ayman | real (no `_mock`): Curiosity's Observed MMGIS rover traverse inside the ops box (`sols 3345–5073`, 464 waypoints across contiguous segments) |
 | `routes/index.json`, `routes/{stop}_{mode}_{crew}_{load}.json` | Ali | fastest + lowest-modeled-hazard outcome for each of S1, S2, S3, D1 and D2 (crew 2, 15 kg); each route has a separate Derived approach endpoint and the Observed stop coordinate remains in `stops.json` |
 | `hazards.geojson` | Ali | primary-DTM nodata, unavailable native slope support and native Horn slope hard masks |
 | `engine-build-manifest.json` | Ali | input/output hashes, source/licence, seam/alignment evidence, G1–G4 status, timing, model and route outcomes |

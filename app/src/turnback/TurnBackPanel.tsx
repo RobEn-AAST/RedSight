@@ -4,6 +4,7 @@ import { Undo2, RotateCcw } from 'lucide-react'
 
 import { cn } from '@/lib/cn'
 import { useEngineData } from '@/lib/useEngineData'
+import { EarthDelayNote } from '@/map/EarthDelayNote'
 import { formatDistance, formatDuration } from '@/map/format'
 import { usePlan } from '@/map/usePlan'
 import { ConstantValue, SourcedValue } from '@/provenance/SourceCard'
@@ -221,6 +222,7 @@ export function TurnBackPanel() {
           </p>
         </div>
       )}
+      <EarthDelayNote className={plan && activeRoute && result ? 'mt-3' : 'mt-2'} />
     </Panel>
   )
 }

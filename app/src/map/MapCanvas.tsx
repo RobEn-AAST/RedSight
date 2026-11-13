@@ -17,6 +17,7 @@ import { cn } from '@/lib/cn'
 import { absoluteDataUrl } from '@/lib/dataUrl'
 import type { EngineRouteMode, PlanMember } from '@/lib/engineDataContext'
 import { useEngineData } from '@/lib/useEngineData'
+import { curiosityLineCollection, curiosityWaypointCollection } from '@/map/curiosityPath'
 import { HAZARD_COLOR, MEMBER_B_COLOR, MODE_COLOR, NO_RETURN_COLOR, formatDistance, hazardLabel } from '@/map/format'
 import { usePlan } from '@/map/usePlan'
 
@@ -187,11 +188,27 @@ export function MapCanvas({
 }) {
   const engine = useEngineData()
   const plan = usePlan()
-  const { selectedTargetId, selectTarget, mode, plans, activeMembers, crewMode, noReturnLine, setMap } = plan
+  const {
+    selectedTargetId,
+    selectTarget,
+    mode,
+    plans,
+    activeMembers,
+    crewMode,
+    noReturnLine,
+    showCuriosityPath,
+    setMap,
+  } = plan
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
   const [ready, setReady] = useState(false)
   const [scale, setScale] = useState<{ px: number; label: string } | null>(null)
+  const [hoveredWaypoint, setHoveredWaypoint] = useState<{
+    sol: number
+    rmc: string
+    elevM: number | null
+    distKm: number | null
+  } | null>(null)
 
   const radiusM = marsRadiusM(engine.meta?.crs)
   const context = engine.preview?.context?.bounds ?? null
@@ -232,6 +249,8 @@ export function MapCanvas({
       map.addSource('ops-box', { type: 'geojson', data: boxLine(opsBox) })
       map.addSource('hazards', { type: 'geojson', data: EMPTY })
       map.addSource('targets', { type: 'geojson', data: EMPTY })
+      map.addSource('curiosity-path', { type: 'geojson', data: EMPTY })
+      map.addSource('curiosity-waypoints', { type: 'geojson', data: EMPTY })
       map.addSource('no-return', { type: 'geojson', data: EMPTY })
       map.addSource('route-other', { type: 'geojson', data: EMPTY })
       map.addSource('route-legs', { type: 'geojson', data: EMPTY })
@@ -279,6 +298,38 @@ export function MapCanvas({
           'line-color': '#56d8f4',
           'line-width': ['case', ['get', 'selected'], 2.5, 1.2],
           'line-opacity': ['case', ['get', 'selected'], 1, 0.7],
+        },
+      })
+      map.addLayer({
+        id: 'curiosity-path-casing',
+        type: 'line',
+        source: 'curiosity-path',
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': '#06080b', 'line-width': 4.5, 'line-opacity': 0.78 },
+      })
+      map.addLayer({
+        id: 'curiosity-path-line',
+        type: 'line',
+        source: 'curiosity-path',
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: {
+          'line-color': '#56d8f4',
+          'line-width': 2.2,
+          'line-dasharray': [2.2, 1.8],
+          'line-opacity': 0.92,
+        },
+      })
+      map.addLayer({
+        id: 'curiosity-waypoints',
+        type: 'circle',
+        source: 'curiosity-waypoints',
+        minzoom: 12,
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 1.6, 15, 3.4, 17, 4.5],
+          'circle-color': '#56d8f4',
+          'circle-stroke-color': '#06080b',
+          'circle-stroke-width': 1,
+          'circle-opacity': ['interpolate', ['linear'], ['zoom'], 12, 0.4, 14, 0.9],
         },
       })
       map.addLayer({
@@ -426,6 +477,50 @@ export function MapCanvas({
     })
     map.getSource<GeoJSONSource>('no-return')?.setData(noReturnLine ?? EMPTY)
   }, [ready, engine.hazards, plan.goalTargets, selectedTargetId, noReturnLine])
+
+  // Curiosity's Observed MMGIS traverse overlay and hover waypoint telemetry.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!ready || !map) return
+    const path = engine.curiosityPath
+    map.getSource<GeoJSONSource>('curiosity-path')?.setData(path ? curiosityLineCollection(path) : EMPTY)
+    map.getSource<GeoJSONSource>('curiosity-waypoints')?.setData(path ? curiosityWaypointCollection(path) : EMPTY)
+    const vis = path && showCuriosityPath ? 'visible' : 'none'
+    for (const id of ['curiosity-path-casing', 'curiosity-path-line', 'curiosity-waypoints']) {
+      if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis)
+    }
+    if (!path || !showCuriosityPath) setHoveredWaypoint(null)
+  }, [ready, engine.curiosityPath, showCuriosityPath])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!ready || !map) return
+    const onMove = (e: { features?: { properties?: Record<string, unknown> }[] }) => {
+      const props = e.features?.[0]?.properties
+      if (!props) return
+      map.getCanvas().style.cursor = 'pointer'
+      const sol = typeof props.sol === 'number' ? props.sol : Number(props.sol)
+      if (!Number.isFinite(sol)) return
+      const elevRaw = props.elev_m
+      const distRaw = props.dist_km
+      setHoveredWaypoint({
+        sol,
+        rmc: typeof props.rmc === 'string' ? props.rmc : `${sol}`,
+        elevM: typeof elevRaw === 'number' && Number.isFinite(elevRaw) ? elevRaw : null,
+        distKm: typeof distRaw === 'number' && Number.isFinite(distRaw) ? distRaw : null,
+      })
+    }
+    const onLeave = () => {
+      map.getCanvas().style.cursor = ''
+      setHoveredWaypoint(null)
+    }
+    map.on('mousemove', 'curiosity-waypoints', onMove)
+    map.on('mouseleave', 'curiosity-waypoints', onLeave)
+    return () => {
+      map.off('mousemove', 'curiosity-waypoints', onMove)
+      map.off('mouseleave', 'curiosity-waypoints', onLeave)
+    }
+  }, [ready])
 
   // Routes: the chosen route by member and leg, the other mode as a faint guide.
   useEffect(() => {
@@ -581,7 +676,32 @@ export function MapCanvas({
             No-return line
           </span>
         )}
+        {showCuriosityPath && engine.curiosityPath && (
+          <span className="flex items-center gap-1.5">
+            <span
+              className="h-[2px] w-5"
+              style={{
+                backgroundImage: 'repeating-linear-gradient(90deg, #56d8f4 0 4px, transparent 4px 7px)',
+              }}
+            />
+            Curiosity path (Observed)
+          </span>
+        )}
       </div>
+
+      {hoveredWaypoint && showCuriosityPath && (
+        <div className="data-readout pointer-events-none absolute right-3 top-10 border border-observed/60 bg-hull/95 px-2.5 py-1.5 text-[11px] text-ink shadow-sm">
+          <span className="text-observed">Curiosity · Sol {hoveredWaypoint.sol}</span>{' '}
+          <span className="text-ink-dim">· RMC {hoveredWaypoint.rmc}</span>
+          {hoveredWaypoint.elevM != null && (
+            <span className="text-ink-dim"> · {hoveredWaypoint.elevM.toFixed(1)} m</span>
+          )}
+          {hoveredWaypoint.distKm != null && (
+            <span className="text-ink-dim"> · {hoveredWaypoint.distKm.toFixed(2)} km odom</span>
+          )}
+          <span className="ml-1.5 text-observed">· Observed</span>
+        </div>
+      )}
 
       {scale && (
         <div className="pointer-events-none absolute bottom-3 left-3 flex flex-col gap-1">

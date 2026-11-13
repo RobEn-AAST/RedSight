@@ -95,4 +95,15 @@ export const layerCatalog: LayerCard[] = [
     sourceUrl: 'https://pds-ppi.igpp.ucla.edu/',
     note: 'The only surface dosimeter on Mars. No spatial radiation dataset exists — any map layer would be SCENARIO.',
   },
+  {
+    id: 'curiosity-traverse',
+    name: "Curiosity's real traverse (MMGIS waypoints)",
+    instrument: 'MSL Curiosity rover odometry / localization',
+    evidence: 'observed',
+    resolution: '464 drive waypoints in ops box (sols 3345–5073)',
+    status: 'verified-source',
+    sourceName: 'NASA/JPL MSL MMGIS Waypoints (MSL_waypoints.json & MSL_waypoints_current.json)',
+    sourceUrl: 'https://mars.nasa.gov/mmgis-maps/MSL/Layers/json/MSL_waypoints.json',
+    note: 'Observed rover drive stations across Mount Sharp and the boxwork campaign, overlaid beside modeled routes for ground-truth context.',
+  },
 ]
