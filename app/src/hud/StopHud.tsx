@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { createPanoViewer, type PanoViewer } from '@/hud/panoViewer'
 import { createRouteOverlay, type RouteOverlay } from '@/hud/routeOverlay'
+import { CommsPanel, type CommsHandle } from '@/hud/CommsPanel'
 import type { StopPanorama } from '@/hud/panoramas'
 import type { EngineCard } from '@/lib/engineDataContext'
 import {
@@ -118,6 +119,8 @@ export function StopHud({
   cards,
   wayOut,
   wayHome,
+  fastestHome,
+  fastHomeCost,
   onClose,
 }: {
   pano: StopPanorama
@@ -131,8 +134,16 @@ export function StopHud({
   /** Way out (habitat → stop) and the way home from the stop, as lon/lat lines. */
   wayOut: LonLat[]
   wayHome: LonLat[]
+  /** Fastest way home from the stop (back_fast path, or the route back if none) and its model cost. */
+  fastestHome: LonLat[]
+  fastHomeCost: { t_s: number; o2_l: number } | null
   onClose: () => void
 }) {
+  const commsRef = useRef<CommsHandle>(null)
+  const homeEdgeRef = useRef<HTMLDivElement>(null)
+  // Emergency: return now on the fastest way home, view turns to it, a message goes to habitat + Earth.
+  const [emergency, setEmergency] = useState(false)
+  const fovRef = useRef(58)
   const hostRef = useRef<HTMLDivElement>(null)
   const tapeRef = useRef<HTMLDivElement>(null)
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
@@ -144,10 +155,24 @@ export function StopHud({
   // Bearing the view faces at start. Unverified estimate; [ and ] rotate the drawn route to align it.
   const [northDeg, setNorthDeg] = useState(pano.northOffsetDeg)
   const northRef = useRef(northDeg)
+  const habBearingRef = useRef(bearingDeg(stopLonLat, habitatLonLat))
   const yawRef = useRef(0)
   const setTape = () => {
     const heading = (((northRef.current - yawRef.current) % 360) + 360) % 360
     if (tapeRef.current) tapeRef.current.style.transform = `translateX(${-heading * 4}px)`
+    // Home finder: when the habitat is outside the view, an arrow at the screen edge points the way to turn.
+    const el = homeEdgeRef.current
+    const host = hostRef.current
+    if (el && host) {
+      const aspect = (host.clientWidth || 1) / (host.clientHeight || 1)
+      const hfov = (2 * Math.atan(Math.tan((fovRef.current * Math.PI) / 360) * aspect) * 180) / Math.PI
+      const rel = ((habBearingRef.current - heading + 540) % 360) - 180
+      const out = Math.abs(rel) > hfov / 2 - 4
+      el.hidden = !out
+      el.dataset.side = rel < 0 ? 'left' : 'right'
+      const turn = el.querySelector('[data-turn]')
+      if (turn) turn.textContent = `TURN ${rel < 0 ? 'LEFT' : 'RIGHT'} ${Math.abs(Math.round(rel))}°`
+    }
   }
 
   useEffect(() => {
@@ -157,8 +182,9 @@ export function StopHud({
       onReady: () => setStatus('ready'),
       onError: () => setStatus('error'),
       // Heading tape follows the view directly (no React re-render per frame).
-      onView: (yawDeg) => {
+      onView: (yawDeg, fovDeg) => {
         yawRef.current = yawDeg
+        fovRef.current = fovDeg
         setTape()
       },
     })
@@ -185,8 +211,9 @@ export function StopHud({
     const yellow = { color: '#ffd400', opacity: 0.7, widthM: 1.2, arrows: true }
     const faint = { color: '#7fe3ff', opacity: 0.35, widthM: 0.8, arrows: false }
     // Arrows only on the walk ahead, so they always lead away from where the viewer stands.
-    const paths =
-      leg === 'to'
+    const paths = emergency
+      ? [{ ...faint, coords: wayOut }, { ...yellow, color: '#ff4d4d', coords: fastestHome }]
+      : leg === 'to'
         ? [{ ...faint, coords: wayHome }, { ...yellow, arrows: false, coords: wayOut }]
         : [{ ...faint, coords: wayOut }, { ...yellow, coords: wayHome }]
     const overlay = createRouteOverlay(viewer.scene, viewer.onFrame, {
@@ -204,7 +231,7 @@ export function StopHud({
       if (overlayRef.current === overlay) overlayRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [leg, wayOut, wayHome, stopLonLat[0], stopLonLat[1], habitatLonLat[0], habitatLonLat[1]])
+  }, [leg, emergency, fastestHome, wayOut, wayHome, stopLonLat[0], stopLonLat[1], habitatLonLat[0], habitatLonLat[1]])
 
   useEffect(() => {
     northRef.current = northDeg
@@ -225,6 +252,18 @@ export function StopHud({
   const habKm = distanceM(stopLonLat, habitatLonLat) / 1000
   const habBearing = bearingDeg(stopLonLat, habitatLonLat)
   const log = tl.events.filter((e) => e.t <= tAt + 1e-6 && e.type !== 'status').slice(-5).reverse()
+
+  const f = tl.worstFactor ?? 1
+  const emNeedL = fastHomeCost ? fastHomeCost.o2_l * f : s.homeL
+  const emTimeS = fastHomeCost ? fastHomeCost.t_s : homeS
+  const emMarginL = s.o2Left - tl.reserveL - emNeedL
+  const startEmergency = () => {
+    setEmergency(true)
+    commsRef.current?.send(
+      `EMERGENCY at ${pano.stopId}: returning to habitat by fastest way, O₂ ${pct(s.o2Left)}, ETA ${formatDuration(emTimeS)}`,
+      true,
+    )
+  }
 
   const rate = numValue(cards.rad, /dose rate/i)
   const doseMSv = typeof rate?.value === 'number' ? (rate.value * tl.totalS) / 86400 : null
@@ -248,7 +287,13 @@ export function StopHud({
   ]
 
   return (
-    <div className="hud-root" role="dialog" aria-modal="true" aria-label={`360° view at ${stopName} with HUD`}>
+    <div
+      className="hud-root"
+      data-emergency={emergency || undefined}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`360° view at ${stopName} with HUD`}
+    >
       <div ref={hostRef} className="hud-pano" />
       {status !== 'ready' && (
         <div className="hud-status">{status === 'error' ? 'Panorama failed to load.' : 'LOADING NASA PANORAMA…'}</div>
@@ -257,12 +302,24 @@ export function StopHud({
       <div className="hud-visor" aria-hidden />
       <div className="hud-reticle" aria-hidden />
 
+      {/* Home finder: shows only when the habitat is out of view; the 3D HOME beacon is drawn in the scene. */}
+      <div ref={homeEdgeRef} className="hud-home-edge" hidden>
+        <span className="hud-home-arrow" aria-hidden />
+        <b>⌂ HOME {habKm.toFixed(2)} km</b>
+        <span data-turn />
+      </div>
+
       {/* Heading tape: compass heading = start bearing (unverified estimate, so marked ≈) − view yaw. */}
       <div className="hud-tape hud-in" style={{ animationDelay: '0.05s' }} aria-hidden>
         <div ref={tapeRef} className="hud-tape-inner">
           {ticks.map((t) => (
             <span key={t.deg} className="hud-tick" style={{ left: `calc(50% + ${t.deg * 4}px)` }}>
               {t.label}
+            </span>
+          ))}
+          {[-360, 0, 360].map((k) => (
+            <span key={k} className="hud-tape-home" style={{ left: `calc(50% + ${(habBearing + k) * 4}px)` }}>
+              ⌂
             </span>
           ))}
         </div>
@@ -341,6 +398,39 @@ export function StopHud({
           ))}
         </ul>
       </div>
+
+      <div className="hud-cm hud-glass hud-in" style={{ animationDelay: '0.5s' }}>
+        <CommsPanel ref={commsRef} />
+      </div>
+
+      {emergency && (
+        <div className="hud-emergency" role="alert">
+          <div className="hud-em-title">⚠ EMERGENCY · RETURN TO HABITAT NOW</div>
+          <div className="hud-em-grid">
+            <span>Fastest way home</span>
+            <b>{formatDuration(emTimeS)}</b>
+            <span>O₂ needed</span>
+            <b>{pct(emNeedL)}</b>
+            <span>O₂ left</span>
+            <b>{pct(s.o2Left)}</b>
+            <span>Above reserve after</span>
+            <b className={emMarginL < 0 ? 'hud-red' : ''}>{emMarginL < 0 ? 'INTO RESERVE' : pct(emMarginL)}</b>
+          </div>
+          <div className="hud-small">
+            Follow the red line · habitat {habBearing.toFixed(0)}° · message sent to the habitat and Earth (see COMMS).
+            Modeled estimate (Scenario).
+          </div>
+          <button className="hud-em-cancel" onClick={() => setEmergency(false)}>
+            Cancel emergency
+          </button>
+        </div>
+      )}
+
+      {!emergency && (
+        <button className="hud-em-btn" onClick={startEmergency} aria-label="Emergency: return to habitat now">
+          ⚠ EMERGENCY
+        </button>
+      )}
 
       <div className="hud-br hud-glass hud-in" style={{ animationDelay: '0.6s' }}>
         <div className="hud-label">ROUTE · NORTH UP</div>

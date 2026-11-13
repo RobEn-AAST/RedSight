@@ -33,6 +33,16 @@ are pending: decision D28). Design source: [`demo-focus-plan.md`](demo-focus-pla
   (user feedback 2026-11-13: arrows must never come toward the viewer). A HABITAT pin with its distance; heading tape with N/E/S/W.
   Limits, stated on screen: flat ground (hills don't hide the line), photo heading approximate (image centre ≈ north per NASA's caption: Gale crater rim at top centre; `[` `]` rotate the drawn route to align it to a landmark), horizon set by eye
   (18° above the mosaic centre, `panoramas.ts`). Code: `app/src/hud/routeOverlay.ts`.
+- **Home beacon, emergency, comms (2026-11-13, user request):**
+  - **HOME beacon:** a hovering, pulsing "⌂ HOME · habitat km" marker over the habitat's direction, a ⌂ mark on the
+    heading tape, and a blinking edge arrow "⌂ HOME · TURN LEFT/RIGHT n°" whenever the habitat is out of view.
+  - **EMERGENCY button:** red view, route switches to the fastest way home (red line, view turns to it), panel with
+    its time, O₂ needed, O₂ left and margin above reserve (Scenario), and an automatic message to habitat + Earth.
+  - **COMMS:** preset messages; each shows "delivered" on local habitat radio, a countdown until it reaches Earth
+    and until the earliest possible reply (2×). Delay = today's Earth–Mars distance (JPL approximate planet
+    orbits, Standish, ssd.jpl.nasa.gov/planets/approx_pos.html) ÷ c: **Derived**; tested against the 2003
+    closest approach (55.8 M km). Not modeled: relay-orbiter pass waits, radio shadow (both stated on screen).
+    "Demo ×60" speeds the countdown for presentations. Code: `earthDelay.ts`, `CommsPanel.tsx`.
 - **Honesty on screen:** Observed chip on the photo, Scenario chip on the numbers, photo credit, and "Real
   imagery exists only at stops: moving between stops is a jump" (§10).
 

@@ -160,34 +160,52 @@ export function createRouteOverlay(
   const habDist = Math.hypot(he, hn)
   const canvas = document.createElement('canvas')
   canvas.width = 256
-  canvas.height = 64
+  canvas.height = 96
   const ctx = canvas.getContext('2d')!
-  ctx.font = '600 26px ui-monospace, Menlo, monospace'
-  ctx.fillStyle = 'rgba(4,20,28,0.7)'
-  ctx.fillRect(0, 0, 256, 64)
+  // Home beacon: a hovering marker so the habitat can always be found by looking around.
+  ctx.fillStyle = 'rgba(30,18,0,0.72)'
+  ctx.fillRect(0, 0, 256, 96)
   ctx.strokeStyle = '#ffb224'
   ctx.lineWidth = 3
-  ctx.strokeRect(1.5, 1.5, 253, 61)
+  ctx.strokeRect(1.5, 1.5, 253, 93)
   ctx.fillStyle = '#ffd27a'
   ctx.textAlign = 'center'
-  ctx.fillText(`HABITAT ${(habDist / 1000).toFixed(2)} km`, 128, 42)
+  ctx.font = '700 30px ui-monospace, Menlo, monospace'
+  ctx.fillText('⌂ HOME', 128, 40)
+  ctx.font = '600 22px ui-monospace, Menlo, monospace'
+  ctx.fillText(`habitat ${(habDist / 1000).toFixed(2)} km`, 128, 74)
   const tex = new THREE.CanvasTexture(canvas)
   tex.colorSpace = THREE.SRGBColorSpace
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, depthWrite: false }))
   sprite.renderOrder = 12
-  sprite.scale.set(1.2, 0.3, 1)
+  sprite.scale.set(1.0, 0.375, 1)
   group.add(sprite)
   const postMat = new THREE.LineBasicMaterial({ color: '#ffb224', depthTest: false, transparent: true, opacity: 0.9 })
   const post = new THREE.Line(new THREE.BufferGeometry(), postMat)
   post.renderOrder = 12
   group.add(post)
+  // Diamond under the label, pulsing; the label hovers (bobs) above the ground point.
+  const diamond = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.09),
+    new THREE.MeshBasicMaterial({ color: '#ffb224', depthTest: false, depthWrite: false, transparent: true }),
+  )
+  diamond.renderOrder = 12
+  group.add(diamond)
+  let pinTop = new THREE.Vector3()
   function placePin() {
     const g = toView(he, hn)
-    const top = g.clone().setY(g.y + 1.1)
-    post.geometry.setFromPoints([g, top])
-    sprite.position.copy(top).setY(top.y + 0.2)
+    pinTop = g.clone().setY(g.y + 1.1)
+    post.geometry.setFromPoints([g, pinTop])
   }
   placePin()
+  onFrame((tS) => {
+    if (disposed) return
+    const bob = Math.sin(tS * 2) * 0.06
+    diamond.position.copy(pinTop).setY(pinTop.y + 0.05 + bob)
+    diamond.rotation.y = tS * 1.5
+    ;(diamond.material as THREE.MeshBasicMaterial).opacity = 0.7 + 0.3 * Math.sin(tS * 4)
+    sprite.position.copy(pinTop).setY(pinTop.y + 0.36 + bob)
+  })
 
   return {
     setNorthOffset(deg) {

@@ -91,6 +91,22 @@ export function MissionReplay() {
   // (the fastest-way-home path when the replay switched to it, else the route walked back).
   const wayOut = useMemo(() => (activeRoute?.coords ?? []) as [number, number][], [activeRoute])
   const fastFromStop = hud?.fastHome ? activeRoute?.back_fast?.path?.[(activeRoute?.coords.length ?? 1) - 1] : undefined
+  const lastI = (activeRoute?.coords.length ?? 1) - 1
+  const bf = activeRoute?.back_fast
+  const bfPath = bf?.path?.[lastI]
+  const bfFaster = !!bf && !!activeRoute && bf.t_s[lastI] < activeRoute.back.t_s[lastI]
+  const fastestHome = useMemo(
+    () => (bfFaster && bfPath?.length ? bfPath : wayOut.slice().reverse()) as [number, number][],
+    [bfFaster, bfPath, wayOut],
+  )
+  // Cost of the fastest way home from the stop: back_fast if it beats the route back, else the route back.
+  const fastHomeCost = useMemo(() => {
+    const back = activeRoute?.back
+    if (!back) return null
+    const b = { t_s: back.t_s[lastI], o2_l: back.o2_l[lastI] }
+    const f = bf ? { t_s: bf.t_s[lastI], o2_l: bf.o2_l[lastI] } : null
+    return f && f.t_s < b.t_s ? f : b
+  }, [activeRoute, bf, lastI])
   const wayHome = useMemo(
     () => (fastFromStop?.length ? fastFromStop : wayOut.slice().reverse()) as [number, number][],
     [fastFromStop, wayOut],
@@ -137,6 +153,8 @@ export function MissionReplay() {
           cards={engine.cards}
           wayOut={wayOut}
           wayHome={wayHome}
+          fastestHome={fastestHome}
+          fastHomeCost={fastHomeCost}
           onClose={closeHud}
         />
       )}
