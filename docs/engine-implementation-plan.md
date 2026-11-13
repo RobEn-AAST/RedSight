@@ -170,7 +170,7 @@ obvious displacement. The review establishes no unique quantitative tie point or
 G2 is therefore recorded as partial visual evidence, not a metric registration pass.
 
 End-to-end timing uses the actual recorded first STAC response `2026-11-13T19:14:31+02:00` through
-native-slope build completion `2026-11-13T20:36:40+02:00`, **4,929.6 s (1 h 22 min 9.6 s)**. The
+native-slope build completion `2026-11-13T20:41:32+02:00`, **5,221.7 s (1 h 27 min 1.7 s)**. The
 first request began shortly before that response, so this is a lower-bound wall interval; the native
 cache and alignment evidence were ready at 20:19:35 and the final build itself took 23.09 s. G4 is
 under the 3 h threshold on this recorded interval. The build manifest retains all timestamps and scope.

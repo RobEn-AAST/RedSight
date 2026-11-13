@@ -80,7 +80,8 @@ python3 -m pytest -p no:cacheprovider -q engine/tests
 node --test app/src/replay/replay-core.test.js
 ```
 
-The build manifest records the manifest/crop/ortho/mosaic/constants/stops hashes, source URLs and
+The build manifest records manifest/crop/ortho/mosaic/constants/stops hashes, a SHA-256 for each
+engine-owned route/meta/constants/hazard output, source URLs and
 licenses, scene offset statistics, CRS/grid/resampling, model values, habitat, runtime versions,
 per-stop outcomes and limitations. Re-run the same command with the same input manifest and source
 files; output is stable for the recorded Python/NumPy/rasterio/SciPy versions and Dijkstra tie policy.

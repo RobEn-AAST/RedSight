@@ -14,7 +14,7 @@ has landed; `_mock/make-mock.mjs` overwrites every data file.
 | `stops.json` | Ayman | positions (§6, §8); photos + science text TODO |
 | `routes/index.json`, `routes/{stop}_{mode}_{crew}_{load}.json` | Ali | fastest + lowest-modeled-hazard outcome for each of S1, S2, S3, D1 and D2 (crew 2, 15 kg); blocked targets have an explicit no-route status |
 | `hazards.geojson` | Ali | primary-DTM nodata, unavailable native slope support and native Horn slope hard masks |
-| `engine-build-manifest.json` | Ali | crop/cache hashes, source/licence data, seam, S1 alignment evidence, G1–G4 status, timing, model and route outcomes |
+| `engine-build-manifest.json` | Ali | input/output hashes, source/licence, seam/alignment evidence, G1–G4 status, timing, model and route outcomes |
 | `cards/rad.json`, `cards/rems.json` | Ayman | RAD dose + source, REMS pressure range |
 | `fields/*.png`, `fields/coverage.png` | Ali / Youssef | not mocked yet (If-time features) |
 
@@ -66,7 +66,7 @@ component after no original north/downslope candidate connected to any walkable 
 
 **Pilot evidence:** G1 pass; G2 partial visual alignment only (major ridge/trough patterns co-locate,
 but no metric tie point or sub-meter residual); G3 partial because four exact target cells are hard
-blocked; G4 pass on a 1 h 22 min 9.6 s lower-bound wall interval from the first recorded STAC response
+blocked; G4 pass on a 1 h 27 min 1.7 s lower-bound wall interval from the first recorded STAC response
 to final native-mask output, under the 3 h threshold. The route build itself took 23.09 s. The first
 request began slightly before the first recorded response. Full timing, S1 evidence files and their
 hashes are in `engine-build-manifest.json`.
