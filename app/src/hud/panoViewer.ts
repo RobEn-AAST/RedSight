@@ -12,7 +12,7 @@ export interface PanoViewer {
 export function createPanoViewer(
   container: HTMLElement,
   imageUrl: string,
-  opts: { onReady?: () => void; onError?: (e: unknown) => void } = {},
+  opts: { onReady?: () => void; onError?: (e: unknown) => void; onView?: (yawDeg: number, fovDeg: number) => void } = {},
 ): PanoViewer {
   const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
@@ -100,7 +100,13 @@ export function createPanoViewer(
   el.addEventListener('wheel', onWheel, { passive: false })
   window.addEventListener('keydown', onKey)
 
+  let lastYaw = NaN, lastFov = NaN
   renderer.setAnimationLoop(() => {
+    if (yaw !== lastYaw || camera.fov !== lastFov) {
+      lastYaw = yaw
+      lastFov = camera.fov
+      opts.onView?.(THREE.MathUtils.radToDeg(yaw), camera.fov)
+    }
     pitch = THREE.MathUtils.clamp(pitch, -maxPitch, maxPitch)
     camera.rotation.set(pitch, yaw, 0, 'YXZ')
     renderer.render(scene, camera)

@@ -1,6 +1,11 @@
 // Types for the plain-JS replay model (replay-core.js), the parts the HUD reads. Owner: Marwan.
 export interface TimelineEvent { t: number; type: string; label: string }
+export interface Frame { t: number; o2: number; pt: [number, number]; d: number; phase: 'out' | 'stop' | 'back' | 'home' }
 export interface Timeline {
+  frames: Frame[]
+  switchPoint: [number, number] | null
+  members: number[]
+  worstFactor: number
   events: TimelineEvent[]
   totalS: number
   tankL?: number

@@ -18,6 +18,13 @@ are pending: decision D28). Design source: [`demo-focus-plan.md`](demo-focus-pla
   · recommended way home (back the way you came, or "Fastest way home (switched: O₂ low)" when §9's switch
   fired) · its time and O₂ · spare above the reserve after it · habitat distance and bearing.
   If the stop is past the turn-back point on the current budget, the HUD says so instead of showing numbers.
+- **Film-style layout (2026-11-13, user request):** semi-transparent glass panels with a cyan glow, scan lines,
+  centre reticle, heading tape (relative degrees until north-aligned). Panels: mission clock (time, distance
+  walked, crew, Earth delay) · O₂ ring for the worst suit (reserve red, O₂ needed to get home amber) + one bar
+  per crew member · way home (blinking "O₂ low, switched" alert when §9's switch fired) · environment from
+  Curiosity's RAD/REMS cards (Observed, rover-local; EVA dose = RAD rate × walk time, unshielded) · event log
+  · north-up route mini-map (way out, way home, switch point, stop, habitat) · walk progress bar with
+  DEPART / SWITCH / STOP / HOME marks. No invented values: no heart rate, CO₂ or suit pressure (we have no data).
 - **Honesty on screen:** Observed chip on the photo, Scenario chip on the numbers, photo credit, and "Real
   imagery exists only at stops: moving between stops is a jump" (§10).
 

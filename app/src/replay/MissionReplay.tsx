@@ -126,6 +126,7 @@ export function MissionReplay() {
           routeMode={activeRoute.mode}
           stopLonLat={[stop.lon, stop.lat]}
           habitatLonLat={habitat}
+          cards={engine.cards}
           onClose={closeHud}
         />
       )}
