@@ -3,11 +3,10 @@ import { Check, Minus, Plus, Rocket, Footprints } from 'lucide-react'
 import { Field } from '@/ui/Field'
 import { EvidenceBadge } from '@/ui/Badge'
 import { cn } from '@/lib/cn'
-import { scienceGoalOptions, unavailableGoalNote } from '@/lib/materials'
+import { scienceGoalOptions } from '@/lib/materials'
 import { useMission } from '@/lib/useMission'
 import {
   missionLimits,
-  nearestLoadBucket,
   perAstronautLoadKg,
   totalLoadKg,
   type LoadBasis,
@@ -24,7 +23,7 @@ export function CrewStep() {
     <div className="flex flex-col gap-6">
       <Field
         label="Astronauts on this EVA"
-        hint={`Team model: crew of ${L.crewMin}–${L.crewMax}. Default 2 — NASA DRA 5.0 (SP-2009-566) plans Mars surface EVAs with a minimum of two crew (buddy system); the pair's turn-back is the earlier member's.`}
+        hint="NASA plans Mars walks in pairs (buddy system). A pair can walk together or split up to sample two areas."
       >
         {() => (
           <div role="radiogroup" aria-label="Crew size" className="flex gap-3">
@@ -53,7 +52,7 @@ export function CrewStep() {
 
       <Field
         label="Body mass per astronaut (kg)"
-        hint={`Range ${L.bodyMassMin}–${L.bodyMassMax} kg — crew mass range from NASA JSC ICES-2026-127 “Mars Spacesuit Mass Requirements”; its worked example uses 82 kg. Only mass enters the energy model (stature isn’t modeled).`}
+        hint={`${L.bodyMassMin}–${L.bodyMassMax} kg, without the suit.`}
       >
         {({ describedBy, invalid }) => (
           <div className="flex max-w-xs items-center gap-3">
@@ -90,11 +89,6 @@ export function CrewStep() {
         )}
       </Field>
 
-      <p className="border border-seam bg-inset/60 px-3 py-2.5 text-xs leading-relaxed text-ink-faint">
-        Crew, body mass, load and samples feed the Pandolf-based metabolic model with suit factor
-        κ = 1.3 (Norcross TP-2010-216115). Every output it produces is a{' '}
-        <span className="text-scenario">Scenario</span> estimate.
-      </p>
     </div>
   )
 }
@@ -106,15 +100,14 @@ export function LoadStep() {
   const { loadKg, loadBasis, sampleKgPerStop, crewCount } = state.config
   const L = missionLimits
   const maxTotal = L.loadPerAstronautMax * crewCount
-  const bucket = nearestLoadBucket(perAstronautLoadKg(state.config))
 
   return (
     <fieldset className="flex flex-col gap-6">
       <legend className="sr-only">Carried load and samples</legend>
 
       <Field
-        label="Mass basis — what does the number mean?"
-        hint="Per-person means each astronaut carries the entered mass (the engine’s per-member load). Total means the whole manifest, divided across the crew."
+        label="Is the mass per person or for the whole crew?"
+        
       >
         {() => (
           <div className="grid gap-2 sm:grid-cols-2">
@@ -152,8 +145,8 @@ export function LoadStep() {
       </Field>
 
       <Field
-        label="Carried package / equipment mass (kg)"
-        hint="Tools and kit only — suits are handled by the model separately. Team model range; context: ICES-2026-127 cites the NIOSH carry limit 51 lbf (227 N)."
+        label="Tools and kit to carry (kg)"
+        hint="Not counting the suit."
       >
         {({ describedBy, invalid }) => (
           <div className="flex max-w-xs items-center gap-3">
@@ -177,8 +170,8 @@ export function LoadStep() {
       </Field>
 
       <Field
-        label="Samples picked up per stop (kg)"
-        hint="Added to the carried load on every leg after that stop — so the return leg costs more. With a rover (Tier 2), samples ride on the rover instead."
+        label="Samples to collect at each stop (kg)"
+        hint="The way home is harder with samples on your back. With a rover, they ride on the rover."
       >
         {({ describedBy, invalid }) => (
           <div className="flex max-w-xs items-center gap-3">
@@ -198,33 +191,11 @@ export function LoadStep() {
           </div>
         )}
       </Field>
-
-      <div className="border border-seam bg-inset/60 px-4 py-3" aria-live="polite">
-        <p className="label-console mb-2 text-ink-faint">Resolved manifest</p>
-        <dl className="data-readout grid grid-cols-3 gap-2 text-sm">
-          <div>
-            <dt className="text-ink-faint">Mission total</dt>
-            <dd className="text-ink">{totalLoadKg(state.config).toFixed(1)} kg</dd>
-          </div>
-          <div>
-            <dt className="text-ink-faint">Per astronaut</dt>
-            <dd className="text-ink">{perAstronautLoadKg(state.config).toFixed(1)} kg</dd>
-          </div>
-          <div>
-            <dt className="text-ink-faint">Engine bucket</dt>
-            <dd className="text-signal">{bucket} kg</dd>
-          </div>
-        </dl>
-        <p className="mt-2 text-[11px] leading-relaxed text-ink-faint">
-          Routes are precomputed per crew × load bucket (§15); the app looks up the nearest bucket —
-          the browser never models numbers.
-        </p>
-      </div>
     </fieldset>
   )
 }
 
-/* -- Step 3: rover (input now; execution is Tier 2 E0) ------------------------ */
+/* -- Step 3: rover ---------------------------------------------------------------- */
 
 export function RoverStep() {
   const { state, patchConfig } = useMission()
@@ -239,13 +210,13 @@ export function RoverStep() {
             [
               true,
               'Rover available',
-              'Recorded now: rover-mode rules (20° slope limit, 0.3 m step, sand hard-avoid), park-and-walk plans and sample-carrying are planned for Tier 2 (E0).',
+              'Drive most of the way, park, and walk the last part. The plan shows where to drive and where to walk.',
               Rocket,
             ],
             [
               false,
               'On foot only',
-              'Walking traverse — suited walking speeds 1.1–2.2 km/h working range. This is the Tier 1 baseline the engine computes first.',
+              'Walk the whole way, about 1–2 km per hour in a suit.',
               Footprints,
             ],
           ] as [boolean, string, string, typeof Rocket][]
@@ -271,11 +242,6 @@ export function RoverStep() {
           </button>
         ))}
       </div>
-      <p className="border border-seam bg-inset/60 px-3 py-2.5 text-xs leading-relaxed text-ink-faint">
-        This input is stored in the shared mission state now (user-authorized); no rover traversal is
-        computed in Tier 1 — rover-vs-foot routing is the first Tier 2 item, after the base is
-        submitted.
-      </p>
     </fieldset>
   )
 }
@@ -348,15 +314,6 @@ export function GoalStep() {
         />
       </label>
 
-      <p className="border border-unavailable/30 bg-unavailable-soft/50 px-3 py-2.5 text-xs leading-relaxed text-unavailable">
-        {unavailableGoalNote}
-      </p>
-      <p className="border border-seam bg-inset/60 px-3 py-2.5 text-xs leading-relaxed text-ink-faint">
-        Stop cards come from the engine’s <span className="data-readout">stops.json</span> (§15): real
-        Curiosity positions inside the ops box — S1/S2 360 sites, S3 current position, plus drill
-        sites. A goal here frames those stops; it never invents reachable targets where the current
-        box has no coverage.
-      </p>
     </fieldset>
   )
 }
@@ -375,10 +332,10 @@ export function ReviewStep() {
     ['Body mass', `${config.bodyMassKg} kg each`],
     [
       'Carried mass',
-      `${config.loadKg} kg ${config.loadBasis === 'perAstronaut' ? 'per astronaut' : 'mission total'} → ${totalLoadKg(config).toFixed(1)} kg total · ${perAstronautLoadKg(config).toFixed(1)} kg each · engine bucket ${nearestLoadBucket(perAstronautLoadKg(config))} kg`,
+      `${perAstronautLoadKg(config).toFixed(1)} kg each · ${totalLoadKg(config).toFixed(1)} kg in total`,
     ],
-    ['Samples', `${config.sampleKgPerStop} kg per stop (added after each stop)`],
-    ['Rover', config.roverAvailable ? 'Available — mode executes in Tier 2 (E0)' : 'On foot only (Tier 1 baseline)'],
+    ['Samples', `${config.sampleKgPerStop} kg per stop`],
+    ['Rover', config.roverAvailable ? 'Yes: drive, then walk' : 'No: on foot'],
     [
       'Science goal',
       goal ? goal.label : config.scienceGoalId === 'custom' ? `Custom: ${config.scienceGoalNote}` : '—',
@@ -391,18 +348,13 @@ export function ReviewStep() {
         {rows.map(([term, value], i) => (
           <div
             key={term}
-            className={cn('grid grid-cols-[8rem_1fr] gap-3 px-4 py-3', i > 0 && 'border-t border-seam')}
+            className={cn('grid grid-cols-[7rem_1fr] gap-3 px-4 py-3', i > 0 && 'border-t border-seam')}
           >
             <dt className="label-console pt-0.5 text-ink-faint">{term}</dt>
             <dd className="text-sm leading-relaxed text-ink">{value}</dd>
           </div>
         ))}
       </dl>
-      <p className="text-xs leading-relaxed text-ink-faint">
-        Confirming stores this as the shared mission state the Tier 1 app consumes (crew × load
-        bucket lookup, §15). All figures above are operator inputs — no measurements, no modeled
-        estimates. Time/O₂ and turn-back numbers arrive only from the engine’s precomputed JSON.
-      </p>
     </div>
   )
 }

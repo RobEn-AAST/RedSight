@@ -1,101 +1,77 @@
 import { useState } from 'react'
-import { MapPin, Radar } from 'lucide-react'
 
 import { useEngineData } from '@/lib/useEngineData'
 import { opsBox as fallbackOpsBox } from '@/lib/stopsData'
-import { LayerPanel } from '@/map/LayerPanel'
 import { MapCanvas } from '@/map/MapCanvas'
-import { RouteCards } from '@/map/RouteCards'
-import { StopPicker } from '@/map/StopPicker'
+import { PlanPanel } from '@/map/PlanPanel'
 import { EmptyState } from '@/ui/EmptyState'
-import { LedDot } from '@/ui/LedDot'
+import { Toggle } from '@/ui/Toggle'
 
 /**
- * Map workspace (Tier 1, B1–B3): the ops-area map with the stop picker, the
- * A/B route cards and the layer panel beside it. Everything shown comes from
- * the §15 contract files; a file that is missing shows as missing.
+ * Routes screen: the map beside one panel that walks the crew through the
+ * plan — where to sample, which route, who goes where, then the plan step by
+ * step. Everything shown comes from the engine files; a missing file shows as
+ * missing.
  */
-export function MapWorkspace() {
+export function MapWorkspace({ onOpenSources }: { onOpenSources: () => void }) {
   const engine = useEngineData()
   const [layerChoice, setLayerChoice] = useState<Record<string, boolean>>({})
-  const [showPreview, setShowPreview] = useState(true)
-  const [showHazards, setShowHazards] = useState(true)
-  const [showOpsBox, setShowOpsBox] = useState(true)
+  const [showImagery, setShowImagery] = useState(true)
 
   const layers = engine.layers ?? []
   const available = layers.filter((l) => l.available)
-  // Until the operator chooses, the first two available layers are on.
+  // Until the crew chooses, the first available data layer is on.
   const enabledLayers = Object.fromEntries(
-    layers.map((l) => [l.id, layerChoice[l.id] ?? available.slice(0, 2).includes(l)]),
+    layers.map((l) => [l.id, layerChoice[l.id] ?? available[0]?.id === l.id]),
   )
   const box = engine.meta?.ops_box ?? fallbackOpsBox
 
   return (
-    <div className="flex min-h-full flex-col gap-4 lg:grid lg:h-full lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_22rem]">
-      {/* Map frame */}
-      <div className="relative h-[58dvh] min-h-80 flex-none overflow-hidden border border-seam bg-inset lg:h-auto">
-        {engine.probed ? (
-          <MapCanvas
-            box={box}
-            enabledLayers={enabledLayers}
-            showPreview={showPreview}
-            showHazards={showHazards}
-            showOpsBox={showOpsBox}
-          />
-        ) : null}
-
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-seam/60 bg-void/75 px-4 py-2 backdrop-blur-sm">
-          <Radar size={13} aria-hidden className="flex-none text-observed" />
-          <span className="label-console text-ink-dim">Mount Sharp boxwork, Gale crater</span>
-          {engine.mock && (
-            <span className="label-console border border-scenario/50 bg-scenario-soft px-1.5 py-0.5 text-[10px] text-scenario">
-              Mock data
-            </span>
-          )}
-          <span className="ml-auto flex items-center gap-2">
-            <LedDot tone={available.length > 0 ? 'green' : 'amber'} />
-            <span className="label-console text-ink-faint">
-              {layers.length === 0
-                ? 'no layer list'
-                : available.length === 0 && engine.preview
-                  ? 'preview image only'
-                  : `${available.length} of ${layers.length} image layers built`}
-            </span>
-          </span>
-        </div>
-
+    <div className="flex min-h-full flex-col lg:grid lg:h-full lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_26rem]">
+      {/* Map */}
+      <div className="relative h-[60dvh] min-h-80 flex-none overflow-hidden bg-inset lg:h-auto">
+        {engine.probed && engine.meta && (
+          <MapCanvas box={box} enabledLayers={enabledLayers} showImagery={showImagery} />
+        )}
         {engine.probed && !engine.meta && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-inset/90 p-6 pt-14">
-            <EmptyState
-              className="border-none bg-transparent"
-              icon={<MapPin size={28} strokeWidth={1.5} />}
-              title="Engine data not found"
-              detail={
-                <>
-                  <span className="data-readout">app/public/data/meta.json</span> is missing or not in
-                  the agreed shape, so the ops area, habitat and routes cannot be drawn.
-                </>
-              }
-            />
+          <EmptyState
+            className="absolute inset-0 border-none"
+            title="Map data not found"
+            detail="The planner could not load app/public/data/meta.json, so the map cannot be drawn."
+          />
+        )}
+
+        {/* Map layers: the orbital image plus any tiled data layers that exist. */}
+        {(engine.preview || available.length > 0) && (
+          <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 flex-wrap items-center justify-center gap-x-4 gap-y-2 border border-seam bg-hull/90 px-3 py-1.5">
+            {engine.preview && (
+              <label className="flex items-center gap-2 text-xs text-ink">
+                <Toggle size="sm" checked={showImagery} onChange={setShowImagery} label="Show orbital image" />
+                Orbital image
+              </label>
+            )}
+            {available.map((l) => (
+              <label key={l.id} className="flex items-center gap-2 text-xs text-ink">
+                <Toggle
+                  size="sm"
+                  checked={enabledLayers[l.id] ?? false}
+                  onChange={(next) => setLayerChoice((s) => ({ ...s, [l.id]: next }))}
+                  label={`Show ${l.name}`}
+                />
+                {l.name}
+              </label>
+            ))}
           </div>
         )}
       </div>
 
-      {/* Side column */}
-      <div className="flex flex-col gap-4 lg:min-h-0 lg:overflow-y-auto">
-        <StopPicker />
-        <RouteCards />
-        <LayerPanel
-          enabledLayers={enabledLayers}
-          onToggleLayer={(id, next) => setLayerChoice((s) => ({ ...s, [id]: next }))}
-          showPreview={showPreview}
-          onTogglePreview={setShowPreview}
-          showHazards={showHazards}
-          onToggleHazards={setShowHazards}
-          showOpsBox={showOpsBox}
-          onToggleOpsBox={setShowOpsBox}
-        />
-      </div>
+      {/* Plan panel */}
+      <aside
+        className="border-t border-seam bg-panel lg:min-h-0 lg:overflow-y-auto lg:border-l lg:border-t-0"
+        aria-label="Plan"
+      >
+        <PlanPanel onOpenSources={onOpenSources} />
+      </aside>
     </div>
   )
 }
