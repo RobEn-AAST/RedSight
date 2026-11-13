@@ -53,3 +53,4 @@
 .replay-hud[data-type="turnback"] .replay-hud-msg, .replay-hud[data-type="forced-return"] .replay-hud-msg,
 .replay-hud[data-type="reserve"] .replay-hud-msg { color: #ff8fa8; font-weight: 600; }
 @media (max-width: 480px) { .replay-hud-clock { display: none; } .replay-hud { max-width: calc(100% - 110px); } }
+.replay-hud-badge { flex: none; padding: 1px 4px; font-size: 10px; background: #5a3fa0; color: #fff; }

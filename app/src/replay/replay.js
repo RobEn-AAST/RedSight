@@ -49,6 +49,7 @@ export function createReplay(map, opts) {
   }
 
   function render() {
+    if (!map.getSource(SRC.crew)) return; // map removed or restyled under us
     const s = sampleAt(tl, t);
     const C = tl.tankL ?? tl.capacityL, R = tl.reserveL; // percentages of the full tank
     const pts = [{ pt: s.pt, color: CREW_A }];
@@ -126,6 +127,7 @@ export function createReplay(map, opts) {
       <span class="replay-hud-clock"></span>
       <span class="replay-hud-tank"><span class="replay-hud-fill"></span></span>
       <span class="replay-hud-o2"></span>
+      <span class="replay-hud-badge" title="Modeled estimate, not a measurement">Scenario</span>
       <span class="replay-hud-msg" aria-live="polite"></span>`;
     container.appendChild(el);
     const q = (c) => el.querySelector(c);
@@ -245,11 +247,15 @@ export function createReplay(map, opts) {
     get timeline() { return tl; },
     voice,
     destroy() {
-      pause();
+      // Stop without redrawing: the host may already have removed the map (leaving the map screen).
+      playing = false;
+      cancelAnimationFrame(raf);
       voice.setEnabled(false);
       ui.el.remove();
       hud?.el.remove();
-      for (const id of Object.values(SRC)) { if (map.getLayer(id)) map.removeLayer(id); if (map.getSource(id)) map.removeSource(id); }
+      try {
+        for (const id of Object.values(SRC)) { if (map.getLayer(id)) map.removeLayer(id); if (map.getSource(id)) map.removeSource(id); }
+      } catch { /* map already removed: its layers went with it */ }
     },
   };
 }

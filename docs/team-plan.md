@@ -50,7 +50,7 @@ Marwan). Work it on your own branch. Order = priority.
 | 3 | Project page text + NASA Data list + AI disclosure (README sections) | Marwan (drafted: [`submission/project-page.md`](submission/project-page.md); team to confirm the SI answer) |
 | 4 | 60-second demo script (§17) and a rehearsal | Marwan (script drafted, same file; rehearsal open) |
 | 5 | Logged-out test of the public URL on phone + laptop | |
-| 6 | Wording + badge audit of the UI (AGENTS rule 3) | |
+| 6 | Wording + badge audit of the UI (AGENTS rule 3) | Marwan (first pass done: [`submission/ui-audit.md`](submission/ui-audit.md); re-run on real data + deployed URL) |
 | 7 | Demo GIF/recording for the project page | |
 | 8 | **Submit** (by whoever the Local Lead says may submit) | |
 
