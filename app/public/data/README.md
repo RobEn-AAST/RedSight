@@ -10,10 +10,10 @@ tell the team first, then update this README + the generator in the same PR.
 | `meta.json` | Ali | ops box, CRS; habitat is MOCK |
 | `constants.json` | Ali | values are the cited team defaults (technical-approaches §3) |
 | `layers.json` | Youssef | layer list + sources; `available:false` until tiles exist |
-| `stops.json` | Ayman | positions (§6, §8); photos + science text TODO |
+| `stops.json` | Ayman | real (no `_mock`): 5 stops from live MMGIS waypoints, per-sol/per-instrument NASA raw photos, PIA26559 / PIA26696 metadata, sourced science text & cards |
 | `routes/index.json`, `routes/{stop}_{mode}_{crew}_{load}.json` | Ali | nothing: shapes only |
 | `hazards.geojson` | Ali | nothing |
-| `cards/rad.json`, `cards/rems.json` | Ayman | RAD dose + source, REMS pressure range |
+| `cards/rad.json`, `cards/rems.json` | Ayman | real (no `_mock`): RAD GCR baseline + Sept 2017 SEP (Si) + Scenario 4-h walk dose; REMS pressure, air/ground temp, Armstrong limit, PDS links |
 | `fields/*.png`, `fields/coverage.png` | Ali / Youssef | not mocked yet (If-time features) |
 
 ## Check your files before a PR
@@ -50,3 +50,16 @@ for `available` layers, banned wording). Errors fail the run. Before submission 
 
 Regenerate mocks: `node app/public/data/_mock/make-mock.mjs`. It only overwrites files that still have
 `"_mock": true`; real files (no flag, e.g. Ayman's `stops.json` and cards) are skipped.
+
+## Stop file fields (`stops.json`)
+
+`stops.json` is an RFC 7946 GeoJSON `FeatureCollection` (CRS is in `meta.json`). Each feature has `Point`
+`geometry.coordinates` `[lon, lat]` from NASA MMGIS waypoints and `properties`:
+
+| Field | Meaning |
+|---|---|
+| `id`, `name`, `kind`, `sols`, `evidence`, `approx`, `badge` | Core §15 stop metadata (`S1`, `S2`, `S3`, `D1`, `D2`). `S3` tracks the latest waypoint in `MSL_waypoints_current.json`. |
+| `photos[]` | 4 verified NASA Curiosity raw-image objects (`id`, `sol`, `instrument`, `title`, `date_taken`, `url`, `credit`, `badge`). At most 1 photo per instrument across the stop's sols. The app's `parseStops()` reads `photo.url`. |
+| `panorama`, `panorama_meta` | Photojournal ID (`PIA26559`, `PIA26696`, or `null`) and preview/full JPEG links + frame count. |
+| `science` | Concise primary-sourced geologic description. |
+| `card` | Compact stop telemetry (`rmc`, `site`, `drive`, `elev_m`, `dist_km`, `location`, `waypoint_badge`: `"Observed"`), `target_name`, `target_type`, `sol`, `geologic_context` (`context_badge`: `"Derived"`), and `source_url`. Model constants stay in `constants.json`. |

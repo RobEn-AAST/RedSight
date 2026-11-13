@@ -1,16 +1,13 @@
 {
  "type": "FeatureCollection",
- "crs": "+proj=longlat +R=3396190 +no_defs",
- "updated": "2026-11-13",
- "source": "NASA MMGIS MSL_waypoints.json (through sol 5070) + NASA MSL Raw Images API + JPL Photojournal (PIA26559, PIA26696)",
  "features": [
   {
    "type": "Feature",
    "geometry": {
     "type": "Point",
     "coordinates": [
-     137.38592,
-     -4.79782
+     137.3859207,
+     -4.797816
     ]
    },
    "properties": {
@@ -19,78 +16,58 @@
     "kind": "panorama",
     "sols": [
      4539,
+     4540,
      4541
     ],
-    "sol": "4539–4541",
-    "lon": 137.38592,
-    "lat": -4.79782,
-    "site": 116,
-    "drive": 408,
-    "elev_m": -3654.97,
-    "dist_km": 34.79,
-    "evidence": "PIA26559 (Mastcam, 2025-05-15…18, site 116)",
+    "evidence": "PIA26559 (Mastcam, 2025-05-15…18, site 116, RMC 116_408)",
     "approx": false,
     "photos": [
      {
-      "id": "4541ML1076060031801339C00_DXXX",
-      "sol": 4541,
-      "instrument": "MAST_LEFT",
-      "title": "Sol 4541: Mast Camera (Mastcam)",
-      "date_taken": "2025-05-16T00:37:47.000Z",
-      "url": "https://mars.nasa.gov/msl-raw-images/msss/04541/mcam/4541ML1076060031801339C00_DXXX.jpg",
+      "id": "4539MH0001900011603543C00_DXXX",
+      "sol": 4539,
+      "instrument": "MAHLI",
+      "title": "Sol 4539: Mars Hand Lens Imager (MAHLI)",
+      "date_taken": "2025-05-13T23:05:55.000Z",
+      "url": "https://mars.nasa.gov/msl-raw-images/msss/04539/mhli/4539MH0001900011603543C00_DXXX.jpg",
       "credit": "NASA/JPL-Caltech/MSSS",
-      "approx_location": true,
-      "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
       "badge": "Observed"
      },
      {
-      "id": "4541MR1076060012301632C00_DXXX",
+      "id": "4540ML1075980061801021C00_DXXX",
+      "sol": 4540,
+      "instrument": "MAST_LEFT",
+      "title": "Sol 4540: Mast Camera (Mastcam)",
+      "date_taken": "2025-05-14T23:14:26.000Z",
+      "url": "https://mars.nasa.gov/msl-raw-images/msss/04540/mcam/4540ML1075980061801021C00_DXXX.jpg",
+      "credit": "NASA/JPL-Caltech/MSSS",
+      "badge": "Observed"
+     },
+     {
+      "id": "4541MR1076010062301608C00_DXXX",
       "sol": 4541,
       "instrument": "MAST_RIGHT",
       "title": "Sol 4541: Mast Camera (Mastcam)",
-      "date_taken": "2025-05-16T00:37:27.000Z",
-      "url": "https://mars.nasa.gov/msl-raw-images/msss/04541/mcam/4541MR1076060012301632C00_DXXX.jpg",
+      "date_taken": "2025-05-15T23:02:38.000Z",
+      "url": "https://mars.nasa.gov/msl-raw-images/msss/04541/mcam/4541MR1076010062301608C00_DXXX.jpg",
       "credit": "NASA/JPL-Caltech/MSSS",
-      "approx_location": true,
-      "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
       "badge": "Observed"
      },
      {
-      "id": "4541ML1076001481801291C00_DXXX",
-      "sol": 4541,
-      "instrument": "MAST_LEFT",
-      "title": "Sol 4541: Mast Camera (Mastcam)",
-      "date_taken": "2025-05-15T21:14:21.000Z",
-      "url": "https://mars.nasa.gov/msl-raw-images/msss/04541/mcam/4541ML1076001481801291C00_DXXX.jpg",
-      "credit": "NASA/JPL-Caltech/MSSS",
-      "approx_location": true,
-      "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
-      "badge": "Observed"
-     },
-     {
-      "id": "4541ML1076001491801292C00_DXXX",
-      "sol": 4541,
-      "instrument": "MAST_LEFT",
-      "title": "Sol 4541: Mast Camera (Mastcam)",
-      "date_taken": "2025-05-15T21:14:32.000Z",
-      "url": "https://mars.nasa.gov/msl-raw-images/msss/04541/mcam/4541ML1076001491801292C00_DXXX.jpg",
-      "credit": "NASA/JPL-Caltech/MSSS",
-      "approx_location": true,
-      "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
+      "id": "CR0_800442618EDR_F1160156CCAM01539M_",
+      "sol": 4539,
+      "instrument": "CHEMCAM_RMI",
+      "title": "Sol 4539: Chemistry & Camera (ChemCam)",
+      "date_taken": "2025-05-13T22:15:48.000Z",
+      "url": "https://mars.nasa.gov/msl-raw-images/proj/msl/redops/ods/surface/sol/04539/opgs/edr/ccam/CR0_800442618EDR_F1160156CCAM01539M_.JPG",
+      "credit": "NASA/JPL-Caltech/LANL/CNES/CNRS/IRAP/IAS/LPG",
       "badge": "Observed"
      }
-    ],
-    "photo_urls": [
-     "https://mars.nasa.gov/msl-raw-images/msss/04541/mcam/4541ML1076060031801339C00_DXXX.jpg",
-     "https://mars.nasa.gov/msl-raw-images/msss/04541/mcam/4541MR1076060012301632C00_DXXX.jpg",
-     "https://mars.nasa.gov/msl-raw-images/msss/04541/mcam/4541ML1076001481801291C00_DXXX.jpg",
-     "https://mars.nasa.gov/msl-raw-images/msss/04541/mcam/4541ML1076001491801292C00_DXXX.jpg"
     ],
     "panorama": "PIA26559",
     "panorama_meta": {
      "id": "PIA26559",
      "title": "Curiosity's First 360-Degree View of Boxwork Patterns",
-     "page_url": "https://www.jpl.nasa.gov/images/pia26559-curiositys-first-360-degree-view-of-boxwork-patterns/",
+     "page_url": "https://photojournal.jpl.nasa.gov/catalog/PIA26559",
      "image_url": "https://images-assets.nasa.gov/image/PIA26559/PIA26559~large.jpg",
      "full_jpeg_url": "https://photojournal.jpl.nasa.gov/jpeg/PIA26559.jpg",
      "date_taken": "2025-05-15 to 2025-05-18",
@@ -100,71 +77,21 @@
      "credit": "NASA/JPL-Caltech/MSSS",
      "badge": "Observed"
     },
-    "science": "Curiosity's first 360-degree Mastcam station inside the Mount Sharp boxwork formations (site 116, sols 4539–4541). Crisscrossing low ridges (~1–2 m tall) formed where ancient groundwater flowed through bedrock fractures, precipitating calcium-sulfate minerals that resisted wind erosion better than the surrounding host rock. Hosted within the CRISM-mapped polyhydrated/monohydrated sulfate unit (boxwork texture is resolved by Curiosity surface imaging, below CRISM's 18 m/px orbital resolution).",
-    "scienceText": "Curiosity's first 360-degree Mastcam station inside the Mount Sharp boxwork formations (site 116, sols 4539–4541). Crisscrossing low ridges (~1–2 m tall) formed where ancient groundwater flowed through bedrock fractures, precipitating calcium-sulfate minerals that resisted wind erosion better than the surrounding host rock. Hosted within the CRISM-mapped polyhydrated/monohydrated sulfate unit (boxwork texture is resolved by Curiosity surface imaging, below CRISM's 18 m/px orbital resolution).",
-    "detail": "Curiosity's first 360-degree Mastcam station inside the Mount Sharp boxwork formations (site 116, sols 4539–4541). Crisscrossing low ridges (~1–2 m tall) formed where ancient groundwater flowed through bedrock fractures, precipitating calcium-sulfate minerals that resisted wind erosion better than the surrounding host rock. Hosted within the CRISM-mapped polyhydrated/monohydrated sulfate unit (boxwork texture is resolved by Curiosity surface imaging, below CRISM's 18 m/px orbital resolution).",
+    "science": "Curiosity's first 360-degree Mastcam mosaic inside the Mount Sharp boxwork patterns (291 stitched frames across sols 4539–4541, May 15–18, 2025). The low crisscrossing ridges and intervening hollows are interpreted by the science team as ancient bedrock fractures cemented by minerals deposited from subterranean water that later resisted wind erosion.",
     "card": {
-     "id": "S1",
      "target_name": "Boxwork Ridge Network (Site 116)",
      "target_type": "360° Mastcam Panorama & Mineralized Ridge Outcrop",
      "sol": "Sols 4539–4541 (May 15–18, 2025)",
-     "rock_type": "Calcium-sulfate cemented fracture ridges in sulfate-bearing sedimentary bedrock",
-     "geologic_unit": "Mount Sharp group — Sulfate-bearing unit / Boxwork member (USGS SIM 3292 unit Htu)",
-     "size": "Ridges ~1–2 m tall with cm-scale mineral veins across a multi-kilometer exposure",
-     "location": "137.38592°E, −4.79782° (Site 116, Drive 408–414, elev −3,655.0 m, odometry 34.79 km)",
-     "sample_mass_scenario_kg": 2,
-     "source_url": "https://www.jpl.nasa.gov/images/pia26559-curiositys-first-360-degree-view-of-boxwork-patterns/",
-     "badge": "Observed",
-     "photos": [
-      {
-       "id": "4541ML1076060031801339C00_DXXX",
-       "sol": 4541,
-       "instrument": "MAST_LEFT",
-       "title": "Sol 4541: Mast Camera (Mastcam)",
-       "date_taken": "2025-05-16T00:37:47.000Z",
-       "url": "https://mars.nasa.gov/msl-raw-images/msss/04541/mcam/4541ML1076060031801339C00_DXXX.jpg",
-       "credit": "NASA/JPL-Caltech/MSSS",
-       "approx_location": true,
-       "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
-       "badge": "Observed"
-      },
-      {
-       "id": "4541MR1076060012301632C00_DXXX",
-       "sol": 4541,
-       "instrument": "MAST_RIGHT",
-       "title": "Sol 4541: Mast Camera (Mastcam)",
-       "date_taken": "2025-05-16T00:37:27.000Z",
-       "url": "https://mars.nasa.gov/msl-raw-images/msss/04541/mcam/4541MR1076060012301632C00_DXXX.jpg",
-       "credit": "NASA/JPL-Caltech/MSSS",
-       "approx_location": true,
-       "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
-       "badge": "Observed"
-      },
-      {
-       "id": "4541ML1076001481801291C00_DXXX",
-       "sol": 4541,
-       "instrument": "MAST_LEFT",
-       "title": "Sol 4541: Mast Camera (Mastcam)",
-       "date_taken": "2025-05-15T21:14:21.000Z",
-       "url": "https://mars.nasa.gov/msl-raw-images/msss/04541/mcam/4541ML1076001481801291C00_DXXX.jpg",
-       "credit": "NASA/JPL-Caltech/MSSS",
-       "approx_location": true,
-       "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
-       "badge": "Observed"
-      },
-      {
-       "id": "4541ML1076001491801292C00_DXXX",
-       "sol": 4541,
-       "instrument": "MAST_LEFT",
-       "title": "Sol 4541: Mast Camera (Mastcam)",
-       "date_taken": "2025-05-15T21:14:32.000Z",
-       "url": "https://mars.nasa.gov/msl-raw-images/msss/04541/mcam/4541ML1076001491801292C00_DXXX.jpg",
-       "credit": "NASA/JPL-Caltech/MSSS",
-       "approx_location": true,
-       "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
-       "badge": "Observed"
-      }
-     ]
+     "geologic_context": "Sulfate-bearing Mount Sharp bedrock with erosion-resistant fracture ridges and inter-ridge hollows resolved at Curiosity surface scale.",
+     "context_badge": "Derived",
+     "source_url": "https://photojournal.jpl.nasa.gov/catalog/PIA26559",
+     "rmc": "116_408",
+     "site": 116,
+     "drive": 408,
+     "elev_m": -3654.97,
+     "dist_km": 34.79,
+     "location": "137.385921°E, -4.797816° (Site 116, Drive 408, elev -3655.0 m, odometry 34.79 km)",
+     "waypoint_badge": "Observed"
     },
     "badge": "Observed"
    }
@@ -174,8 +101,8 @@
    "geometry": {
     "type": "Point",
     "coordinates": [
-     137.381,
-     -4.808
+     137.3810041,
+     -4.8080076
     ]
    },
    "properties": {
@@ -186,150 +113,79 @@
      4711,
      4741
     ],
-    "sol": "4711 / 4741",
-    "lon": 137.381,
-    "lat": -4.808,
-    "site": 120,
-    "drive": 82,
-    "elev_m": -3607.72,
-    "dist_km": 36.11,
-    "evidence": "PIA26696 (Mastcam, 2025-11-09…12-07, site 120)",
+    "evidence": "PIA26696 (Mastcam, 2025-11-09…12-07, site 120, RMC 120_82)",
     "approx": false,
     "photos": [
      {
-      "id": "4741ML1086880060708823C00_DXXX",
-      "sol": 4741,
-      "instrument": "MAST_LEFT",
-      "title": "Sol 4741: Mast Camera (Mastcam)",
-      "date_taken": "2025-12-07T11:58:23.000Z",
-      "url": "https://mars.nasa.gov/msl-raw-images/msss/04741/mcam/4741ML1086880060708823C00_DXXX.jpg",
+      "id": "4711MH0007400031702760C00_DXXX",
+      "sol": 4711,
+      "instrument": "MAHLI",
+      "title": "Sol 4711: Mars Hand Lens Imager (MAHLI)",
+      "date_taken": "2025-11-06T15:30:05.000Z",
+      "url": "https://mars.nasa.gov/msl-raw-images/msss/04711/mhli/4711MH0007400031702760C00_DXXX.jpg",
       "credit": "NASA/JPL-Caltech/MSSS",
-      "approx_location": true,
-      "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
       "badge": "Observed"
      },
      {
-      "id": "4741MR1086880012402952C00_DXXX",
+      "id": "4741ML1086850170708799C00_DXXX",
       "sol": 4741,
+      "instrument": "MAST_LEFT",
+      "title": "Sol 4741: Mast Camera (Mastcam)",
+      "date_taken": "2025-12-07T09:22:19.000Z",
+      "url": "https://mars.nasa.gov/msl-raw-images/msss/04741/mcam/4741ML1086850170708799C00_DXXX.jpg",
+      "credit": "NASA/JPL-Caltech/MSSS",
+      "badge": "Observed"
+     },
+     {
+      "id": "4711MR1085840122401704C00_DXXX",
+      "sol": 4711,
       "instrument": "MAST_RIGHT",
-      "title": "Sol 4741: Mast Camera (Mastcam)",
-      "date_taken": "2025-12-07T11:57:55.000Z",
-      "url": "https://mars.nasa.gov/msl-raw-images/msss/04741/mcam/4741MR1086880012402952C00_DXXX.jpg",
+      "title": "Sol 4711: Mast Camera (Mastcam)",
+      "date_taken": "2025-11-06T17:54:19.000Z",
+      "url": "https://mars.nasa.gov/msl-raw-images/msss/04711/mcam/4711MR1085840122401704C00_DXXX.jpg",
       "credit": "NASA/JPL-Caltech/MSSS",
-      "approx_location": true,
-      "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
       "badge": "Observed"
      },
      {
-      "id": "4741ML1086840090708764C00_DXXX",
-      "sol": 4741,
-      "instrument": "MAST_LEFT",
-      "title": "Sol 4741: Mast Camera (Mastcam)",
-      "date_taken": "2025-12-07T09:12:43.000Z",
-      "url": "https://mars.nasa.gov/msl-raw-images/msss/04741/mcam/4741ML1086840090708764C00_DXXX.jpg",
-      "credit": "NASA/JPL-Caltech/MSSS",
-      "approx_location": true,
-      "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
-      "badge": "Observed"
-     },
-     {
-      "id": "4741ML1086840100708765C00_DXXX",
-      "sol": 4741,
-      "instrument": "MAST_LEFT",
-      "title": "Sol 4741: Mast Camera (Mastcam)",
-      "date_taken": "2025-12-07T09:12:53.000Z",
-      "url": "https://mars.nasa.gov/msl-raw-images/msss/04741/mcam/4741ML1086840100708765C00_DXXX.jpg",
-      "credit": "NASA/JPL-Caltech/MSSS",
-      "approx_location": true,
-      "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
+      "id": "CR0_815703179EDR_F1200000CCAM01711M_",
+      "sol": 4711,
+      "instrument": "CHEMCAM_RMI",
+      "title": "Sol 4711: Chemistry & Camera (ChemCam)",
+      "date_taken": "2025-11-06T13:20:55.000Z",
+      "url": "https://mars.nasa.gov/msl-raw-images/proj/msl/redops/ods/surface/sol/04711/opgs/edr/ccam/CR0_815703179EDR_F1200000CCAM01711M_.JPG",
+      "credit": "NASA/JPL-Caltech/LANL/CNES/CNRS/IRAP/IAS/LPG",
       "badge": "Observed"
      }
-    ],
-    "photo_urls": [
-     "https://mars.nasa.gov/msl-raw-images/msss/04741/mcam/4741ML1086880060708823C00_DXXX.jpg",
-     "https://mars.nasa.gov/msl-raw-images/msss/04741/mcam/4741MR1086880012402952C00_DXXX.jpg",
-     "https://mars.nasa.gov/msl-raw-images/msss/04741/mcam/4741ML1086840090708764C00_DXXX.jpg",
-     "https://mars.nasa.gov/msl-raw-images/msss/04741/mcam/4741ML1086840100708765C00_DXXX.jpg"
     ],
     "panorama": "PIA26696",
     "panorama_meta": {
      "id": "PIA26696",
      "title": "Curiosity Captures a 360-Degree View at Nevado Sajama",
-     "page_url": "https://www.jpl.nasa.gov/images/pia26696-curiosity-captures-a-360-degree-view-at-nevado-sajama/",
-     "image_url": "https://photojournal.jpl.nasa.gov/jpeg/PIA26696.jpg",
+     "page_url": "https://photojournal.jpl.nasa.gov/catalog/PIA26696",
+     "image_url": "https://photojournal.jpl.nasa.gov/jpegMod/PIA26696_modest.jpg",
      "full_jpeg_url": "https://photojournal.jpl.nasa.gov/jpeg/PIA26696.jpg",
      "date_taken": "2025-11-09 to 2025-12-07",
-     "sol_range": "4714–4741 (waypoints at sols 4711 / 4741)",
+     "sol_range": "4714–4741 (waypoint bracket: sols 4711 and 4741)",
      "stitched_frames": 1031,
      "instrument": "Mastcam Right (100 mm)",
      "credit": "NASA/JPL-Caltech/MSSS",
      "badge": "Observed"
     },
-    "science": "Ridgetop panorama and drill station at 'Nevado Sajama' inside the boxwork unit (site 120). A 1.5-gigapixel mosaic stitched from 1,031 Mastcam right-eye (100 mm) frames captured across sols 4714–4741, showing polygonal fracture ridges and hollows across lower Mount Sharp, paired with nighttime LED-lit MAHLI inspection of the drill borehole wall.",
-    "scienceText": "Ridgetop panorama and drill station at 'Nevado Sajama' inside the boxwork unit (site 120). A 1.5-gigapixel mosaic stitched from 1,031 Mastcam right-eye (100 mm) frames captured across sols 4714–4741, showing polygonal fracture ridges and hollows across lower Mount Sharp, paired with nighttime LED-lit MAHLI inspection of the drill borehole wall.",
-    "detail": "Ridgetop panorama and drill station at 'Nevado Sajama' inside the boxwork unit (site 120). A 1.5-gigapixel mosaic stitched from 1,031 Mastcam right-eye (100 mm) frames captured across sols 4714–4741, showing polygonal fracture ridges and hollows across lower Mount Sharp, paired with nighttime LED-lit MAHLI inspection of the drill borehole wall.",
+    "science": "Ridgetop panorama station at 'Nevado Sajama' within the boxwork terrain (site 120; bracketing MMGIS waypoints at sols 4711 and 4741). The 1.5-gigapixel PIA26696 mosaic was stitched from 1,031 Mastcam right-eye (100 mm) frames captured across sols 4714–4741, showing polygonal fracture ridges and hollows across lower Mount Sharp.",
     "card": {
-     "id": "S2",
      "target_name": "Nevado Sajama Ridgetop",
-     "target_type": "360° Telephoto Panorama & Ridgetop Drill Target",
-     "sol": "Sols 4711–4741 (Nov 9 – Dec 7, 2025)",
-     "rock_type": "Indurated boxwork ridgetop bedrock with mineralized fracture fills",
-     "geologic_unit": "Mount Sharp group — Boxwork unit (USGS SIM 3292 unit Htu)",
-     "size": "1.5-billion-pixel 360° panorama (1,031 Mastcam frames); ridgetop workspace",
-     "location": "137.38100°E, −4.80800° (Site 120, Drive 82–232, elev −3,607.7 m, odometry 36.11 km)",
-     "sample_mass_scenario_kg": 2,
-     "source_url": "https://www.jpl.nasa.gov/images/pia26696-curiosity-captures-a-360-degree-view-at-nevado-sajama/",
-     "badge": "Observed",
-     "photos": [
-      {
-       "id": "4741ML1086880060708823C00_DXXX",
-       "sol": 4741,
-       "instrument": "MAST_LEFT",
-       "title": "Sol 4741: Mast Camera (Mastcam)",
-       "date_taken": "2025-12-07T11:58:23.000Z",
-       "url": "https://mars.nasa.gov/msl-raw-images/msss/04741/mcam/4741ML1086880060708823C00_DXXX.jpg",
-       "credit": "NASA/JPL-Caltech/MSSS",
-       "approx_location": true,
-       "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
-       "badge": "Observed"
-      },
-      {
-       "id": "4741MR1086880012402952C00_DXXX",
-       "sol": 4741,
-       "instrument": "MAST_RIGHT",
-       "title": "Sol 4741: Mast Camera (Mastcam)",
-       "date_taken": "2025-12-07T11:57:55.000Z",
-       "url": "https://mars.nasa.gov/msl-raw-images/msss/04741/mcam/4741MR1086880012402952C00_DXXX.jpg",
-       "credit": "NASA/JPL-Caltech/MSSS",
-       "approx_location": true,
-       "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
-       "badge": "Observed"
-      },
-      {
-       "id": "4741ML1086840090708764C00_DXXX",
-       "sol": 4741,
-       "instrument": "MAST_LEFT",
-       "title": "Sol 4741: Mast Camera (Mastcam)",
-       "date_taken": "2025-12-07T09:12:43.000Z",
-       "url": "https://mars.nasa.gov/msl-raw-images/msss/04741/mcam/4741ML1086840090708764C00_DXXX.jpg",
-       "credit": "NASA/JPL-Caltech/MSSS",
-       "approx_location": true,
-       "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
-       "badge": "Observed"
-      },
-      {
-       "id": "4741ML1086840100708765C00_DXXX",
-       "sol": 4741,
-       "instrument": "MAST_LEFT",
-       "title": "Sol 4741: Mast Camera (Mastcam)",
-       "date_taken": "2025-12-07T09:12:53.000Z",
-       "url": "https://mars.nasa.gov/msl-raw-images/msss/04741/mcam/4741ML1086840100708765C00_DXXX.jpg",
-       "credit": "NASA/JPL-Caltech/MSSS",
-       "approx_location": true,
-       "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
-       "badge": "Observed"
-      }
-     ]
+     "target_type": "360° Telephoto Mastcam Panorama (1.5 Gigapixels)",
+     "sol": "Sols 4711 & 4741 (MMGIS waypoints); mosaic sols 4714–4741",
+     "geologic_context": "Boxwork ridgetop exposure displaying intersecting mineral-cemented fracture ridges and adjacent weathered hollows on lower Mount Sharp.",
+     "context_badge": "Derived",
+     "source_url": "https://photojournal.jpl.nasa.gov/catalog/PIA26696",
+     "rmc": "120_82",
+     "site": 120,
+     "drive": 82,
+     "elev_m": -3607.72,
+     "dist_km": 36.11,
+     "location": "137.381004°E, -4.808008° (Site 120, Drive 82, elev -3607.7 m, odometry 36.11 km)",
+     "waypoint_badge": "Observed"
     },
     "badge": "Observed"
    }
@@ -339,149 +195,78 @@
    "geometry": {
     "type": "Point",
     "coordinates": [
-     137.38915,
-     -4.82568
+     137.388886,
+     -4.8260233
     ]
    },
    "properties": {
     "id": "S3",
-    "name": "Curiosity current position",
+    "name": "Curiosity current position (sol 5073)",
     "kind": "rover",
     "sols": [
-     5070
+     5073
     ],
-    "sol": "5070",
-    "lon": 137.38915,
-    "lat": -4.82568,
-    "site": 125,
-    "drive": 2274,
-    "elev_m": -3473.68,
-    "dist_km": 38.29,
-    "evidence": "MMGIS waypoint (MSL_waypoints_current.json, sol 5070, site 125, drive 2274)",
+    "evidence": "MSL_waypoints_current.json (RMC 125_2490, site 125 drive 2490, sol 5073)",
     "approx": false,
     "photos": [
      {
-      "id": "5070ML1102540061307053C00_DXXX",
-      "sol": 5070,
-      "instrument": "MAST_LEFT",
-      "title": "Sol 5070: Mast Camera (Mastcam)",
-      "date_taken": "2026-11-10T16:05:24.000Z",
-      "url": "https://mars.nasa.gov/msl-raw-images/msss/05070/mcam/5070ML1102540061307053C00_DXXX.jpg",
-      "credit": "NASA/JPL-Caltech/MSSS",
-      "approx_location": true,
-      "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
+      "id": "NLB_847851382EDR_F1252454NCAM00385M_",
+      "sol": 5073,
+      "instrument": "NAV_LEFT_B",
+      "title": "Sol 5073: Left Navigation Camera",
+      "date_taken": "2026-11-13T15:29:24.000Z",
+      "url": "https://mars.nasa.gov/msl-raw-images/proj/msl/redops/ods/surface/sol/05073/opgs/edr/ncam/NLB_847851382EDR_F1252454NCAM00385M_.JPG",
+      "credit": "NASA/JPL-Caltech",
       "badge": "Observed"
      },
      {
-      "id": "5070MR1102540012602248C00_DXXX",
-      "sol": 5070,
-      "instrument": "MAST_RIGHT",
-      "title": "Sol 5070: Mast Camera (Mastcam)",
-      "date_taken": "2026-11-10T16:04:57.000Z",
-      "url": "https://mars.nasa.gov/msl-raw-images/msss/05070/mcam/5070MR1102540012602248C00_DXXX.jpg",
-      "credit": "NASA/JPL-Caltech/MSSS",
-      "approx_location": true,
-      "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
+      "id": "NRB_847851382EDR_F1252454NCAM00385M_",
+      "sol": 5073,
+      "instrument": "NAV_RIGHT_B",
+      "title": "Sol 5073: Right Navigation Camera",
+      "date_taken": "2026-11-13T15:29:24.000Z",
+      "url": "https://mars.nasa.gov/msl-raw-images/proj/msl/redops/ods/surface/sol/05073/opgs/edr/ncam/NRB_847851382EDR_F1252454NCAM00385M_.JPG",
+      "credit": "NASA/JPL-Caltech",
       "badge": "Observed"
      },
      {
-      "id": "5070ML1102460011306998C00_DXXX",
-      "sol": 5070,
-      "instrument": "MAST_LEFT",
-      "title": "Sol 5070: Mast Camera (Mastcam)",
-      "date_taken": "2026-11-10T12:11:19.000Z",
-      "url": "https://mars.nasa.gov/msl-raw-images/msss/05070/mcam/5070ML1102460011306998C00_DXXX.jpg",
-      "credit": "NASA/JPL-Caltech/MSSS",
-      "approx_location": true,
-      "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
+      "id": "FLB_847851928EDR_F1252490FHAZ00302M_",
+      "sol": 5073,
+      "instrument": "FHAZ_LEFT_B",
+      "title": "Sol 5073: Front Hazard Avoidance Camera (Front Hazcam)",
+      "date_taken": "2026-11-13T15:38:30.000Z",
+      "url": "https://mars.nasa.gov/msl-raw-images/proj/msl/redops/ods/surface/sol/05073/opgs/edr/fcam/FLB_847851928EDR_F1252490FHAZ00302M_.JPG",
+      "credit": "NASA/JPL-Caltech",
       "badge": "Observed"
      },
      {
-      "id": "5070ML1102460021306999C00_DXXX",
-      "sol": 5070,
-      "instrument": "MAST_LEFT",
-      "title": "Sol 5070: Mast Camera (Mastcam)",
-      "date_taken": "2026-11-10T12:11:31.000Z",
-      "url": "https://mars.nasa.gov/msl-raw-images/msss/05070/mcam/5070ML1102460021306999C00_DXXX.jpg",
-      "credit": "NASA/JPL-Caltech/MSSS",
-      "approx_location": true,
-      "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
+      "id": "FRB_847851928EDR_F1252490FHAZ00302M_",
+      "sol": 5073,
+      "instrument": "FHAZ_RIGHT_B",
+      "title": "Sol 5073: Front Hazard Avoidance Camera (Front Hazcam)",
+      "date_taken": "2026-11-13T15:38:30.000Z",
+      "url": "https://mars.nasa.gov/msl-raw-images/proj/msl/redops/ods/surface/sol/05073/opgs/edr/fcam/FRB_847851928EDR_F1252490FHAZ00302M_.JPG",
+      "credit": "NASA/JPL-Caltech",
       "badge": "Observed"
      }
     ],
-    "photo_urls": [
-     "https://mars.nasa.gov/msl-raw-images/msss/05070/mcam/5070ML1102540061307053C00_DXXX.jpg",
-     "https://mars.nasa.gov/msl-raw-images/msss/05070/mcam/5070MR1102540012602248C00_DXXX.jpg",
-     "https://mars.nasa.gov/msl-raw-images/msss/05070/mcam/5070ML1102460011306998C00_DXXX.jpg",
-     "https://mars.nasa.gov/msl-raw-images/msss/05070/mcam/5070ML1102460021306999C00_DXXX.jpg"
-    ],
     "panorama": null,
     "panorama_meta": null,
-    "science": "Curiosity's latest published MMGIS waypoint on lower Mount Sharp (sol 5070, site 125, drive 2274, RMC 125_2274, elevation −3,473.7 m MOLA areoid after 38.29 km of total drive odometry). Serves as the active rover reference station and upper-slope benchmark for comparing human Marswalk plans against actual robotic traverse progress.",
-    "scienceText": "Curiosity's latest published MMGIS waypoint on lower Mount Sharp (sol 5070, site 125, drive 2274, RMC 125_2274, elevation −3,473.7 m MOLA areoid after 38.29 km of total drive odometry). Serves as the active rover reference station and upper-slope benchmark for comparing human Marswalk plans against actual robotic traverse progress.",
-    "detail": "Curiosity's latest published MMGIS waypoint on lower Mount Sharp (sol 5070, site 125, drive 2274, RMC 125_2274, elevation −3,473.7 m MOLA areoid after 38.29 km of total drive odometry). Serves as the active rover reference station and upper-slope benchmark for comparing human Marswalk plans against actual robotic traverse progress.",
+    "science": "Curiosity's latest published MMGIS rover waypoint on lower Mount Sharp (sol 5073, site 125, drive 2490, RMC 125_2490, elevation -3472.09 m after 38.32 km of total drive odometry; 12.45° local tilt). Used as the active rover benchmark for human Marswalk comparisons.",
     "card": {
-     "id": "S3",
-     "target_name": "Curiosity Active Station (RMC 125_2274)",
+     "target_name": "Curiosity Active Station (RMC 125_2490)",
      "target_type": "Active Rover Reference Waypoint",
-     "sol": "Sol 5070 (Nov 2026)",
-     "rock_type": "Upper sulfate / boxwork transition bedrock on lower Aeolis Mons",
-     "geologic_unit": "Mount Sharp group — Sulfate-bearing unit (USGS SIM 3292 unit Htu)",
-     "size": "Rover station footprint (~3 m × 2.7 m vehicle; 14.68° local tilt)",
-     "location": "137.38915°E, −4.82568° (Site 125, Drive 2274, elev −3,473.7 m, odometry 38.29 km)",
-     "sample_mass_scenario_kg": 2,
+     "sol": "Sol 5073",
+     "geologic_context": "Lower Mount Sharp traverse terrain along the active Curiosity route.",
+     "context_badge": "Derived",
      "source_url": "https://mars.nasa.gov/mmgis-maps/MSL/Layers/json/MSL_waypoints_current.json",
-     "badge": "Observed",
-     "photos": [
-      {
-       "id": "5070ML1102540061307053C00_DXXX",
-       "sol": 5070,
-       "instrument": "MAST_LEFT",
-       "title": "Sol 5070: Mast Camera (Mastcam)",
-       "date_taken": "2026-11-10T16:05:24.000Z",
-       "url": "https://mars.nasa.gov/msl-raw-images/msss/05070/mcam/5070ML1102540061307053C00_DXXX.jpg",
-       "credit": "NASA/JPL-Caltech/MSSS",
-       "approx_location": true,
-       "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
-       "badge": "Observed"
-      },
-      {
-       "id": "5070MR1102540012602248C00_DXXX",
-       "sol": 5070,
-       "instrument": "MAST_RIGHT",
-       "title": "Sol 5070: Mast Camera (Mastcam)",
-       "date_taken": "2026-11-10T16:04:57.000Z",
-       "url": "https://mars.nasa.gov/msl-raw-images/msss/05070/mcam/5070MR1102540012602248C00_DXXX.jpg",
-       "credit": "NASA/JPL-Caltech/MSSS",
-       "approx_location": true,
-       "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
-       "badge": "Observed"
-      },
-      {
-       "id": "5070ML1102460011306998C00_DXXX",
-       "sol": 5070,
-       "instrument": "MAST_LEFT",
-       "title": "Sol 5070: Mast Camera (Mastcam)",
-       "date_taken": "2026-11-10T12:11:19.000Z",
-       "url": "https://mars.nasa.gov/msl-raw-images/msss/05070/mcam/5070ML1102460011306998C00_DXXX.jpg",
-       "credit": "NASA/JPL-Caltech/MSSS",
-       "approx_location": true,
-       "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
-       "badge": "Observed"
-      },
-      {
-       "id": "5070ML1102460021306999C00_DXXX",
-       "sol": 5070,
-       "instrument": "MAST_LEFT",
-       "title": "Sol 5070: Mast Camera (Mastcam)",
-       "date_taken": "2026-11-10T12:11:31.000Z",
-       "url": "https://mars.nasa.gov/msl-raw-images/msss/05070/mcam/5070ML1102460021306999C00_DXXX.jpg",
-       "credit": "NASA/JPL-Caltech/MSSS",
-       "approx_location": true,
-       "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
-       "badge": "Observed"
-      }
-     ]
+     "rmc": "125_2490",
+     "site": 125,
+     "drive": 2490,
+     "elev_m": -3472.09,
+     "dist_km": 38.32,
+     "location": "137.388886°E, -4.826023° (Site 125, Drive 2490, elev -3472.1 m, odometry 38.32 km)",
+     "waypoint_badge": "Observed"
     },
     "badge": "Observed"
    }
@@ -491,8 +276,8 @@
    "geometry": {
     "type": "Point",
     "coordinates": [
-     137.3835,
-     -4.79981
+     137.3835414,
+     -4.7998472
     ]
    },
    "properties": {
@@ -500,141 +285,75 @@
     "name": "Altadena drill site",
     "kind": "drill",
     "sols": [
-     4558,
-     4560
+     4560,
+     4561,
+     4562,
+     4563,
+     4564,
+     4565,
+     4566
     ],
-    "sol": "4558–4560 (drilled sol 4564)",
-    "lon": 137.3835,
-    "lat": -4.79981,
-    "site": 116,
-    "drive": 1890,
-    "elev_m": -3646.64,
-    "dist_km": 35.0,
-    "evidence": "JPL news 2025-06-23 (drilled 2025-06-08; nearest MMGIS waypoint sols 4558–4560)",
+    "evidence": "JPL news 2025-06-23 (drilled sol 4564 while parked at MMGIS waypoint sol 4560, RMC 116_1944)",
     "approx": true,
     "photos": [
      {
-      "id": "4560ML1077180061801853C00_DXXX",
-      "sol": 4560,
+      "id": "4564ML1077420021801947C00_DXXX",
+      "sol": 4564,
       "instrument": "MAST_LEFT",
-      "title": "Sol 4560: Mast Camera (Mastcam)",
-      "date_taken": "2025-06-04T12:21:53.000Z",
-      "url": "https://mars.nasa.gov/msl-raw-images/msss/04560/mcam/4560ML1077180061801853C00_DXXX.jpg",
+      "title": "Sol 4564: Mast Camera (Mastcam)",
+      "date_taken": "2025-06-08T13:58:20.000Z",
+      "url": "https://mars.nasa.gov/msl-raw-images/msss/04564/mcam/4564ML1077420021801947C00_DXXX.jpg",
       "credit": "NASA/JPL-Caltech/MSSS",
-      "approx_location": true,
-      "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
       "badge": "Observed"
      },
      {
-      "id": "4560MR1077210242302180C00_DXXX",
-      "sol": 4560,
+      "id": "4561MH0008790031603981C00_DXXX",
+      "sol": 4561,
+      "instrument": "MAHLI",
+      "title": "Sol 4561: Mars Hand Lens Imager (MAHLI)",
+      "date_taken": "2025-06-05T11:17:55.000Z",
+      "url": "https://mars.nasa.gov/msl-raw-images/msss/04561/mhli/4561MH0008790031603981C00_DXXX.jpg",
+      "credit": "NASA/JPL-Caltech/MSSS",
+      "badge": "Observed"
+     },
+     {
+      "id": "4566MR1077470042302306C00_DXXX",
+      "sol": 4566,
       "instrument": "MAST_RIGHT",
-      "title": "Sol 4560: Mast Camera (Mastcam)",
-      "date_taken": "2025-06-04T13:31:49.000Z",
-      "url": "https://mars.nasa.gov/msl-raw-images/msss/04560/mcam/4560MR1077210242302180C00_DXXX.jpg",
+      "title": "Sol 4566: Mast Camera (Mastcam)",
+      "date_taken": "2025-06-10T10:10:36.000Z",
+      "url": "https://mars.nasa.gov/msl-raw-images/msss/04566/mcam/4566MR1077470042302306C00_DXXX.jpg",
       "credit": "NASA/JPL-Caltech/MSSS",
-      "approx_location": true,
-      "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
       "badge": "Observed"
      },
      {
-      "id": "4560ML1077150011801850C00_DXXX",
-      "sol": 4560,
-      "instrument": "MAST_LEFT",
-      "title": "Sol 4560: Mast Camera (Mastcam)",
-      "date_taken": "2025-06-04T10:06:31.000Z",
-      "url": "https://mars.nasa.gov/msl-raw-images/msss/04560/mcam/4560ML1077150011801850C00_DXXX.jpg",
-      "credit": "NASA/JPL-Caltech/MSSS",
-      "approx_location": true,
-      "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
-      "badge": "Observed"
-     },
-     {
-      "id": "4560ML1077150021801851C00_DXXX",
-      "sol": 4560,
-      "instrument": "MAST_LEFT",
-      "title": "Sol 4560: Mast Camera (Mastcam)",
-      "date_taken": "2025-06-04T10:06:43.000Z",
-      "url": "https://mars.nasa.gov/msl-raw-images/msss/04560/mcam/4560ML1077150021801851C00_DXXX.jpg",
-      "credit": "NASA/JPL-Caltech/MSSS",
-      "approx_location": true,
-      "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
+      "id": "CR0_802739175EDR_F1161944CCAM05563M_",
+      "sol": 4565,
+      "instrument": "CHEMCAM_RMI",
+      "title": "Sol 4565: Chemistry & Camera (ChemCam)",
+      "date_taken": "2025-06-09T12:12:07.000Z",
+      "url": "https://mars.nasa.gov/msl-raw-images/proj/msl/redops/ods/surface/sol/04565/opgs/edr/ccam/CR0_802739175EDR_F1161944CCAM05563M_.JPG",
+      "credit": "NASA/JPL-Caltech/LANL/CNES/CNRS/IRAP/IAS/LPG",
       "badge": "Observed"
      }
     ],
-    "photo_urls": [
-     "https://mars.nasa.gov/msl-raw-images/msss/04560/mcam/4560ML1077180061801853C00_DXXX.jpg",
-     "https://mars.nasa.gov/msl-raw-images/msss/04560/mcam/4560MR1077210242302180C00_DXXX.jpg",
-     "https://mars.nasa.gov/msl-raw-images/msss/04560/mcam/4560ML1077150011801850C00_DXXX.jpg",
-     "https://mars.nasa.gov/msl-raw-images/msss/04560/mcam/4560ML1077150021801851C00_DXXX.jpg"
-    ],
     "panorama": null,
     "panorama_meta": null,
-    "science": "First rotary-percussive drill sample collected inside the Mount Sharp boxwork unit (drilled June 8, 2025; JPL release June 23, 2025). Powdered bedrock from 'Altadena' was delivered to Curiosity's internal CheMin (X-ray diffraction) and SAM (gas chromatograph / mass spectrometer) laboratories to analyze the cement mineralogy and test how ancient groundwater evolved as Gale Crater dried out.",
-    "scienceText": "First rotary-percussive drill sample collected inside the Mount Sharp boxwork unit (drilled June 8, 2025; JPL release June 23, 2025). Powdered bedrock from 'Altadena' was delivered to Curiosity's internal CheMin (X-ray diffraction) and SAM (gas chromatograph / mass spectrometer) laboratories to analyze the cement mineralogy and test how ancient groundwater evolved as Gale Crater dried out.",
-    "detail": "First rotary-percussive drill sample collected inside the Mount Sharp boxwork unit (drilled June 8, 2025; JPL release June 23, 2025). Powdered bedrock from 'Altadena' was delivered to Curiosity's internal CheMin (X-ray diffraction) and SAM (gas chromatograph / mass spectrometer) laboratories to analyze the cement mineralogy and test how ancient groundwater evolved as Gale Crater dried out.",
+    "science": "First rotary-percussive drill sample collected inside the Mount Sharp boxwork terrain (drilled June 8, 2025 on sol 4564 while Curiosity was parked at site 116 drive 1944; JPL release June 23, 2025). Powdered rock from 'Altadena' was delivered to Curiosity's internal CheMin and SAM laboratories to investigate mineral cements and ancient groundwater.",
     "card": {
-     "id": "D1",
      "target_name": "Altadena",
-     "target_type": "Rotary-Percussive Drill Core & Powdered Sample (Boxwork Edge)",
-     "sol": "Sols 4558–4564 (drilled 2025-06-08)",
-     "rock_type": "Cemented sulfate-bearing bedrock at the boxwork unit margin (Altadena member)",
-     "geologic_unit": "Mount Sharp group — Altadena member / Boxwork unit (USGS SIM 3292 unit Htu)",
-     "size": "1.6 cm diameter × ~6 cm deep drill borehole (+ abraded DRT patch)",
-     "location": "137.38350°E, −4.79981° (approximate: nearest MMGIS waypoint sol 4558–4560, Site 116, elev −3,646.6 m)",
-     "sample_mass_scenario_kg": 2,
+     "target_type": "Rotary-Percussive Drill Target (Boxwork Terrain)",
+     "sol": "Drilled sol 4564 (2025-06-08); parked at waypoint sol 4560 (RMC 116_1944)",
+     "geologic_context": "Bedrock target in the boxwork terrain sampled by Curiosity's drill and analyzed by CheMin and SAM to trace groundwater mineralization history.",
+     "context_badge": "Derived",
      "source_url": "https://www.jpl.nasa.gov/news/nasas-curiosity-mars-rover-starts-unpacking-boxwork-formations/",
-     "badge": "Observed",
-     "photos": [
-      {
-       "id": "4560ML1077180061801853C00_DXXX",
-       "sol": 4560,
-       "instrument": "MAST_LEFT",
-       "title": "Sol 4560: Mast Camera (Mastcam)",
-       "date_taken": "2025-06-04T12:21:53.000Z",
-       "url": "https://mars.nasa.gov/msl-raw-images/msss/04560/mcam/4560ML1077180061801853C00_DXXX.jpg",
-       "credit": "NASA/JPL-Caltech/MSSS",
-       "approx_location": true,
-       "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
-       "badge": "Observed"
-      },
-      {
-       "id": "4560MR1077210242302180C00_DXXX",
-       "sol": 4560,
-       "instrument": "MAST_RIGHT",
-       "title": "Sol 4560: Mast Camera (Mastcam)",
-       "date_taken": "2025-06-04T13:31:49.000Z",
-       "url": "https://mars.nasa.gov/msl-raw-images/msss/04560/mcam/4560MR1077210242302180C00_DXXX.jpg",
-       "credit": "NASA/JPL-Caltech/MSSS",
-       "approx_location": true,
-       "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
-       "badge": "Observed"
-      },
-      {
-       "id": "4560ML1077150011801850C00_DXXX",
-       "sol": 4560,
-       "instrument": "MAST_LEFT",
-       "title": "Sol 4560: Mast Camera (Mastcam)",
-       "date_taken": "2025-06-04T10:06:31.000Z",
-       "url": "https://mars.nasa.gov/msl-raw-images/msss/04560/mcam/4560ML1077150011801850C00_DXXX.jpg",
-       "credit": "NASA/JPL-Caltech/MSSS",
-       "approx_location": true,
-       "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
-       "badge": "Observed"
-      },
-      {
-       "id": "4560ML1077150021801851C00_DXXX",
-       "sol": 4560,
-       "instrument": "MAST_LEFT",
-       "title": "Sol 4560: Mast Camera (Mastcam)",
-       "date_taken": "2025-06-04T10:06:43.000Z",
-       "url": "https://mars.nasa.gov/msl-raw-images/msss/04560/mcam/4560ML1077150021801851C00_DXXX.jpg",
-       "credit": "NASA/JPL-Caltech/MSSS",
-       "approx_location": true,
-       "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
-       "badge": "Observed"
-      }
-     ]
+     "rmc": "116_1944",
+     "site": 116,
+     "drive": 1944,
+     "elev_m": -3647.18,
+     "dist_km": 35.01,
+     "location": "approx. rover waypoint: 137.383541°E, -4.799847° (Site 116, Drive 1944, elev -3647.2 m, odometry 35.01 km)",
+     "waypoint_badge": "Observed"
     },
     "badge": "Observed"
    }
@@ -644,8 +363,8 @@
    "geometry": {
     "type": "Point",
     "coordinates": [
-     137.38104,
-     -4.80784
+     137.3810353,
+     -4.8078392
     ]
    },
    "properties": {
@@ -653,40 +372,33 @@
     "name": "Valle de la Luna drill site",
     "kind": "drill",
     "sols": [
-     4687
+     4687,
+     4689,
+     4690,
+     4693,
+     4694
     ],
-    "sol": "4687 (campaign sols 4689–4694)",
-    "lon": 137.38104,
-    "lat": -4.80784,
-    "site": 119,
-    "drive": 1722,
-    "elev_m": -3610.43,
-    "dist_km": 36.1,
-    "evidence": "NASA Curiosity blog sols 4689–4694 ('Monte Grande' hollow drill campaign, Oct 2025)",
+    "evidence": "NASA Curiosity blog sols 4689–4694 (Monte Grande hollow, waypoint sol 4687, RMC 119_1722)",
     "approx": true,
     "photos": [
      {
-      "id": "4693ML1084970011207071C00_DXXX",
-      "sol": 4693,
-      "instrument": "MAST_LEFT",
-      "title": "Sol 4693: Mast Camera (Mastcam)",
-      "date_taken": "2025-10-19T02:22:01.000Z",
-      "url": "https://mars.nasa.gov/msl-raw-images/msss/04693/mcam/4693ML1084970011207071C00_DXXX.jpg",
+      "id": "4690MH0008340031702622C00_DXXX",
+      "sol": 4690,
+      "instrument": "MAHLI",
+      "title": "Sol 4690: Mars Hand Lens Imager (MAHLI)",
+      "date_taken": "2025-10-15T23:03:59.000Z",
+      "url": "https://mars.nasa.gov/msl-raw-images/msss/04690/mhli/4690MH0008340031702622C00_DXXX.jpg",
       "credit": "NASA/JPL-Caltech/MSSS",
-      "approx_location": true,
-      "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
       "badge": "Observed"
      },
      {
-      "id": "4693MR1084940032400976C00_DXXX",
+      "id": "4693ML1084920001207064C00_DXXX",
       "sol": 4693,
-      "instrument": "MAST_RIGHT",
+      "instrument": "MAST_LEFT",
       "title": "Sol 4693: Mast Camera (Mastcam)",
-      "date_taken": "2025-10-19T02:04:29.000Z",
-      "url": "https://mars.nasa.gov/msl-raw-images/msss/04693/mcam/4693MR1084940032400976C00_DXXX.jpg",
+      "date_taken": "2025-10-19T02:02:13.000Z",
+      "url": "https://mars.nasa.gov/msl-raw-images/msss/04693/mcam/4693ML1084920001207064C00_DXXX.jpg",
       "credit": "NASA/JPL-Caltech/MSSS",
-      "approx_location": true,
-      "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
       "badge": "Observed"
      },
      {
@@ -697,107 +409,38 @@
       "date_taken": "2025-10-20T01:53:13.000Z",
       "url": "https://mars.nasa.gov/msl-raw-images/proj/msl/redops/ods/surface/sol/04694/opgs/edr/ncam/NLB_814193131EDR_S1191722NCAM00593M_.JPG",
       "credit": "NASA/JPL-Caltech",
-      "approx_location": true,
-      "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
       "badge": "Observed"
      },
      {
-      "id": "NRB_814193131EDR_S1191722NCAM00593M_",
-      "sol": 4694,
-      "instrument": "NAV_RIGHT_B",
-      "title": "Sol 4694: Right Navigation Camera",
-      "date_taken": "2025-10-20T01:53:13.000Z",
-      "url": "https://mars.nasa.gov/msl-raw-images/proj/msl/redops/ods/surface/sol/04694/opgs/edr/ncam/NRB_814193131EDR_S1191722NCAM00593M_.JPG",
-      "credit": "NASA/JPL-Caltech",
-      "approx_location": true,
-      "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
+      "id": "4689MR1084820012400937C00_DXXX",
+      "sol": 4689,
+      "instrument": "MAST_RIGHT",
+      "title": "Sol 4689: Mast Camera (Mastcam)",
+      "date_taken": "2025-10-14T20:30:32.000Z",
+      "url": "https://mars.nasa.gov/msl-raw-images/msss/04689/mcam/4689MR1084820012400937C00_DXXX.jpg",
+      "credit": "NASA/JPL-Caltech/MSSS",
       "badge": "Observed"
      }
     ],
-    "photo_urls": [
-     "https://mars.nasa.gov/msl-raw-images/msss/04693/mcam/4693ML1084970011207071C00_DXXX.jpg",
-     "https://mars.nasa.gov/msl-raw-images/msss/04693/mcam/4693MR1084940032400976C00_DXXX.jpg",
-     "https://mars.nasa.gov/msl-raw-images/proj/msl/redops/ods/surface/sol/04694/opgs/edr/ncam/NLB_814193131EDR_S1191722NCAM00593M_.JPG",
-     "https://mars.nasa.gov/msl-raw-images/proj/msl/redops/ods/surface/sol/04694/opgs/edr/ncam/NRB_814193131EDR_S1191722NCAM00593M_.JPG"
-    ],
     "panorama": null,
     "panorama_meta": null,
-    "science": "Curiosity's 44th Martian drill target, sampled inside the 'Monte Grande' hollow—a less-resistant bedrock depression bounded by hardened boxwork ridges (sols 4689–4694, October 2025). Comparing hollow bedrock at Valle de la Luna against ridge-crest targets tests why mineral-cemented fractures resisted erosion while intervening hollows weathered away.",
-    "scienceText": "Curiosity's 44th Martian drill target, sampled inside the 'Monte Grande' hollow—a less-resistant bedrock depression bounded by hardened boxwork ridges (sols 4689–4694, October 2025). Comparing hollow bedrock at Valle de la Luna against ridge-crest targets tests why mineral-cemented fractures resisted erosion while intervening hollows weathered away.",
-    "detail": "Curiosity's 44th Martian drill target, sampled inside the 'Monte Grande' hollow—a less-resistant bedrock depression bounded by hardened boxwork ridges (sols 4689–4694, October 2025). Comparing hollow bedrock at Valle de la Luna against ridge-crest targets tests why mineral-cemented fractures resisted erosion while intervening hollows weathered away.",
+    "science": "Drill target sampled inside the 'Monte Grande' hollow between hardened boxwork ridges (sols 4689–4694, October 2025; rover arrival waypoint sol 4687 at site 119 drive 1722). Powdered tailings were delivered to SAM and CheMin while Mastcam and ChemCam imaged the hollow bedrock to compare less-resistant hollows against adjacent mineralized ridges.",
     "card": {
-     "id": "D2",
      "target_name": "Valle de la Luna ('Monte Grande' Hollow)",
-     "target_type": "Rotary-Percussive Drill Core (#44 on Mars)",
-     "sol": "Sol 4687 waypoint; drill campaign Sols 4689–4694 (Oct 2025)",
-     "rock_type": "Inter-ridge hollow sedimentary bedrock within the boxwork unit",
-     "geologic_unit": "Mount Sharp group — Boxwork unit hollow facies (USGS SIM 3292 unit Htu)",
-     "size": "1.6 cm diameter × ~6 cm deep drill borehole in hollow floor block",
-     "location": "137.38104°E, −4.80784° (approximate: nearest MMGIS waypoint sol 4687, Site 119, elev −3,610.4 m)",
-     "sample_mass_scenario_kg": 2,
+     "target_type": "Rotary-Percussive Drill Target (Boxwork Hollow)",
+     "sol": "Waypoint sol 4687; drill campaign sols 4689–4694 (Oct 2025)",
+     "geologic_context": "Recessed hollow floor bedrock bounded by hardened boxwork ridges, sampled to compare composition against nearby ridge targets.",
+     "context_badge": "Derived",
      "source_url": "https://science.nasa.gov/blog/curiosity-blog-sols-4689-4694-drill-in-the-boxwork-unit-is-go/",
-     "badge": "Observed",
-     "photos": [
-      {
-       "id": "4693ML1084970011207071C00_DXXX",
-       "sol": 4693,
-       "instrument": "MAST_LEFT",
-       "title": "Sol 4693: Mast Camera (Mastcam)",
-       "date_taken": "2025-10-19T02:22:01.000Z",
-       "url": "https://mars.nasa.gov/msl-raw-images/msss/04693/mcam/4693ML1084970011207071C00_DXXX.jpg",
-       "credit": "NASA/JPL-Caltech/MSSS",
-       "approx_location": true,
-       "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
-       "badge": "Observed"
-      },
-      {
-       "id": "4693MR1084940032400976C00_DXXX",
-       "sol": 4693,
-       "instrument": "MAST_RIGHT",
-       "title": "Sol 4693: Mast Camera (Mastcam)",
-       "date_taken": "2025-10-19T02:04:29.000Z",
-       "url": "https://mars.nasa.gov/msl-raw-images/msss/04693/mcam/4693MR1084940032400976C00_DXXX.jpg",
-       "credit": "NASA/JPL-Caltech/MSSS",
-       "approx_location": true,
-       "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
-       "badge": "Observed"
-      },
-      {
-       "id": "NLB_814193131EDR_S1191722NCAM00593M_",
-       "sol": 4694,
-       "instrument": "NAV_LEFT_B",
-       "title": "Sol 4694: Left Navigation Camera",
-       "date_taken": "2025-10-20T01:53:13.000Z",
-       "url": "https://mars.nasa.gov/msl-raw-images/proj/msl/redops/ods/surface/sol/04694/opgs/edr/ncam/NLB_814193131EDR_S1191722NCAM00593M_.JPG",
-       "credit": "NASA/JPL-Caltech",
-       "approx_location": true,
-       "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
-       "badge": "Observed"
-      },
-      {
-       "id": "NRB_814193131EDR_S1191722NCAM00593M_",
-       "sol": 4694,
-       "instrument": "NAV_RIGHT_B",
-       "title": "Sol 4694: Right Navigation Camera",
-       "date_taken": "2025-10-20T01:53:13.000Z",
-       "url": "https://mars.nasa.gov/msl-raw-images/proj/msl/redops/ods/surface/sol/04694/opgs/edr/ncam/NRB_814193131EDR_S1191722NCAM00593M_.JPG",
-       "credit": "NASA/JPL-Caltech",
-       "approx_location": true,
-       "location_note": "Pinned by sol to NASA MMGIS rover waypoint; raw image metadata does not carry per-frame lat/lon.",
-       "badge": "Observed"
-      }
-     ]
+     "rmc": "119_1722",
+     "site": 119,
+     "drive": 1722,
+     "elev_m": -3610.43,
+     "dist_km": 36.1,
+     "location": "approx. rover waypoint: 137.381035°E, -4.807839° (Site 119, Drive 1722, elev -3610.4 m, odometry 36.10 km)",
+     "waypoint_badge": "Observed"
     },
-    "badge": "Observed",
-    "campaign_sols": [
-     4687,
-     4689,
-     4690,
-     4691,
-     4692,
-     4693,
-     4694
-    ]
+    "badge": "Observed"
    }
   }
  ]
