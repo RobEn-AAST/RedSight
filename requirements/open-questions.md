@@ -22,6 +22,20 @@ Companion to `competition-requirements.md`.
 4. **Licensing for the data we want to use.** Verified rule: non-U.S. Government sources require complying "with any data use parameters of that specific website"; copyrighted material needs permission; everything used must be listed. Unknown specifics: JPL Mars Trek tile reuse terms; USGS Astrogeology terms; PDS data-use terms (HiRISE/CRISM/THEMIS/RAD/REMS); NASA media attribution expectations for the demo. Also note the new verified rule: **SI-generated content must not contain NASA branding/logos**.
 5. **China funding-restriction review.** Judging Guide: teams undergo review for "prohibited bilateral activity with China, or a Chinese-owned entity" for Global Judging eligibility (determination at NASA's sole discretion; see https://www.spaceappschallenge.org/legal/). Relevant **only if** any teammate/entity affiliation is affected — confirm team composition is clear of it.
 
+### Update — 2026-11-13 (planning session; source: official Cairo page, rank 2)
+
+- **#3 Pre-work boundary — mostly answered:** the official Cairo page's schedule starts the hackathon on
+  **Fri 2026-11-13 07:00 Africa/Cairo** ("The hackathon will kick off on Friday, November 13th…"), so work from
+  that time is inside the event. **Residual:** the global FAQ still says Nov 14–15; if the Lead says the global
+  start governs, follow the Lead's written answer.
+- **#1 Cairo cutoff — still open:** the Cairo page's data has `submissionDeadline: null`; Saturday lists
+  "the judging process alongside Connect & Reflect, the People's Choice Award pitching, and finally the
+  closing ceremony". Ask the Lead for the **judging start time**: submission opens only at Sat 09:00.
+- **Supplied source files not present on this Mac:** the `/home/ali/Downloads/…` files cited here and in
+  `decision-log.md` / `quick-requirements.md` were authored on another machine and do not exist at
+  `~/Downloads` on the current workstation (checked 2026-11-13). Their links are broken here. Share copies
+  in the team drive if anyone needs them; their verified content already lives in `competition-requirements.md`.
+
 ## Resolved this session (2026-11-13)
 
 - ✅ 2026 Project Submission Guide fetched and mined — https://www.spaceappschallenge.org/resources/project-submission-guide/

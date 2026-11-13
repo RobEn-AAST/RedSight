@@ -42,6 +42,15 @@ intact below as the research record):
   2026-11-13 session (this report said 83). Immaterial; carry access dates on such counts.
 - **Naming:** the project is now called **RedSight** (this report's era said "Marswalk Planner"). No
   other content affected.
+- **Ops box (2026-11-13 planning session; §1 table and §15 item 1):** the assumed box 137.30–137.45°E /
+  −4.75…−4.55° is ≈ **8.9 × 11.9 km**, not "~6×6 km" (§3.2 itself calls it the "9×12 km window"), and it
+  **does not contain the boxwork campaign**: NASA's MMGIS Curiosity waypoints place sols 4539–4752 at
+  137.381–137.386°E / −4.798…−4.808° and the sol-5070 position at 137.389°E / −4.826° (accessed 2026-11-13).
+  The proposed replacement is 137.335–137.435°E / −4.85…−4.75° (decision D11), covered by
+  `DTEEC_009149_1750_009294_1750_U01` and `DTEEC_019698_1750_019988_1750_U01` (both DTMs HTTP 206 on
+  2026-11-13). Also resolves §15 item 7 partially: a machine-readable traverse exists at
+  `https://mars.nasa.gov/mmgis-maps/MSL/Layers/json/MSL_waypoints.json` (GeoJSON, per-stop sol/site/lon/lat/
+  elevation). See [`../demo-focus-plan.md`](../demo-focus-plan.md) §6.
 
 Everything else the review re-checked was confirmed live: the 8 CC0-licensed ops-box DTM items, Trek
 layer extents/pixel sizes to 5 decimals, the raw-image API at sol 5072, pygeoapi SIM 3292 units, and

@@ -19,6 +19,25 @@ Prepared 2026-11-13. This is the initial decision log. Some source questions wer
 | D09 | **AI disclosure, credits, and content details** | [C §1.4; §2–3] requires resources, credit, copyright compliance, and AI disclosure but does not provide disclosure wording or complete content instructions. [R] relays third-party data-use obligations. | Obtain official disclosure fields/wording and content instructions; record actual AI/tool use, datasets, references, credits, and applicable terms. |
 | D10 | **Summary limits and judging details** | [C §1.3; §4] specifies summary topics and five judging criteria, without a summary word limit, scoring scale, or weights. | Confirm any original limits/scoring details and prepare the summary and evidence against all five criteria. |
 
+## Planning-session decisions — 2026-11-13 (team choices; details in [demo-focus-plan.md](../docs/demo-focus-plan.md))
+
+| ID | Decision | Status | Evidence / what closes it |
+|---|---|---|---|
+| D11 | **Ops box moved to the boxwork site:** 137.335–137.435°E / −4.85…−4.75° (≈5.9×5.9 km); stops S1 (sol 4539–4541), S2 (sols 4711–4741), S3 (sol 5070) at real Curiosity waypoints; habitat = Scenario point chosen at the pilot | **Proposed** — confirm at pilot gate | Research-era box missed the boxwork positions (NASA MMGIS waypoints, accessed 2026-11-13); closes U1 when the pilot's landmark check passes |
+| D12 | **Tiered scope, strict order.** Tier 1 base (2D map, ≥4 layers, 3 stops, fastest + safest routes, turn-back slider, provenance cards, RAD/REMS cards, deploy + submit) first; Tier 2 extras (360 + HUD) only after Tier 1 is submitted; Tier 3 bonus (Vision Pro, 3D fly-along, chemical) only after Tier 2 works; AI, rover/buddy, LOS out of this hackathon | Adopted (team) | demo-focus-plan §3 |
+| D13 | **Tier 2 — 360° view at stops** from real NASA panoramas (PIA26559, PIA26696) in a three.js sphere; no invented scenery; between stops = jump | Adopted (team), after Tier 1 | demo-focus-plan §10 |
+| D14 | **Tier 2 — HUD overlay** on the 360 view, values only from engine `routes.json`, Scenario-badged | Adopted (team), after Tier 1 | demo-focus-plan §10 |
+| D15 | **Tier 3 — Apple Vision Pro** via WebXR `immersive-vr` in Safari (same URL); no native visionOS app; demo-table bonus, judged demo never depends on it | Adopted (team), after Tier 2; device test pending | demo-focus-plan §11 |
+| D16 | **Data-type build order:** optical → topographic → thermal (3 by Friday night) → spectral → radiation card → atmospheric card → chemical (Sunday); geophysical skipped | Adopted (team) | demo-focus-plan §7 |
+| D18 | **Site re-confirmed: Gale over Jezero** (D02 stands) | Adopted (user, 2026-11-13) | Challenge example = Mount Sharp boxwork; only Gale has surface radiation data (RAD); switching would discard the ops box, stops, DEM and panoramas. Comparison in demo-focus-plan §5 |
+| D19 | **Crew setup in Tier 1:** crew 1–2 (default 2, buddy rule), body mass, carried load, sample mass per stop; pair pace = slower member, pair turn-back = earlier member | Adopted (team) | demo-focus-plan §8; NASA ICES-2026-127, DRA 5.0 |
+| D20 | **Rover vs foot mode = Tier 2 item E0** (before 360/HUD): separate rover rules (slope 20°, step 0.3 m, sand hard-avoid, width), mixed park-point plan, walkback check, rover carries samples | Adopted (team) | demo-focus-plan §8; Apollo LRV (NTRS 20250011301), EVA Walkback Test |
+| D21 | **Science targets include Curiosity drill sites** (Altadena, Valle de la Luna) with stop cards modeled on NASA's Perseverance sample page | Adopted (team) | demo-focus-plan §8 |
+| D22 | **Return-budget zones + automatic fastest-return switch in Tier 1 (B4b):** green/amber/red zones from `Out_fast + Back_safest/Back_fast` vs budget, a "don't go beyond" boundary, hazard no-go overlay, walk-along slider; HUD reuses it in Tier 2 | Adopted (team) | demo-focus-plan §9 |
+| D23 | **Judge-facing extras:** Tier 1 adds four < 1 h items (real-traverse overlay, elevation profile + "why this route", EVA dose card vs 600 mSv limit, Earth-delay note); Tier 2 E4 adds cuff card, shareable link, daylight window, uncertainty bands, EN/AR labels | Adopted (team) | demo-focus-plan §17 |
+| D24 | **Radio coverage layer in Tier 1 (B4c):** `gdal_viewshed` from the habitat mast → radio-shadow mask, per-route % out of contact + longest blackout, shadow penalty in lowest-hazard mode; relays (rover/buddy/beacon) in Tier 2 E5. **Supersedes the "LOS out of this hackathon" part of D12** | Adopted (user request, 2026-11-13) | demo-focus-plan §9b |
+| D17 | **Badge decision:** DEM = Observed; slope/hillshade/cost = Derived; THEMIS thermal inertia = Derived | Adopted (team) | Resolves drift between technical-approaches §1 and mapping-options §13 |
+
 ## Working boundary
 
 The companion [quick-requirements.md](quick-requirements.md) is a checklist of the supplied document's claims. None of its boxes represents completed competition compliance; obtaining missing official material and choosing a site/demo are follow-up decisions, not blockers to creating these two artifacts.

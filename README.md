@@ -12,7 +12,8 @@
 
 **Start here:** [docs/challenge-in-plain-language.md](docs/challenge-in-plain-language.md) (the challenge, the
 glossary, and the corrections behind our framing) · [docs/ai-context.md](docs/ai-context.md) (workspace state &
-navigation) · [AGENTS.md](AGENTS.md) (working rules for agents & teammates).
+navigation) · [AGENTS.md](AGENTS.md) (working rules for agents & teammates) ·
+**[docs/demo-focus-plan.md](docs/demo-focus-plan.md) (current plan: Tier 1 base → Tier 2 360/HUD → Tier 3 Vision Pro)**.
 
 ---
 
@@ -26,20 +27,27 @@ simulated.
 
 ## What it does *(planned scope — Must tier; see [docs/24-48-hour-plan.md](docs/24-48-hour-plan.md))*
 
-- **Layered map** of a ~6×6 km operations area on lower Mount Sharp: HiRISE optical (0.25 m), DEM hillshade &
-  derived slope (1 m), THEMIS thermal inertia (sand proxy), CRISM-derived mineral indicators, geologic units.
-- **Science-goal picker** — e.g. boxwork veins, sulfates, clays, photo targets — showing candidate sites with the
-  evidence behind each.
-- **Route planner** — cost grid with hard slope/terrain constraints over a precomputed return-cost field
-  (Dijkstra; A\* reserved for interactive re-routes); one or two route options; estimated excursion time and
-  O2 consumption from a cited metabolic model; **turn-back / point-of-no-return marker** — a *scenario
-  estimate* of the last turnaround that keeps a user-set return reserve, never a safety guarantee.
-- **Mission setup** — solo/buddy, foot/rover/mixed, robot helper, carried load, time window.
-- **Provenance inspector** — every layer and every model constant shows its NASA source, resolution, date, and an
-  **Observed / Derived / Scenario** badge. We will not present scenario math as measurement.
-- **(Should tier)** 3D terrain view · first-person HUD walk-through with live O2 countdown · real Curiosity
-  photographs pinned to the map · habitat line-of-sight comms layer · REMS/MCD weather window and RAD-based
-  radiation context cards.
+*Current scope is tiered — full detail in [docs/demo-focus-plan.md](docs/demo-focus-plan.md) §3.*
+
+**Tier 1 — base (submitted first):**
+- **Layered map** of a ~6×6 km area at the Mount Sharp **boxwork site** (137.335–137.435°E, 4.75–4.85°S):
+  HiRISE optical (0.25 m), DEM hillshade & derived slope (1 m), THEMIS thermal inertia (sand proxy),
+  CRISM-derived mineral indicators, geologic units.
+- **Science stops** at real Curiosity positions: boxwork 360 sites, drill sites (Altadena, Valle de la Luna),
+  today's rover position — each with real photos from that sol and the evidence behind it.
+- **Crew setup** — crew of 1–2 (two by default, buddy rule), body mass, carried load, sample mass per stop.
+- **Route planner** — fastest vs lowest-hazard routes over a precomputed Dijkstra return-cost field; modeled
+  time and O2 from a cited metabolic model; **turn-back marker**, green/amber/red **return zones**, a
+  **"don't go beyond" line**, and an automatic switch to the fastest way home when modeled O2 runs low — all
+  *scenario estimates*, never a safety guarantee.
+- **Radio coverage** — where ridges block line of sight to the habitat (radio shadow), with the longest
+  blackout per route; relays via rover/buddy come in Tier 2.
+- **Provenance inspector** — every layer and model constant shows its NASA source, resolution, date, and an
+  **Observed / Derived / Scenario** badge. RAD radiation and REMS weather appear as rover-local context cards.
+
+**Tier 2 — extras:** rover vs foot mode (why the rover can't go somewhere, park-and-walk plan, walkback
+check) · real NASA 360° panoramas at stops with a helmet-style HUD.
+**Tier 3 — bonus:** the same 360 + HUD in Apple Vision Pro (WebXR) · 3D fly-along between stops.
 
 ## Data & provenance *(summary — full table with URLs, resolutions, dates in
 [docs/technical-approaches.md](docs/technical-approaches.md))*
