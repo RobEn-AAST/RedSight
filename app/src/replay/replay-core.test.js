@@ -1,7 +1,8 @@
 // Run: node --test app/src/replay/replay-core.test.js
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildTimeline, sampleAt, trailAt, o2Plan } from "./replay-core.js";
+import { buildTimeline, routeGoalInfo, sampleAt, trailAt, o2Plan } from "./replay-core.js";
+import { calloutFor } from "./voice.js";
 
 // 3 vertices, 10 + 10 min out, 5 + 5 L; return assumed symmetric.
 const route = {
@@ -142,4 +143,58 @@ test("auto-switch: switch point always comes before the turn-back point", () => 
     if (tl.switchT != null && turn) assert.ok(tl.switchT <= turn.t + 1e-9, `B=${B}`);
     assert.ok(tl.arrivalL >= 10 - 1e-9, `reserve intact at B=${B}: ${tl.arrivalL}`);
   }
+});
+
+test("approach-only engine routes do not claim arrival at the Observed stop", () => {
+  const approachRoute = {
+    ...route,
+    stop_name: "S2",
+    goal_access: {
+      badge: "Derived",
+      status: "approach_only",
+      observed_stop_lonlat: [137.381, -4.808],
+      endpoint_lonlat: route.coords.at(-1),
+      offset_m: 8.2589,
+      access_bound_m: 10,
+      last_leg_modeled: false,
+    },
+  };
+
+  const tl = buildTimeline(approachRoute, base);
+  const approach = tl.events.find((event) => event.type === "approach");
+  const withDwell = buildTimeline(approachRoute, { ...base, dwellS: 30 });
+
+  assert.equal(tl.reachStop, true, "legacy reachStop still means the route endpoint was reached");
+  assert.equal(tl.reachedApproachPoint, true);
+  assert.equal(tl.reachedObservedStop, false);
+  assert.ok(approach);
+  assert.equal(tl.events.some((event) => event.type === "arrive"), false);
+  assert.match(approach.label, /approach point/i);
+  assert.match(approach.label, /8\.3 m/);
+  assert.match(approach.label, /Observed stop/);
+  assert.match(approach.label, /no final leg is modeled/i);
+  assert.equal(calloutFor(approach), approach.label, "the spoken callout uses the honest approach label");
+  assert.ok(withDwell.frames.some((frame) => frame.phase === "approach"));
+
+  const goal = routeGoalInfo(approachRoute);
+  assert.equal(goal.approachOnly, true);
+  assert.deepEqual(goal.endpointLonlat, approachRoute.coords.at(-1));
+  assert.deepEqual(goal.observedStopLonlat, approachRoute.goal_access.observed_stop_lonlat);
+  assert.equal(goal.offsetM, 8.2589);
+  assert.equal(sampleAt(tl, 1200).phase, "approach");
+  const outboundAtEndpoint = trailAt(tl, 1200).out;
+  assert.deepEqual(outboundAtEndpoint.at(-1), approachRoute.coords.at(-1));
+  assert.ok(!outboundAtEndpoint.some(([lon, lat]) => lon === 137.381 && lat === -4.808));
+});
+
+test("legacy route payloads retain stop-arrival behavior", () => {
+  const tl = buildTimeline(route, base);
+  const arrival = tl.events.find((event) => event.type === "arrive");
+
+  assert.equal(tl.reachStop, true);
+  assert.equal(tl.reachedApproachPoint, false);
+  assert.equal(tl.reachedObservedStop, true);
+  assert.equal(arrival.label, "Arrived at S1");
+  assert.equal(routeGoalInfo(route).approachOnly, false);
+  assert.equal(routeGoalInfo(route).observedStopLonlat, null);
 });
