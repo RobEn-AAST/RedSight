@@ -38,14 +38,18 @@ def main():
     out = args.out.resolve()
     mapping = {}
     inventory = {}
+    copies = []
+    planned_assets = {}
     for source, expected in assets:
         target = out / 'assets' / source.name
         actual = digest(source)
-        if target.exists() and digest(target) != actual:
+        if target in planned_assets and planned_assets[target] != actual:
+            raise ValueError(f'pilot assets share a filename but differ: {target.name}')
+        if target.exists() and (not target.is_file() or digest(target) != actual):
             raise ValueError(f'refusing to overwrite different asset: {target}')
-        target.parent.mkdir(parents=True, exist_ok=True)
         if source.resolve() != target:
-            shutil.copy2(source, target)
+            copies.append((source, target))
+        planned_assets[target] = actual
         mapping[str(source)] = str(target)
         inventory[str(target.relative_to(out))] = actual
 
@@ -56,16 +60,38 @@ def main():
             return [relocate(item) for item in value]
         return mapping.get(value, value) if isinstance(value, str) else value
 
+    writes = []
     for source, filename, content in ((args.manifest, 'input-manifest.json', manifest),
                                       (args.access_review, 'access-review.json', access)):
         original = out / ('original-' + filename)
-        if not original.exists():
-            shutil.copy2(source, original)
+        original_bytes = source.read_bytes()
         target = out / filename
-        target.write_text(json.dumps(relocate(content), indent=2) + '\n')
-        inventory[filename] = digest(target)
-        inventory[original.name] = digest(original)
-    (out / 'SHA256.json').write_text(json.dumps(inventory, indent=2, sort_keys=True) + '\n')
+        target_bytes = (json.dumps(relocate(content), indent=2) + '\n').encode()
+        for path, data in ((original, original_bytes), (target, target_bytes)):
+            if path.exists() and (not path.is_file() or path.read_bytes() != data):
+                raise ValueError(f'refusing to overwrite different bundle file: {path}')
+        if not original.exists():
+            writes.append((original, original_bytes))
+        if not target.exists():
+            writes.append((target, target_bytes))
+        inventory[filename] = hashlib.sha256(target_bytes).hexdigest()
+        inventory[original.name] = hashlib.sha256(original_bytes).hexdigest()
+    inventory_bytes = (json.dumps(inventory, indent=2, sort_keys=True) + '\n').encode()
+    inventory_path = out / 'SHA256.json'
+    if inventory_path.exists() and (not inventory_path.is_file() or inventory_path.read_bytes() != inventory_bytes):
+        raise ValueError(f'refusing to overwrite different bundle file: {inventory_path}')
+
+    # Validate the full destination plan before creating or changing anything.
+    for source, target in copies:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if not target.exists():
+            shutil.copy2(source, target)
+    for path, data in writes:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+    if not inventory_path.exists():
+        inventory_path.parent.mkdir(parents=True, exist_ok=True)
+        inventory_path.write_bytes(inventory_bytes)
     print(out / 'input-manifest.json')
 
 

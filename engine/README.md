@@ -38,15 +38,17 @@ python3 engine/tools/preserve_pilot.py \
 ```
 
 The source bundle must remain at its recorded absolute paths during this copy. The helper checks
-recorded asset hashes, refuses conflicting assets, and rewrites paths into the new bundle. Copy
+recorded asset hashes and preflights existing destination assets and manifests, refusing conflicting
+files before it writes the bundle. It then rewrites paths into the new bundle. Copy
 `evidence/` separately when transferring the historical reports/scripts; the helper only relocates
 manifest-referenced assets. Relocation changes manifest hashes and path-bearing output metadata;
 it does not change raster bytes or modeled route geometry/costs. The committed route artifacts retain
 the original historical producer/manifest provenance; a rebuild records the new source revision.
 
 For a non-destructive rebuild, use the build command above with `--out /tmp/redsight-rebuild`.
-Expected result: exit **1**, `status: partial`, seven files, two S3 routes and eight explicit no-route
-outcomes. Exit 2 means an actual input/build error. Do not treat exit 1 as five-stop completion.
+Expected result: exit **1**, `status: partial`, seven files, S3 routed in both supported modes and
+eight explicit no-route stop/mode outcomes. Exit 2 means an actual input/build error. Do not treat
+exit 1 as five-stop completion.
 
 Cache reconstruction is distinct from this checked local replay. The archived `build_native_hazard.py`
 and `build_native_p90.py` are historical scripts with original `/tmp` paths and remote reads; do not
@@ -60,11 +62,12 @@ Exact upstream reacquisition/byte-for-byte cache reconstruction has **not** been
 Full remote COG hashes remain unavailable; local hashes and recorded upstream ETags are retained.
 
 The engine implementation has tested routing/PNR/replay behavior, but the intended five-stop demo
-remains incomplete. The p90 comparison also fails one habitat with nearby access to all five targets;
-its best common component's offsets are about 764/197/688/647/203 m for S1/S2/S3/D1/D2. These are
-diagnostics, not approach routes or modeled last legs. G2 remains a broad visual alignment check with
-no uniquely identified common landmark. Historical G4 is only the 5,221.715 s first-recorded-STAC-
-response-to-output lower bound, not exact total acquisition wall time; a later replay is not that pilot.
+remains incomplete. Neither the native maximum nor p90 mask gives one habitat-connected component
+serving all five targets. The p90 best-component offsets are about 764/197/688/647/203 m for
+S1/S2/S3/D1/D2. These are diagnostics, not approach routes or modeled last legs. G2 remains a broad
+visual alignment check with no uniquely identified common landmark. Historical G4 is only the
+5,221.715 s first-recorded STAC-response-to-output lower bound, not exact total acquisition wall time;
+a later replay is not that pilot.
 A team decision on the target/habitat/slope-policy configuration is still required for five-stop
 routing. Stop content and web integration remain other owners' work; no push, merge or deployment
 is included here.

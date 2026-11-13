@@ -15,7 +15,11 @@ verified green** (2026-11-13, web-foundation worker + resumed web-copilot worker
 React+Vite+TS mission console (mission setup per plan §8, map/stops/routes/provenance/HUD workspaces
 with honest engine-data-absent states, copilot panel in not-configured state) — build/lint/typecheck
 pass and the full flow was browser-tested with zero console errors (verification record:
-[`web-foundation.md`](web-foundation.md) §7). Engine data, MapLibre tiles and route math are still
+[`web-foundation.md`](web-foundation.md) §7). The offline engine now supplies a real-data partial
+payload: S3 routes in both supported modes and eight explicit no-route stop/mode outcomes at the
+native 15° maximum-slope limit.
+The ignored local pilot cache is not included in Git; build inputs, assumptions, and limits are
+documented in [`../engine/README.md`](../engine/README.md). MapLibre tiles and web integration remain
 pending (see [`web-foundation.md`](web-foundation.md) §1–§2, §6).
 
 ## 2. Document map (read order for a new agent)
@@ -33,6 +37,7 @@ pending (see [`web-foundation.md`](web-foundation.md) §1–§2, §6).
 | 7b | [`web-foundation.md`](web-foundation.md) | **App status** (2026-11-13, verified): implemented vs planned, exact installed versions + Node needs, commands, folder boundaries, engine→app integration steps, verification record §7 (build/lint/typecheck green, browser-tested, zero console errors) |
 | 7c | [`ai/voice-copilot-plan.md`](ai/voice-copilot-plan.md), [`ai/assistant-system-prompt.md`](ai/assistant-system-prompt.md) | Voice/chat copilot **plan** (UNCONNECTED): pipeline, local-vs-Groq STT tradeoffs, Gemini/Groq model IDs verified 2026-11-13, server-side-key backend proposal, typed future tool contracts, system-prompt design. Records the user's 2026-11-13 exception to D12 (planning + honest panel only; no live AI at judging without a new team decision) |
 | 7d | [`24-48-hour-plan.md`](24-48-hour-plan.md) | Must/Should/Stretch scope, phase plan, acceptance evidence, risks (scope/ops area superseded by demo-focus-plan) |
+| 7e | [`../engine/README.md`](../engine/README.md) | **Offline engine status and handoff**: native-slope real-data build, local ignored pilot bundle, explicit partial route outcomes, model and reproducibility limits |
 | 8 | [`research/mapping-options.md`](research/mapping-options.md), [`research/routing-options.md`](research/routing-options.md) | Deep evidence: datasets/live checks/CRS traps; graph/algorithms/PNR — keep as evidence, see their Errata headers |
 | 8b | [`research/external-sources-review.md`](research/external-sources-review.md) | Verdicts on the Kaggle notebook (game data, rejected), the NASA Life Sciences Portal (EVA/walkback citations), and how each of the 5 official resources is used, by tier |
 | 9 | [`research/independent-architecture-review.md`](research/independent-architecture-review.md) | Adversarial review of the two research docs: verdicts V1–V13, findings F1–F8, pilot + gate |
