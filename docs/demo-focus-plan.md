@@ -1,7 +1,7 @@
 # RedSight — Demo Focus Plan (what we actually build and submit)
 
 **Written:** 2026-11-13 (Cairo day 1), from the team planning session after a full read of the repo and a
-same-day live re-check of the official pages and data services (sources in §11, all accessed 2026-11-13).
+same-day live re-check of the official pages and data services (sources in §18, all accessed 2026-11-13).
 **Status:** working plan, **team choice** throughout. Not a challenge rule, and not a promise of a result.
 **Relationship to other docs:** this narrows [`24-48-hour-plan.md`](24-48-hour-plan.md) to a demo we can
 finish. Where the two conflict on **scope or ops area**, this file wins. Phase timing, the pilot gate,
@@ -49,17 +49,17 @@ and no specific number of formats is required.** Our plan covers three with one 
 |---|---|---|---|
 | "create a layered, integrated view of a location or route… data from multiple NASA science missions" | **Must** (core) | Layered map from MRO, Mars Odyssey, Curiosity + USGS/Trek | 1 |
 | "help a human explorer plan and carry out a successful Marswalk… conducting… science" | **Must** (core) | Science stops → modeled route → turn-back point | 1 |
-| "identifying some scientific goals… boxwork… Mount Sharp region" | Example | Boxwork stops + Curiosity drill sites (§5, §7a) | 1 |
-| "at least three kinds of data" | Recommended | 6 types (§6) | 1 |
+| "identifying some scientific goals… boxwork… Mount Sharp region" | Example | Boxwork stops + Curiosity drill sites (§6, §8) | 1 |
+| "at least three kinds of data" | Recommended | 6 types (§7) | 1 |
 | "consider what information might help a crew move safely… radiation… space weather data" | Recommended | RAD card + SEP scenario note (no spatial map: Unavailable) | 1 |
-| "wearing spacesuits and possibly carrying scientific equipment and other supplies. Consider how this might impact their mobility" | Recommended | Crew setup: body mass, load, samples, suit factor (§7a) | 1 |
-| "if possible, include a route map… avoiding significant obstacles such as large rock formations" | Recommended | Slope-blocked routes; step/rock limits stated (§7a) | 1 |
+| "wearing spacesuits and possibly carrying scientific equipment and other supplies. Consider how this might impact their mobility" | Recommended | Crew setup: body mass, load, samples, suit factor (§8) | 1 |
+| "if possible, include a route map… avoiding significant obstacles such as large rock formations" | Recommended | Slope-blocked routes; step/rock limits stated (§8) | 1 |
 | Habitat display / tablet / helmet HUD / other | Optional | Station + tablet (1), HUD (2), Vision Pro (3) | 1–3 |
 | Static, interactive, or map generator | Optional | Interactive | 1 |
 | Time frame past/future/none | Optional | Present-day terrain; RAD/REMS as observed climatology | 1 |
 | "point-of-view images… so the astronaut knows what to expect" | Optional | Raw photos per stop (1), 360 panoramas (2) | 1–2 |
-| "rovers or other robotic systems to help transport the crew and their tools" | Optional | Rover vs foot mode, rover carries samples (§7a) | 2 |
-| "astronauts might work in pairs" | Optional | Crew of 2 default, buddy rule, pair turn-back (§7a) | 1 |
+| "rovers or other robotic systems to help transport the crew and their tools" | Optional | Rover vs foot mode, rover carries samples (§8) | 2 |
+| "astronauts might work in pairs" | Optional | Crew of 2 default, buddy rule, pair turn-back (§8) | 1 |
 
 ## 2. Rules versus ideas
 
@@ -76,32 +76,32 @@ and no specific number of formats is required.** Our plan covers three with one 
 
 | # | Item | Done when (evidence) |
 |---|---|---|
-| B1 | 2D map of the ops box with ≥4 toggleable layers: HiRISE ortho, hillshade + slope, THEMIS, CRISM (§6) | Layers toggle on the public URL |
-| B2 | 3 science stops at real Curiosity positions, with raw photos from those sols (§5) | Clicking a stop shows its card + photos + sources |
+| B1 | 2D map of the ops box with ≥4 toggleable layers: HiRISE ortho, hillshade + slope, THEMIS, CRISM (§7) | Layers toggle on the public URL |
+| B2 | 3 science stops at real Curiosity positions, with raw photos from those sols (§6) | Clicking a stop shows its card + photos + sources |
 | B3 | Fastest + safest routes per stop, precomputed (scipy Dijkstra field, review F2) | Routes never cross a >15° cell (asserted in the engine) |
 | B4 | **Turn-back slider**: budget → PNR marker moves along the route | Marker moves toward the habitat as the budget drops |
-| B4b | **Return-budget zones + automatic switch to the fastest way home** (§7b): map shading for "any return OK / fastest return only / beyond turn-back", a "don't go beyond" boundary line, hazard no-go overlay, and a "walk along the route" slider that switches the recommended return to fastest when O₂ gets low | Zones shrink as budget drops; the recommendation switches at the computed point; never recommends a return that doesn't fit the budget |
+| B4b | **Return-budget zones + automatic switch to the fastest way home** (§9): map shading for "any return OK / fastest return only / beyond turn-back", a "don't go beyond" boundary line, hazard no-go overlay, and a "walk along the route" slider that switches the recommended return to fastest when O₂ gets low | Zones shrink as budget drops; the recommendation switches at the computed point; never recommends a return that doesn't fit the budget |
 | B5 | Provenance card on every layer and number (Observed / Derived / Scenario) | No visible layer or number without a card |
 | B6 | RAD + REMS context **cards** (not map layers) | Cards cite their PDS sources |
-| B6b | **Crew setup panel** (§7a): crew of 1 or 2 (default 2, buddy rule), body mass, carried load, sample mass picked up per stop; time/O₂/turn-back recompute | Changing mass/load/crew changes O₂ and the turn-back point monotonically |
+| B6b | **Crew setup panel** (§8): crew of 1 or 2 (default 2, buddy rule), body mass, carried load, sample mass picked up per stop; time/O₂/turn-back recompute | Changing mass/load/crew changes O₂ and the turn-back point monotonically |
 | B7 | Deployed public URL + 7 slides + project page submitted | Submitted page; links tested logged-out |
 
 ### Tier 2 — Extras (start only after Tier 1 is submitted)
 
 | # | Item | Detail |
 |---|---|---|
-| E0 | **Rover vs foot mode** (§7a): separate rover traversability grid, "rover can't go here, why" reasons, mixed plan = drive to a park point + walk the last leg, walkback check if the rover fails | §7a — engine-side, reuses the Tier 1 grid |
-| E1 | 360° view at stops from real NASA panoramas (PIA26559, PIA26696) | §7 |
-| E2 | HUD overlay on the 360 view | §7 |
+| E0 | **Rover vs foot mode** (§8): separate rover traversability grid, "rover can't go here, why" reasons, mixed plan = drive to a park point + walk the last leg, walkback check if the rover fails | §8 — engine-side, reuses the Tier 1 grid |
+| E1 | 360° view at stops from real NASA panoramas (PIA26559, PIA26696) | §10 |
+| E2 | HUD overlay on the 360 view | §10 |
 | E3 | Resubmit with E0–E2 + updated slides | Only if the Lead confirms post-judging edits count |
 
 ### Tier 3 — Bonus (only after Tier 2 works on a normal browser)
 
 | # | Item | Detail |
 |---|---|---|
-| X1 | Apple Vision Pro: same 360 + HUD page in WebXR | §8, demo-table bonus |
+| X1 | Apple Vision Pro: same 360 + HUD page in WebXR | §11, demo-table bonus |
 | X2 | 3D fly-along between stops (DEM + ortho) | Labeled visualization, not a photo |
-| X3 | Chemical data at stops (ChemCam/APXS) | §6 row 7 |
+| X3 | Chemical data at stops (ChemCam/APXS) | §7 row 7 |
 
 ### Not in this hackathon
 
@@ -126,17 +126,21 @@ normal browser.
  │ 1 clip to ops box → 10 m grid (600×600)                               │
  │ 2 slope (max → 15° hard block; mean → energy), hillshade  (review F4) │
  │ 3 cost grid = slope + sand proxy (THEMIS)                             │
- │ 4 scipy Dijkstra from habitat → return-cost field (turn-back data)    │
- │ 5 paths to 3 stops × {fastest, safest} + time/O2 (Pandolf model)      │
- │ 6 tiles (gdal2tiles z10–16)                                           │
+ │ 4 scipy Dijkstra fields per crew/load bucket:                         │
+ │     Out_fast (from habitat), Back_fast, Back_safest (to habitat)      │
+ │ 5 paths to stops × {fastest, safest} + time/O2 (Pandolf + κ)          │
+ │ 6 [T2] rover grid: slope 20°, step 0.3 m, sand, width → park points   │
+ │ 7 tiles (gdal2tiles z10–16)                                           │
  │   constants.json ← every number + source + badge                      │
  └───────────────────────┬───────────────────────────────────────────────┘
-                         ▼  static files only: tiles/ routes.json field.png stops.json
+                         ▼  static files only (contract §15)
  ┌──────────────── WEB APP (static, no server) ──────────────────────────┐
  │ MapLibre map ── layer toggles ── stop picker ── route cards (A/B)     │
  │      │                                    │                           │
- │  turn-back slider (budget → marker)   source card (click anything)    │
- │  photo pins (real sols)               RAD / REMS context cards        │
+ │  crew setup (1–2, mass, load, samples) → picks precomputed bucket     │
+ │  turn-back slider + zones (green/amber/red) + "don't go beyond" line  │
+ │  walk-along slider → auto-switch to fastest return when O2 low        │
+ │  photo pins (real sols)    source cards    RAD / REMS context cards   │
  │ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ Tier 1 (base) above · Tier 2/3 below ─ ─ ─ ─ ─ ─ │
  │      │ click a stop                                                   │
  │      ▼                                                                │
@@ -148,12 +152,14 @@ normal browser.
 ```
 
 Design rule: the browser never computes model numbers. The map, route cards and HUD all read the same
-engine JSON, so they cannot disagree (review §7 integration contract).
+engine JSON, so they cannot disagree (review §7 integration contract). The only browser-side math allowed
+is **comparing precomputed fields against the budget** (zone shading, §9) and **picking the nearest
+precomputed crew/load bucket**. Both are threshold/lookup operations, not modeling.
 
 Deployment note: `.gitignore` excludes `tiles/` and `app/dist/`, so a plain "GitHub Pages from the main
 branch" deploy would ship without tiles. Deploy by uploading the built folder, or use a deploy branch.
 
-## 5a. Why Gale, not Jezero (site re-confirmed 2026-11-13, decision D02)
+## 5. Why Gale, not Jezero (site re-confirmed 2026-11-13, decision D02)
 
 Jezero was reconsidered in the planning session because it is data-rich. **Gale stays** (Team choice):
 
@@ -173,7 +179,7 @@ would be Scenario-only). Switching would also discard the box, stops, DEM select
 Jezero is the better choice only if the science goal is "ancient life / delta". That's not our goal.
 The Perseverance raw-image resource is therefore not used (wrong site); Curiosity imagery replaces it.
 
-## 5. Ops area: corrected (supersedes the research-era box)
+## 6. Ops area: corrected (supersedes the research-era box)
 
 **Finding (2026-11-13, Observed):** the box assumed in the research docs, 137.30–137.45°E / −4.75…−4.55°,
 does **not contain the boxwork site**, and it is about **8.9 × 11.9 km**, not the "~6×6 km" it is
@@ -204,7 +210,7 @@ panorama's sols, where the rover was stationary.
 A bbox is not a footprint (HiRISE strips are diagonal), so the pilot must check each stop against the actual
 raster. Fallback per the F3 ladder: Trek `Gale_DEM_SMG_1m` (`format=tiff&compression=LZW&size=…`).
 
-## 6. Data types: build order
+## 7. Data types: build order
 
 "At least three kinds" is **Recommended**, not a threshold. We reach 3 on Friday night, then add more.
 A layer counts only if it helps navigation or explains a stop.
@@ -234,7 +240,7 @@ and cost = **Derived**; THEMIS thermal inertia = **Derived** (a model product fr
 research docs disagree on the last two (technical-approaches §1 vs mapping-options §13); the app uses this
 table.
 
-## 7a. Crew, load, samples and rover model (Team choice; numbers are Scenario unless sourced)
+## 8. Crew, load, samples and rover model (Team choice; numbers are Scenario unless sourced)
 
 ### Crew and load: Tier 1 (B6b)
 
@@ -263,7 +269,7 @@ real targets are **Curiosity's drill sites**:
 |---|---|---|
 | **Altadena** drill site (boxwork-unit edge, drilled 2025-06-08) | JPL news 2025-06-23 | sol 4558–4560: 137.38350°E, −4.79981° (approximate: nearest waypoint) |
 | **Valle de la Luna** block, "Monte Grande" hollow (boxwork-unit drill campaign, Oct 2025) | NASA Curiosity blog, sols 4689–4694 | sol 4687: 137.38104°E, −4.80784° (approximate) |
-| + S1/S2 360 sites and S3 current position (§5) | — | — |
+| + S1/S2 360 sites and S3 current position (§6) | — | — |
 
 ### Rover vs foot: Tier 2 (E0)
 
@@ -285,7 +291,7 @@ reserve? NASA's EVA Walkback Test concept (10 km suited walkback, NLSP record EW
 is the reference. Our ≈6 km box always passes the distance part, so we show the O₂ check, not just distance.
 **Rover carries samples:** with the rover, collected samples go on the rover, so crew load L stays constant.
 
-## 7b. Return-budget logic: zones, "don't go beyond" line, automatic fastest-return switch (Tier 1, B4b)
+## 9. Return-budget logic: zones, "don't go beyond" line, automatic fastest-return switch (Tier 1, B4b)
 
 All outputs are **Scenario** estimates (they inherit the O₂ model's assumptions) and are worded as
 modeled guidance, never as a guarantee (AGENTS rule 3).
@@ -297,7 +303,7 @@ modeled guidance, never as a guarantee (AGENTS rule 3).
 | `Out_fast(x)` | Modeled O₂ to reach cell x from the habitat by the fastest route |
 | `Back_fast(x)` | Modeled O₂ to return from x to the habitat (or the rover park point) by the **fastest** return |
 | `Back_safest(x)` | Modeled O₂ to return by the **lowest-hazard** return |
-| `B` | Usable budget = capacity × (1 − reserve), per crew member; for a pair, the lower member's (§7a) |
+| `B` | Usable budget = capacity × (1 − reserve), per crew member; for a pair, the lower member's (§8) |
 
 **Map zones (static layer for the current crew/load/budget):**
 
@@ -329,7 +335,7 @@ constraint), but if the user drags a custom point there, the tooltip gives the r
 shrinks zones; the switch point on a route is monotone in B; the recommended return always satisfies
 `R(x) ≥ Back(x)` until state 3; pair mode never shows a later turn-back than either member alone.
 
-## 7. Tier 2 — 360° view at stops + HUD (Optional per the challenge; Team choice; after Tier 1)
+## 10. Tier 2 — 360° view at stops + HUD (Optional per the challenge; Team choice; after Tier 1)
 
 The challenge itself suggests both a helmet HUD and point-of-view images "so the astronaut knows what to
 expect when they arrive at their destination".
@@ -338,11 +344,11 @@ expect when they arrive at their destination".
   Other stops get a strip of raw images from the same sol(s). Matching sol → waypoint gives each image the
   rover's position for that sol, which replaces the old "pin approximately" fallback for these stops.
 - **Viewer:** a three.js textured sphere (MIT) rather than Pannellum, because three.js also gives a WebXR
-  mode for Vision Pro (§8) with the same code. Use NASA's downsized versions (~8–16k px wide). Check
+  mode for Vision Pro (§11) with the same code. Use NASA's downsized versions (~8–16k px wide). Check
   whether each mosaic covers the full sphere and limit the vertical range if not.
 - **HUD overlay:** heading · O2 remaining · distance/ETA to next stop · turn-back warning · current zone
-  (green/amber/red) · recommended return (lowest-hazard or fastest, auto-switching per §7b). All values
-  come from `routes.json` and the §7b fields (**Scenario** model outputs, badged as such on the HUD).
+  (green/amber/red) · recommended return (lowest-hazard or fastest, auto-switching per §9). All values
+  come from `routes.json` and the §9 fields (**Scenario** model outputs, badged as such on the HUD).
 - **Limit stated on screen:** real imagery exists **only at stops**. Moving between stops is a jump, like
   street-view points. A 3D fly-along from DEM + ortho is a Sunday extra, labeled "visualization from
   orbital data, not a photograph". No AI-generated Mars scenery; if any is used, SI watermark rules apply.
@@ -358,7 +364,7 @@ expect when they arrive at their destination".
 Prep that can be done without touching base work: downloading the two panoramas and recording their
 credits in `data/PROVENANCE.md`. Building the viewer waits until Tier 1 is submitted.
 
-## 8. Tier 3 — Apple Vision Pro (Optional, Team choice; a demo-table bonus, never a dependency; after Tier 2)
+## 11. Tier 3 — Apple Vision Pro (Optional, Team choice; a demo-table bonus, never a dependency; after Tier 2)
 
 - **Path:** the same web page, entered through **WebXR `immersive-vr` in Safari on visionOS**. Apple's WebKit
   supports the immersive-vr session type; it is on by default since visionOS 2; input arrives as
@@ -372,9 +378,9 @@ credits in `data/PROVENANCE.md`. Building the viewer waits until Tier 1 is submi
 - **To verify on the device (Unverified until tested):** the WebXR session starts from our deployed URL; the
   panorama texture size loads; HUD text is readable at the chosen distance.
 
-## 9. First steps (now)
+## 12. First steps (now)
 
-1. **Lock the ops box + stops (15 min):** confirm §5, record it in the decision log (D11).
+1. **Lock the ops box + stops (15 min):** confirm §6, record it in the decision log (D11).
 2. **Start the download immediately (critical path):** `DTEEC_009149…` DTM + its ortho, retry loop,
    checksums into `data/PROVENANCE.md`. In parallel: person B scaffolds the empty MapLibre page; person C
    asks the Local Lead (judging start time, who submits, local edit lock) and starts the slides/text.
@@ -382,11 +388,64 @@ credits in `data/PROVENANCE.md`. Building the viewer waits until Tier 1 is submi
    G3 route never crosses >15°, PNR moves monotonically · G4 ≤3 h. Full build starts only after it passes.
 4. **Build Tier 1 (B1–B7) → submit.** Only then Tier 2, then Tier 3 (§3).
 
-## 10. Doc-hygiene findings from this pass (2026-11-13)
+## 13. Tier 1 schedule and owners (assumes 3–4 people; adjust names at kickoff)
+
+| Window (Cairo time) | Engine owner | App owner | Data/story owner |
+|---|---|---|---|
+| Fri, now → +3 h | Pilot: download DTM + ortho, 10 m grid, slope, one scipy route (gate G1–G4) | MapLibre shell, layer toggles on a placeholder image | Ask Local Lead; download panoramas + raw photos for the stops; start `PROVENANCE.md` |
+| +3 → +7 h | Fields `Out_fast`/`Back_*` for 2 crew × 3 load buckets; routes to 4–5 stops; `constants.json` | Stop picker, route cards, turn-back slider, zones layer | THEMIS + CRISM exports; RAD/REMS card numbers; stop texts |
+| +7 → +11 h | Tile ortho/hillshade/slope (z16 full + z17 core, review F1); engine tests (§9, T-suite) | Crew setup panel, walk-along slider + auto-switch alerts, source cards | 7-slide deck v1, project-page text, SI disclosure, NASA Data list |
+| +11 → Sat 09:00 | Fix bugs, freeze data | Deploy (upload build), test logged-out on phone + laptop | Screenshots into slides; **submit at 09:00** |
+
+If the pilot fails G1–G4 by +3 h: switch DEM per the F3 ladder, drop to 2 stops and 1 load bucket, and keep
+the schedule. Cut order if late: walk-along slider → crew buckets (fix at 2 × 15 kg) → CRISM layer. The
+turn-back slider and zones are the last things to cut.
+
+## 14. Slide outline (7 slides, English, team + member names + challenge on slide 1)
+
+1. **Title**: RedSight, team, members, "Interplanetary Survival Guide: Martian Map"
+2. **Problem**: Mars Trek and USGS maps are regional/global; an astronaut needs a walk-scale plan
+3. **Our map**: screenshot of layers + stops on Mount Sharp boxwork (Gale) and why this site
+4. **Plan a Marswalk**: crew of two, load, samples → fastest vs lowest-hazard route, modeled time/O₂
+5. **Getting home**: turn-back point, green/amber/red zones, automatic switch to the fastest return
+6. **NASA data + honesty**: 6 data types, 4 missions, Observed/Derived/Scenario badges, what's Unavailable
+7. **What's next + link**: Tier 2/3 (360 + HUD, rover mode, Vision Pro), public URL, repo
+
+## 15. Data contract: engine → app (write it at kickoff; both owners code against it)
+
+All files live in `app/public/data/` (built by `engine/`). Coordinates: planetocentric east-positive degrees,
+explicit CRS `+proj=longlat +R=3396190 +no_defs` (review §7). Every number shown in the UI comes from one of
+these files.
+
+| File | Content | Producer → consumer |
+|---|---|---|
+| `meta.json` | ops box, grid origin/resolution/size, CRS string, nodata value, build date, constants-file hash | engine → app |
+| `constants.json` | every model constant: `{value, range, unit, source_url, badge}` (κ, reserve, slope limits, speeds, O₂ conversion, crew defaults, rover rules) | engine ↔ app (UI reads, never hardcodes) |
+| `layers.json` | per layer: tile URL template, zoom range, legend, provenance card fields, badge | engine → app |
+| `stops.json` | GeoJSON points: name, evidence, sol(s), waypoint lon/lat, approx flag, photos[], panorama?, science text, badge | data owner → app |
+| `routes/{stop}_{mode}_{crew}_{load}.json` | polyline, per-segment `{t, o2, slope, cost_terms}`, cumulative tables, PNR index, budget used, mode, constants hash | engine → app |
+| `fields/{crew}_{load}_{field}.png` | `Out_fast`, `Back_fast`, `Back_safest` as 16-bit PNG (O₂ in 0.1 L units) on the planning grid | engine → app (zones = threshold only) |
+| `hazards.geojson` | hard-blocked areas with reason codes (`slope`, `nodata`, `edge`; Tier 2 adds `rover_step`, `rover_sand`, `rover_width`) | engine → app |
+| `cards/rad.json`, `cards/rems.json` | context-card values + source + date range | data owner → app |
+
+Buckets: crew ∈ {1, 2} × carried load ∈ {5, 15, 30} kg (+ sample mass rounded to the next load bucket for
+legs after a stop). That's 6 field sets ≈ 6 × 3 × ~0.7 MB. If the size or time budget is tight, ship only
+crew 2 × 15 kg.
+
+## 16. Acceptance checks for the new features (add to the 24–48 h plan §3 list)
+
+1. Crew of 2 never shows a later turn-back point than the same plan with one member (§8).
+2. Raising load or sample mass raises modeled O₂ and moves the turn-back point toward the habitat.
+3. Zones are nested and shrink when the budget drops; the "don't go beyond" line moves inward (§9).
+4. On the walk-along slider, the recommendation switches to fastest exactly where `R(x) < Back_safest(x)`.
+5. (Tier 2) every rover-mode route avoids rover-blocked cells; each blocked area shows its reason code.
+6. (Tier 2) mixed plan: walking leg + walkback-to-habitat O₂ check both shown at the park point.
+
+## 17. Doc-hygiene findings from this pass (2026-11-13)
 
 | Finding | Status |
 |---|---|
-| Ops box misses boxwork; mislabeled 6×6 km (§5) | Fixed here; errata added to mapping-options; ai-context updated |
+| Ops box misses boxwork; mislabeled 6×6 km (§6) | Fixed here; errata added to mapping-options; ai-context updated |
 | Machine-readable traverse exists (MMGIS waypoints JSON) — the research listed the format as unknown | Recorded here + ai-context |
 | Cairo event officially started Fri 2026-11-13 07:00 Africa/Cairo; Cairo page has no `submissionDeadline` | open-questions updated |
 | 4 links in `requirements/` point to `/home/ali/Downloads/…`; those files are not on this Mac | Noted in open-questions; supply copies to the team or treat as unavailable |
@@ -394,7 +453,7 @@ credits in `data/PROVENANCE.md`. Building the viewer waits until Tier 1 is submi
 | `.gitignore` excludes `tiles/` ⇒ deploy by upload, not Pages-from-main (§4) | Noted here |
 | ai-context banned-word list omitted "safe time remaining" and "flight-safe" | Fixed in ai-context |
 
-## 11. Sources (all accessed 2026-11-13)
+## 18. Sources (all accessed 2026-11-13)
 
 - Official challenge page (live text re-extracted; resources unchanged, 5 items):
   https://www.spaceappschallenge.org/2026/challenges/interplanetary-survival-guide-martian-map/

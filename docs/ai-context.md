@@ -37,14 +37,14 @@ official "no pre-work" rule; build happens inside the event window).
 - **Project name:** RedSight (user-selected). Earlier drafts say "Marswalk Planner (working title)" — superseded.
 - **Site:** Gale crater / lower Mount Sharp (user decision; challenge permits any site). Ops box
   **proposed 137.335–137.435°E / −4.85…−4.75°** at the boxwork site, with stops at real Curiosity
-  waypoints (D11, demo-focus-plan §5). The research-era box (137.30–137.45°E / −4.75…−4.55°) missed the
+  waypoints (D11, demo-focus-plan §6). The research-era box (137.30–137.45°E / −4.75…−4.55°) missed the
   boxwork and was ~9×12 km. Habitat position is set at the pilot gate (U1 closes there).
 - **Scope is tiered, built strictly in order** (D12, [`demo-focus-plan.md`](demo-focus-plan.md) §3):
   **Tier 1 base** (map + layers + stops + routes + turn-back slider + provenance/RAD/REMS cards +
   deploy + submit) → **Tier 2 extras** (360 at stops + HUD) only after Tier 1 is submitted → **Tier 3
   bonus** (Vision Pro WebXR, 3D fly-along) only after Tier 2 works. Before starting work, check which tier
   is complete. Data-type order and badges: D16–D17. Return-budget zones, the "don't go beyond" line and
-  the automatic switch to the fastest return when O₂ is low are Tier 1 (D22, demo-focus-plan §7b). Crew setup (pair, body mass, load, samples) is
+  the automatic switch to the fastest return when O₂ is low are Tier 1 (D22, demo-focus-plan §9). Crew setup (pair, body mass, load, samples) is
   Tier 1 (D19); rover-vs-foot mode is the first Tier 2 item (D20); drill-site stops (D21). Display
   formats are all optional; no fixed number is required (demo-focus-plan §1b). The challenge-text
   traceability table is demo-focus-plan §1c.

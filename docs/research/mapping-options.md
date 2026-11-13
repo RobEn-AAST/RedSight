@@ -50,7 +50,7 @@ intact below as the research record):
   `DTEEC_009149_1750_009294_1750_U01` and `DTEEC_019698_1750_019988_1750_U01` (both DTMs HTTP 206 on
   2026-11-13). Also resolves §15 item 7 partially: a machine-readable traverse exists at
   `https://mars.nasa.gov/mmgis-maps/MSL/Layers/json/MSL_waypoints.json` (GeoJSON, per-stop sol/site/lon/lat/
-  elevation). See [`../demo-focus-plan.md`](../demo-focus-plan.md) §5.
+  elevation). See [`../demo-focus-plan.md`](../demo-focus-plan.md) §6.
 
 Everything else the review re-checked was confirmed live: the 8 CC0-licensed ops-box DTM items, Trek
 layer extents/pixel sizes to 5 decimals, the raw-image API at sol 5072, pygeoapi SIM 3292 units, and
