@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:copilot": "node ../server/index.mjs",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "check:data": "node scripts/check-data.mjs",
@@ -14,7 +15,9 @@
     "@fontsource/chakra-petch": "^5.3.0",
     "@fontsource/ibm-plex-mono": "^5.3.0",
     "@fontsource/ibm-plex-sans": "^5.3.0",
+    "@huggingface/transformers": "^4.3.2",
     "@tailwindcss/vite": "^4.3.5",
+    "kokoro-js": "^1.2.1",
     "@types/three": "^0.170.0",
     "lucide-react": "^1.72.0",
     "maplibre-gl": "^6.18.0",
