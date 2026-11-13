@@ -46,9 +46,9 @@ Marwan). Work it on your own branch. Order = priority.
 | # | Delivery item | Taken by |
 |---|---|---|
 | 1 | Ask the Local Lead the open questions (open-questions.md: cutoff, who submits, edits after submit) | |
-| 2 | 7 slides (§14) with real screenshots | |
+| 2 | 7 slides (§14) with real screenshots | Marwan (outline + notes drafted: [`submission/demo-script.md`](submission/demo-script.md); screenshots wait for real data) |
 | 3 | Project page text + NASA Data list + AI disclosure (README sections) | |
-| 4 | 60-second demo script (§17) and a rehearsal | |
+| 4 | 60-second demo script (§17) and a rehearsal | Marwan (script drafted, same file; rehearsal open) |
 | 5 | Logged-out test of the public URL on phone + laptop | |
 | 6 | Wording + badge audit of the UI (AGENTS rule 3) | |
 | 7 | Demo GIF/recording for the project page | |

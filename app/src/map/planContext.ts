@@ -3,6 +3,7 @@ import type { Map as MapLibreMap } from 'maplibre-gl'
 import type { FeatureCollection } from 'geojson'
 
 import type {
+  EngineRoute,
   EngineRouteMode,
   PlanFile,
   PlanMember,
@@ -53,6 +54,19 @@ export interface PlanStore {
   preset: PlanPreset | null
   /** true when plans come from the older single-route files (no legs, no split). */
   legacy: boolean
+  /**
+   * The first active member as a §15 route (coords, seg, cum, back, pnr_index,
+   * budget_l), for the turn-back slider and Mission Replay. null with no plan.
+   */
+  activeRoute: EngineRoute | null
+  /** Same as `status`, under the name the slider and replay read. */
+  routesStatus: PlanStatus
+  /**
+   * Usable O₂ budget per crew member set by the turn-back slider (L), shared so
+   * the slider and Mission Replay use the same number. null = full budget C − R.
+   */
+  o2BudgetL: number | null
+  setO2BudgetL: (l: number | null) => void
   map: MapLibreMap | null
   setMap: (map: MapLibreMap | null) => void
 }

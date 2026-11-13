@@ -99,3 +99,47 @@ test("no-go and turn-back-ahead", () => {
   const ahead = tl.events.find((e) => e.type === "turnback-ahead");
   assert.equal(ahead.t, tl.events.find((e) => e.type === "turnback").t - 300);
 });
+
+test("lower budget (turn-back slider) = less O2 at the start of the same tank", () => {
+  // tank 40, reserve 10, budget 10 → start with 20 L = 50 % of the tank.
+  const tl = buildTimeline(route, { ...base, budgetL: 10, statusStep: 0.1 });
+  assert.equal(tl.tankL, 40);
+  assert.equal(tl.capacityL, 20);
+  const pcts = tl.events.filter((e) => e.type === "status").map((e) => e.pct);
+  assert.ok(pcts.length > 0 && pcts.every((p) => p < 50), `status calls below the start level: ${pcts}`);
+  assert.equal(pcts[0], 40);
+});
+
+// Own way back 6 L from the stop; fastest way home 3 L with its own path.
+const withFast = {
+  ...route, mode: "safest",
+  back: { t_s: [0, 600, 1200], o2_l: [0, 3, 6] },
+  back_fast: { t_s: [0, 300, 600], o2_l: [0, 1.5, 3], path: [
+    [[137.40, -4.815]], [[137.395, -4.81], [137.40, -4.815]], [[137.39, -4.805], [137.40, -4.815]]] },
+};
+
+test("auto-switch: own way back stops fitting → switch to the fastest way home, later turn-back", () => {
+  // B = 14: own rule 10 + 6 = 16 > 14 at the stop; fastest 10 + 3 = 13 ≤ 14 → reach the stop, switch on the way.
+  const tl = buildTimeline(withFast, { ...base, capacityL: 24, reserveL: 10 });
+  assert.equal(tl.reachStop, true);
+  assert.ok(tl.switchT > 600 && tl.switchT < 1200, `switch between vertex 1 and 2: ${tl.switchT}`);
+  assert.ok(tl.events.some((e) => e.type === "switch-fast"));
+  assert.equal(tl.fastHome, true);
+  assert.equal(tl.arrivalL, 24 - 13); // home by the fastest way: 10 out + 3 back
+});
+
+test("auto-switch: no switch when the own way back fits", () => {
+  const tl = buildTimeline(withFast, { ...base, capacityL: 40, reserveL: 10 });
+  assert.equal(tl.switchT, null);
+  assert.equal(tl.fastHome, false);
+  assert.ok(!tl.events.some((e) => e.type === "switch-fast"));
+});
+
+test("auto-switch: switch point always comes before the turn-back point", () => {
+  for (const B of [4, 6, 8, 10, 12]) {
+    const tl = buildTimeline(withFast, { ...base, capacityL: B + 10, reserveL: 10 });
+    const turn = tl.events.find((e) => e.type === "turnback" || e.type === "arrive");
+    if (tl.switchT != null && turn) assert.ok(tl.switchT <= turn.t + 1e-9, `B=${B}`);
+    assert.ok(tl.arrivalL >= 10 - 1e-9, `reserve intact at B=${B}: ${tl.arrivalL}`);
+  }
+});

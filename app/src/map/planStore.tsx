@@ -19,6 +19,26 @@ import { nearestLoadBucket, perAstronautLoadKg } from '@/types/mission'
 
 const MODES: EngineRouteMode[] = ['fastest', 'safest']
 
+/** One plan member in the §15 route shape the turn-back slider and replay read. */
+function memberAsRoute(plan: PlanFile, m: PlanMember): EngineRoute {
+  return {
+    _mock: plan._mock,
+    id: `${plan.id}:${m.member}`,
+    stop: m.targets[m.targets.length - 1] ?? plan.target,
+    mode: plan.mode,
+    crew: plan.crew,
+    load_kg: plan.load_kg,
+    badge: plan.badge,
+    budget_l: plan.budget_l,
+    constants_hash: '',
+    coords: m.coords,
+    seg: m.seg.map(({ distance_m, ...s }) => ({ ...s, cost_terms: { distance_m } })),
+    cum: m.cum,
+    back: m.back,
+    pnr_index: m.pnr_index,
+  }
+}
+
 interface Want {
   crew: number
   load: number
@@ -139,6 +159,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
   const [mode, setMode] = useState<EngineRouteMode>('fastest')
   const [crewMode, setCrewMode] = useState<CrewMode>('together')
   const [map, setMap] = useState<MapLibreMap | null>(null)
+  const [o2BudgetL, setO2BudgetL] = useState<number | null>(null)
   const [loaded, setLoaded] = useState<Loaded | null>(null)
   const [limits, setLimits] = useState<{ key: string; line: FeatureCollection | null } | null>(null)
 
@@ -239,10 +260,14 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       noReturnLine: limits && limits.key === limitsFile ? limits.line : null,
       preset: pick?.preset ?? null,
       legacy,
+      activeRoute: activePlan && activeMembers[0] ? memberAsRoute(activePlan, activeMembers[0]) : null,
+      routesStatus: status,
+      o2BudgetL,
+      setO2BudgetL,
       map,
       setMap,
     }
-  }, [goalTargets, goalUnmatched, selectedTargetId, mode, crewMode, loaded, key, pick, limits, limitsFile, legacy, map])
+  }, [goalTargets, goalUnmatched, selectedTargetId, mode, crewMode, loaded, key, pick, limits, limitsFile, legacy, map, o2BudgetL])
 
   return <PlanContext.Provider value={store}>{children}</PlanContext.Provider>
 }

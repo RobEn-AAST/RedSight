@@ -8,7 +8,7 @@
    "crew": 2,
    "load_kg": 15,
    "file": "routes/S1_fastest_2_15.json",
-   "total_s": 7866
+   "total_s": 7462
   },
   {
    "id": "S1_safest_2_15",
@@ -17,7 +17,7 @@
    "crew": 2,
    "load_kg": 15,
    "file": "routes/S1_safest_2_15.json",
-   "total_s": 7468
+   "total_s": 9939
   },
   {
    "id": "S2_fastest_2_15",
@@ -26,7 +26,7 @@
    "crew": 2,
    "load_kg": 15,
    "file": "routes/S2_fastest_2_15.json",
-   "total_s": 6887
+   "total_s": 6533
   },
   {
    "id": "S2_safest_2_15",
@@ -35,7 +35,7 @@
    "crew": 2,
    "load_kg": 15,
    "file": "routes/S2_safest_2_15.json",
-   "total_s": 6531
+   "total_s": 8945
   },
   {
    "id": "S3_fastest_2_15",
@@ -44,7 +44,7 @@
    "crew": 2,
    "load_kg": 15,
    "file": "routes/S3_fastest_2_15.json",
-   "total_s": 4110
+   "total_s": 3906
   },
   {
    "id": "S3_safest_2_15",
@@ -53,7 +53,7 @@
    "crew": 2,
    "load_kg": 15,
    "file": "routes/S3_safest_2_15.json",
-   "total_s": 3826
+   "total_s": 6742
   },
   {
    "id": "D1_fastest_2_15",
@@ -62,7 +62,7 @@
    "crew": 2,
    "load_kg": 15,
    "file": "routes/D1_fastest_2_15.json",
-   "total_s": 7848
+   "total_s": 7446
   },
   {
    "id": "D1_safest_2_15",
@@ -71,7 +71,7 @@
    "crew": 2,
    "load_kg": 15,
    "file": "routes/D1_safest_2_15.json",
-   "total_s": 7444
+   "total_s": 9859
   },
   {
    "id": "D2_fastest_2_15",
@@ -80,7 +80,7 @@
    "crew": 2,
    "load_kg": 15,
    "file": "routes/D2_fastest_2_15.json",
-   "total_s": 6900
+   "total_s": 6546
   },
   {
    "id": "D2_safest_2_15",
@@ -89,7 +89,7 @@
    "crew": 2,
    "load_kg": 15,
    "file": "routes/D2_safest_2_15.json",
-   "total_s": 6544
+   "total_s": 8961
   }
  ]
 }

@@ -4,6 +4,8 @@ import { useEngineData } from '@/lib/useEngineData'
 import { opsBox as fallbackOpsBox } from '@/lib/stopsData'
 import { MapCanvas } from '@/map/MapCanvas'
 import { PlanPanel } from '@/map/PlanPanel'
+import { MissionReplay } from '@/replay/MissionReplay'
+import { TurnBackPanel } from '@/turnback/TurnBackPanel'
 import { EmptyState } from '@/ui/EmptyState'
 import { Toggle } from '@/ui/Toggle'
 
@@ -71,6 +73,11 @@ export function MapWorkspace({ onOpenSources }: { onOpenSources: () => void }) {
         aria-label="Plan"
       >
         <PlanPanel onOpenSources={onOpenSources} />
+        {/* Jana's turn-back slider and Marwan's Mission Replay read usePlan().activeRoute. */}
+        <div className="flex flex-col gap-3 border-t border-seam p-3">
+          <TurnBackPanel />
+          <MissionReplay />
+        </div>
       </aside>
     </div>
   )
