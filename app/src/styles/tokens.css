@@ -1,0 +1,175 @@
+/*
+ * RedSight design tokens — Tailwind v4 theme.
+ * World: inside a spacecraft/station. Deep blue-charcoal hull, thin luminous
+ * seams, squared instrument panels, one signal amber, taxonomy badge colors.
+ * Fonts: Chakra Petch (display/labels), IBM Plex Sans (body), IBM Plex Mono (data).
+ */
+@import 'tailwindcss';
+
+@theme {
+  /* -- Surfaces: hull to raised panel ---------------------------------- */
+  --color-void: #06080b;
+  --color-hull: #0b0f15;
+  --color-panel: #10151d;
+  --color-panel-2: #151b25;
+  --color-inset: #0a0e14;
+  --color-seam: #1e2733;
+  --color-seam-lit: #2c3947;
+
+  /* -- Ink --------------------------------------------------------------- */
+  --color-ink: #e9edf3;
+  --color-ink-dim: #9aa6b5;
+  --color-ink-faint: #66717f;
+
+  /* -- Signal + status ---------------------------------------------------- */
+  --color-signal: #ffb224;
+  --color-signal-soft: #3a2c10;
+  --color-caution: #ff6d6d;
+  --color-caution-soft: #3a1717;
+  --color-go: #4fd08a;
+  --color-go-soft: #11301f;
+
+  /* -- Evidence taxonomy (OBSERVED / DERIVED / SCENARIO / UNAVAILABLE) ---- */
+  --color-observed: #56d8f4;
+  --color-observed-soft: #0e2a33;
+  --color-derived: #b9a4f5;
+  --color-derived-soft: #221c3a;
+  --color-scenario: #f59a5f;
+  --color-scenario-soft: #33200f;
+  --color-unavailable: #8a94a3;
+  --color-unavailable-soft: #1c2027;
+
+  /* -- Type ---------------------------------------------------------------- */
+  --font-display: 'Chakra Petch', 'IBM Plex Sans', system-ui, sans-serif;
+  --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-data: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', monospace;
+
+  /* -- Motion -------------------------------------------------------------- */
+  --ease-console: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* -- Shadows: panels lit from within, offset downward --------------------- */
+  --shadow-panel: 0 1px 0 0 rgba(255, 255, 255, 0.03) inset, 0 8px 24px -12px rgba(0, 0, 0, 0.8);
+  --shadow-lift: 0 1px 0 0 rgba(255, 255, 255, 0.05) inset, 0 16px 40px -16px rgba(0, 0, 0, 0.9);
+}
+
+/*
+ * Base layer: browser surfaces belong to the design too — selection, caret,
+ * scrollbars, focus rings, numerals.
+ */
+@layer base {
+  html {
+    color-scheme: dark;
+    scrollbar-gutter: stable;
+  }
+
+  body {
+    @apply bg-void text-ink font-body antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--color-signal);
+    color: #14100a;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-signal);
+    outline-offset: 2px;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-seam-lit) transparent;
+  }
+}
+
+/*
+ * Component-ish utilities used across panels. Kept small; most styling stays
+ * composable in JSX with Tailwind utilities.
+ */
+@layer utilities {
+  /* Uppercase console micro-label */
+  .label-console {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 0.6875rem; /* 11px */
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  /* Tabular readouts */
+  .data-readout {
+    font-family: var(--font-data);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Chamfer: squared console corner with a 45° nick, top-left + bottom-right */
+  .chamfer {
+    clip-path: polygon(
+      10px 0,
+      100% 0,
+      100% calc(100% - 10px),
+      calc(100% - 10px) 100%,
+      0 100%,
+      0 10px
+    );
+  }
+  .chamfer-sm {
+    clip-path: polygon(
+      6px 0,
+      100% 0,
+      100% calc(100% - 6px),
+      calc(100% - 6px) 100%,
+      0 100%,
+      0 6px
+    );
+  }
+
+  /* Instrument grid — only on real map/plot canvases */
+  .instrument-grid {
+    background-image:
+      linear-gradient(rgba(86, 216, 244, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(86, 216, 244, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* Status LED */
+  .led {
+    width: 7px;
+    height: 7px;
+    border-radius: 9999px;
+    flex: none;
+  }
+  .led-pulse {
+    animation: led-pulse 2.4s var(--ease-console, ease) infinite;
+  }
+
+  /* Fine horizontal rule with a lit left edge — section divider in panels */
+  .rule-seam {
+    height: 1px;
+    background: linear-gradient(90deg, var(--color-seam-lit), var(--color-seam) 60%);
+  }
+}
+
+@keyframes led-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .led-pulse {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

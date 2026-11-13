@@ -10,9 +10,11 @@ every fact lives. Working rules for agents: [`../AGENTS.md`](../AGENTS.md).
 **RedSight** — NASA Space Apps Challenge 2026 (Cairo, Nov 13–14) entry for the **Interplanetary
 Survival Guide: Martian Map** challenge (Intermediate). A hyperlocal Marswalk decision-support planner
 for **Gale crater / lower Mount Sharp**: layered NASA-data map, science-goal picker, modeled routes
-with time/O2 estimates and turn-back marker, provenance inspector. **No app code exists yet** — the
-repo currently contains strategy, requirements, and research documentation only (by design: the
-official "no pre-work" rule; build happens inside the event window).
+with time/O2 estimates and turn-back marker, provenance inspector. **App foundation exists** since
+2026-11-13 (web-foundation worker): `app/` holds the React+Vite+TS mission console (mission setup per
+plan §8, map/stops/routes/provenance/HUD workspaces with honest engine-data-absent states, copilot
+panel in not-configured state) — engine data, MapLibre tiles and route math are still pending (see
+[`web-foundation.md`](web-foundation.md) §1–§2).
 
 ## 2. Document map (read order for a new agent)
 
@@ -25,8 +27,10 @@ official "no pre-work" rule; build happens inside the event window).
 | 5 | [`competition-overview.md`](competition-overview.md) | Official requirements vs our proposal, mapping table, site choice, open decisions |
 | 6 | [`technical-approaches.md`](technical-approaches.md) | Verified data inventory, claim verdicts, model constants, architecture recommendation, honesty guardrails |
 | 7 | [`demo-focus-plan.md`](demo-focus-plan.md) | **Current focused plan** (2026-11-13): what we submit, narrowed scope, architecture diagram, corrected ops box + stops, data-type order, 360 + HUD, Vision Pro, first steps |
+| 7b | [`web-foundation.md`](web-foundation.md) | **App status** (2026-11-13): implemented vs planned, installed versions + Node needs, commands, folder boundaries, engine→app integration steps |
+| 7c | [`ai/voice-copilot-plan.md`](ai/voice-copilot-plan.md), [`ai/assistant-system-prompt.md`](ai/assistant-system-prompt.md) | Voice/chat copilot **plan** (UNCONNECTED): pipeline, local-vs-Groq STT tradeoffs, Gemini/Groq model IDs verified 2026-11-13, server-side-key backend proposal, typed future tool contracts, system-prompt design. Records the user's 2026-11-13 exception to D12 (planning + honest panel only; no live AI at judging without a new team decision) |
 | 7a | [`team-plan.md`](team-plan.md) | **Who builds what**: 6 owners, Must ship / If time per person, branches, checkpoints, Mission Replay hook. Teammates start a session with "I am <name>" |
-| 7b | [`24-48-hour-plan.md`](24-48-hour-plan.md) | Must/Should/Stretch scope, phase plan, acceptance evidence, risks (scope/ops area superseded by demo-focus-plan) |
+| 7d | [`24-48-hour-plan.md`](24-48-hour-plan.md) | Must/Should/Stretch scope, phase plan, acceptance evidence, risks (scope/ops area superseded by demo-focus-plan) |
 | 8 | [`research/mapping-options.md`](research/mapping-options.md), [`research/routing-options.md`](research/routing-options.md) | Deep evidence: datasets/live checks/CRS traps; graph/algorithms/PNR — keep as evidence, see their Errata headers |
 | 8b | [`research/external-sources-review.md`](research/external-sources-review.md) | Verdicts on the Kaggle notebook (game data, rejected), the NASA Life Sciences Portal (EVA/walkback citations), and how each of the 5 official resources is used, by tier |
 | 9 | [`research/independent-architecture-review.md`](research/independent-architecture-review.md) | Adversarial review of the two research docs: verdicts V1–V13, findings F1–F8, pilot + gate |

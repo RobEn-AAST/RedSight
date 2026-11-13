@@ -1,0 +1,408 @@
+import { Check, Minus, Plus, Rocket, Footprints } from 'lucide-react'
+
+import { Field } from '@/ui/Field'
+import { EvidenceBadge } from '@/ui/Badge'
+import { cn } from '@/lib/cn'
+import { scienceGoalOptions, unavailableGoalNote } from '@/lib/materials'
+import { useMission } from '@/lib/useMission'
+import {
+  missionLimits,
+  nearestLoadBucket,
+  perAstronautLoadKg,
+  totalLoadKg,
+  type LoadBasis,
+} from '@/types/mission'
+
+/* -- Step 1: crew + body mass (plan §8, D19) --------------------------------- */
+
+export function CrewStep() {
+  const { state, patchConfig } = useMission()
+  const { crewCount, bodyMassKg } = state.config
+  const L = missionLimits
+
+  return (
+    <div className="flex flex-col gap-6">
+      <Field
+        label="Astronauts on this EVA"
+        hint={`Team model: crew of ${L.crewMin}–${L.crewMax}. Default 2 — NASA DRA 5.0 (SP-2009-566) plans Mars surface EVAs with a minimum of two crew (buddy system); the pair's turn-back is the earlier member's.`}
+      >
+        {() => (
+          <div role="radiogroup" aria-label="Crew size" className="flex gap-3">
+            {[1, 2].map((n) => (
+              <button
+                key={n}
+                type="button"
+                role="radio"
+                aria-checked={crewCount === n}
+                onClick={() => patchConfig({ crewCount: n })}
+                className={cn(
+                  'flex items-center gap-3 border px-5 py-3 transition-colors',
+                  crewCount === n
+                    ? 'border-signal/60 bg-signal-soft/50'
+                    : 'border-seam bg-inset/40 hover:border-seam-lit',
+                )}
+              >
+                <span className="data-readout text-2xl text-ink">{n}</span>
+                <span className="label-console text-ink-dim">{n === 1 ? 'solo' : 'pair'}</span>
+                {crewCount === n && <Check size={14} aria-hidden className="text-signal" />}
+              </button>
+            ))}
+          </div>
+        )}
+      </Field>
+
+      <Field
+        label="Body mass per astronaut (kg)"
+        hint={`Range ${L.bodyMassMin}–${L.bodyMassMax} kg — crew mass range from NASA JSC ICES-2026-127 “Mars Spacesuit Mass Requirements”; its worked example uses 82 kg. Only mass enters the energy model (stature isn’t modeled).`}
+      >
+        {({ describedBy, invalid }) => (
+          <div className="flex max-w-xs items-center gap-3">
+            <button
+              type="button"
+              onClick={() => patchConfig({ bodyMassKg: Math.max(L.bodyMassMin, bodyMassKg - 1) })}
+              aria-label="Decrease body mass by one kilogram"
+              className="flex size-11 items-center justify-center border border-seam-lit text-ink hover:border-signal/60 hover:text-signal"
+            >
+              <Minus size={16} aria-hidden />
+            </button>
+            <input
+              type="number"
+              inputMode="decimal"
+              min={L.bodyMassMin}
+              max={L.bodyMassMax}
+              step={1}
+              value={Number.isFinite(bodyMassKg) ? bodyMassKg : ''}
+              aria-invalid={invalid}
+              aria-describedby={describedBy}
+              onChange={(e) => patchConfig({ bodyMassKg: Number.parseFloat(e.target.value) })}
+              className="data-readout w-24 border border-seam-lit bg-inset px-3 py-2 text-center text-xl text-ink focus:border-signal/60 focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => patchConfig({ bodyMassKg: Math.min(L.bodyMassMax, bodyMassKg + 1) })}
+              aria-label="Increase body mass by one kilogram"
+              className="flex size-11 items-center justify-center border border-seam-lit text-ink hover:border-signal/60 hover:text-signal"
+            >
+              <Plus size={16} aria-hidden />
+            </button>
+            <span className="text-sm text-ink-dim">kg</span>
+          </div>
+        )}
+      </Field>
+
+      <p className="border border-seam bg-inset/60 px-3 py-2.5 text-xs leading-relaxed text-ink-faint">
+        Crew, body mass, load and samples feed the Pandolf-based metabolic model with suit factor
+        κ = 1.3 (Norcross TP-2010-216115). Every output it produces is a{' '}
+        <span className="text-scenario">Scenario</span> estimate.
+      </p>
+    </div>
+  )
+}
+
+/* -- Step 2: carried load + samples (plan §8, §15 buckets) ------------------- */
+
+export function LoadStep() {
+  const { state, patchConfig } = useMission()
+  const { loadKg, loadBasis, sampleKgPerStop, crewCount } = state.config
+  const L = missionLimits
+  const maxTotal = L.loadPerAstronautMax * crewCount
+  const bucket = nearestLoadBucket(perAstronautLoadKg(state.config))
+
+  return (
+    <fieldset className="flex flex-col gap-6">
+      <legend className="sr-only">Carried load and samples</legend>
+
+      <Field
+        label="Mass basis — what does the number mean?"
+        hint="Per-person means each astronaut carries the entered mass (the engine’s per-member load). Total means the whole manifest, divided across the crew."
+      >
+        {() => (
+          <div className="grid gap-2 sm:grid-cols-2">
+            {(
+              [
+                ['perAstronaut', 'Per astronaut', `Each crew member carries the entered mass (0–${L.loadPerAstronautMax} kg).`],
+                ['total', 'Mission total', `The entered mass is the whole manifest (0–${maxTotal} kg for ${crewCount}).`],
+              ] as [LoadBasis, string, string][]
+            ).map(([value, title, desc]) => (
+              <label
+                key={value}
+                className={cn(
+                  'flex cursor-pointer items-start gap-3 border p-3 transition-colors',
+                  loadBasis === value
+                    ? 'border-signal/60 bg-signal-soft/60'
+                    : 'border-seam bg-inset/40 hover:border-seam-lit',
+                )}
+              >
+                <input
+                  type="radio"
+                  name="load-basis"
+                  value={value}
+                  checked={loadBasis === value}
+                  onChange={() => patchConfig({ loadBasis: value })}
+                  className="mt-0.5 accent-[#ffb224]"
+                />
+                <span className="flex flex-col gap-0.5">
+                  <span className="label-console text-ink">{title}</span>
+                  <span className="text-xs text-ink-dim">{desc}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        )}
+      </Field>
+
+      <Field
+        label="Carried package / equipment mass (kg)"
+        hint="Tools and kit only — suits are handled by the model separately. Team model range; context: ICES-2026-127 cites the NIOSH carry limit 51 lbf (227 N)."
+      >
+        {({ describedBy, invalid }) => (
+          <div className="flex max-w-xs items-center gap-3">
+            <input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              max={loadBasis === 'perAstronaut' ? L.loadPerAstronautMax : maxTotal}
+              step={0.5}
+              value={Number.isFinite(loadKg) ? loadKg : ''}
+              aria-invalid={invalid}
+              aria-describedby={describedBy}
+              onChange={(e) => patchConfig({ loadKg: Number.parseFloat(e.target.value) })}
+              className="data-readout w-28 border border-seam-lit bg-inset px-3 py-2 text-xl text-ink focus:border-signal/60 focus:outline-none"
+            />
+            <span className="text-sm text-ink-dim">
+              kg {loadBasis === 'perAstronaut' ? 'per astronaut' : 'mission total'}
+            </span>
+          </div>
+        )}
+      </Field>
+
+      <Field
+        label="Samples picked up per stop (kg)"
+        hint="Added to the carried load on every leg after that stop — so the return leg costs more. With a rover (Tier 2), samples ride on the rover instead."
+      >
+        {({ describedBy, invalid }) => (
+          <div className="flex max-w-xs items-center gap-3">
+            <input
+              type="number"
+              inputMode="decimal"
+              min={L.sampleMin}
+              max={L.sampleMax}
+              step={0.5}
+              value={Number.isFinite(sampleKgPerStop) ? sampleKgPerStop : ''}
+              aria-invalid={invalid}
+              aria-describedby={describedBy}
+              onChange={(e) => patchConfig({ sampleKgPerStop: Number.parseFloat(e.target.value) })}
+              className="data-readout w-24 border border-seam-lit bg-inset px-3 py-2 text-center text-xl text-ink focus:border-signal/60 focus:outline-none"
+            />
+            <span className="text-sm text-ink-dim">kg / stop</span>
+          </div>
+        )}
+      </Field>
+
+      <div className="border border-seam bg-inset/60 px-4 py-3" aria-live="polite">
+        <p className="label-console mb-2 text-ink-faint">Resolved manifest</p>
+        <dl className="data-readout grid grid-cols-3 gap-2 text-sm">
+          <div>
+            <dt className="text-ink-faint">Mission total</dt>
+            <dd className="text-ink">{totalLoadKg(state.config).toFixed(1)} kg</dd>
+          </div>
+          <div>
+            <dt className="text-ink-faint">Per astronaut</dt>
+            <dd className="text-ink">{perAstronautLoadKg(state.config).toFixed(1)} kg</dd>
+          </div>
+          <div>
+            <dt className="text-ink-faint">Engine bucket</dt>
+            <dd className="text-signal">{bucket} kg</dd>
+          </div>
+        </dl>
+        <p className="mt-2 text-[11px] leading-relaxed text-ink-faint">
+          Routes are precomputed per crew × load bucket (§15); the app looks up the nearest bucket —
+          the browser never models numbers.
+        </p>
+      </div>
+    </fieldset>
+  )
+}
+
+/* -- Step 3: rover (input now; execution is Tier 2 E0) ------------------------ */
+
+export function RoverStep() {
+  const { state, patchConfig } = useMission()
+  const available = state.config.roverAvailable
+
+  return (
+    <fieldset className="flex flex-col gap-4">
+      <legend className="sr-only">Rover availability</legend>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {(
+          [
+            [
+              true,
+              'Rover available',
+              'Recorded now: rover-mode rules (20° slope limit, 0.3 m step, sand hard-avoid), park-and-walk plans and sample-carrying are planned for Tier 2 (E0).',
+              Rocket,
+            ],
+            [
+              false,
+              'On foot only',
+              'Walking traverse — suited walking speeds 1.1–2.2 km/h working range. This is the Tier 1 baseline the engine computes first.',
+              Footprints,
+            ],
+          ] as [boolean, string, string, typeof Rocket][]
+        ).map(([value, title, desc, Icon]) => (
+          <button
+            key={String(value)}
+            type="button"
+            aria-pressed={available === value}
+            onClick={() => patchConfig({ roverAvailable: value })}
+            className={cn(
+              'flex flex-col items-start gap-2 border p-4 text-left transition-colors',
+              available === value
+                ? 'border-signal/60 bg-signal-soft/50'
+                : 'border-seam bg-inset/40 hover:border-seam-lit',
+            )}
+          >
+            <span className="flex w-full items-center gap-2">
+              <Icon size={16} aria-hidden className={available === value ? 'text-signal' : 'text-ink-dim'} />
+              <span className="label-console text-ink">{title}</span>
+              {available === value && <Check size={14} aria-hidden className="ml-auto text-signal" />}
+            </span>
+            <span className="text-xs leading-relaxed text-ink-dim">{desc}</span>
+          </button>
+        ))}
+      </div>
+      <p className="border border-seam bg-inset/60 px-3 py-2.5 text-xs leading-relaxed text-ink-faint">
+        This input is stored in the shared mission state now (user-authorized); no rover traversal is
+        computed in Tier 1 — rover-vs-foot routing is the first Tier 2 item, after the base is
+        submitted.
+      </p>
+    </fieldset>
+  )
+}
+
+/* -- Step 4: science goal ------------------------------------------------------- */
+
+export function GoalStep() {
+  const { state, patchConfig } = useMission()
+  const selected = state.config.scienceGoalId
+
+  return (
+    <fieldset className="flex flex-col gap-3">
+      <legend className="sr-only">Science or material goal</legend>
+      {scienceGoalOptions.map((goal) => (
+        <label
+          key={goal.id}
+          className={cn(
+            'flex cursor-pointer flex-col gap-2 border p-4 transition-colors',
+            selected === goal.id
+              ? 'border-signal/60 bg-signal-soft/50'
+              : 'border-seam bg-inset/40 hover:border-seam-lit',
+          )}
+        >
+          <span className="flex w-full items-center gap-2">
+            <input
+              type="radio"
+              name="science-goal"
+              value={goal.id}
+              checked={selected === goal.id}
+              onChange={() => patchConfig({ scienceGoalId: goal.id })}
+              className="accent-[#ffb224]"
+            />
+            <span className="label-console text-ink">{goal.label}</span>
+            <EvidenceBadge evidence={goal.evidence} className="ml-auto" />
+          </span>
+          <span className="text-xs leading-relaxed text-ink-dim">{goal.summary}</span>
+          <span className="text-[11px] leading-relaxed text-ink-faint">
+            Source: {goal.sourceName}
+            {goal.caveat ? ` — ${goal.caveat}` : ''}
+          </span>
+        </label>
+      ))}
+
+      <label
+        className={cn(
+          'flex cursor-pointer flex-col gap-2 border p-4 transition-colors',
+          selected === 'custom'
+            ? 'border-signal/60 bg-signal-soft/50'
+            : 'border-seam bg-inset/40 hover:border-seam-lit',
+        )}
+      >
+        <span className="flex w-full items-center gap-2">
+          <input
+            type="radio"
+            name="science-goal"
+            value="custom"
+            checked={selected === 'custom'}
+            onChange={() => patchConfig({ scienceGoalId: 'custom' })}
+            className="accent-[#ffb224]"
+          />
+          <span className="label-console text-ink">Custom goal</span>
+          <EvidenceBadge evidence="scenario" className="ml-auto" />
+        </span>
+        <textarea
+          rows={2}
+          value={state.config.scienceGoalNote}
+          onChange={(e) => patchConfig({ scienceGoalNote: e.target.value })}
+          placeholder="Describe the target in one or two sentences…"
+          className="w-full resize-y border border-seam-lit bg-inset px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-signal/60 focus:outline-none"
+        />
+      </label>
+
+      <p className="border border-unavailable/30 bg-unavailable-soft/50 px-3 py-2.5 text-xs leading-relaxed text-unavailable">
+        {unavailableGoalNote}
+      </p>
+      <p className="border border-seam bg-inset/60 px-3 py-2.5 text-xs leading-relaxed text-ink-faint">
+        Stop cards come from the engine’s <span className="data-readout">stops.json</span> (§15): real
+        Curiosity positions inside the ops box — S1/S2 360 sites, S3 current position, plus drill
+        sites. A goal here frames those stops; it never invents reachable targets where the current
+        box has no coverage.
+      </p>
+    </fieldset>
+  )
+}
+
+/* -- Step 5: review --------------------------------------------------------------- */
+
+export function ReviewStep() {
+  const { state } = useMission()
+  const { config } = state
+  const goal =
+    scienceGoalOptions.find((g) => g.id === config.scienceGoalId) ??
+    (config.scienceGoalId === 'custom' ? null : undefined)
+
+  const rows: [string, string][] = [
+    ['Crew', `${config.crewCount} astronaut${config.crewCount === 1 ? '' : 's'}`],
+    ['Body mass', `${config.bodyMassKg} kg each`],
+    [
+      'Carried mass',
+      `${config.loadKg} kg ${config.loadBasis === 'perAstronaut' ? 'per astronaut' : 'mission total'} → ${totalLoadKg(config).toFixed(1)} kg total · ${perAstronautLoadKg(config).toFixed(1)} kg each · engine bucket ${nearestLoadBucket(perAstronautLoadKg(config))} kg`,
+    ],
+    ['Samples', `${config.sampleKgPerStop} kg per stop (added after each stop)`],
+    ['Rover', config.roverAvailable ? 'Available — mode executes in Tier 2 (E0)' : 'On foot only (Tier 1 baseline)'],
+    [
+      'Science goal',
+      goal ? goal.label : config.scienceGoalId === 'custom' ? `Custom: ${config.scienceGoalNote}` : '—',
+    ],
+  ]
+
+  return (
+    <div className="flex flex-col gap-4">
+      <dl className="flex flex-col gap-0 border border-seam bg-inset/40">
+        {rows.map(([term, value], i) => (
+          <div
+            key={term}
+            className={cn('grid grid-cols-[8rem_1fr] gap-3 px-4 py-3', i > 0 && 'border-t border-seam')}
+          >
+            <dt className="label-console pt-0.5 text-ink-faint">{term}</dt>
+            <dd className="text-sm leading-relaxed text-ink">{value}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="text-xs leading-relaxed text-ink-faint">
+        Confirming stores this as the shared mission state the Tier 1 app consumes (crew × load
+        bucket lookup, §15). All figures above are operator inputs — no measurements, no modeled
+        estimates. Time/O₂ and turn-back numbers arrive only from the engine’s precomputed JSON.
+      </p>
+    </div>
+  )
+}
