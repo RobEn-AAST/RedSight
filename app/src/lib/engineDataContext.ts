@@ -52,6 +52,8 @@ export interface EngineStop {
   photos: string[]
   panorama?: string | null
   science?: string
+  /** Observed rover elevation at the stop from stops.json card.elev_m (m). */
+  elevM?: number
   badge: ContractBadge
 }
 
@@ -91,6 +93,8 @@ export interface EngineRoute {
   constants_hash: string
   /** [[lon, lat], …] habitat → stop, N points. */
   coords: [number, number][]
+  /** Optional per-vertex elevation along the route (m), N values. */
+  elev_m?: number[]
   /** N−1 segments. */
   seg: {
     t_s: number
@@ -184,8 +188,16 @@ export interface PlanMember {
   label: string
   targets: string[]
   coords: [number, number][]
+  /** Optional per-vertex elevation along the route (m), N values. */
+  elev_m?: number[]
   legs: PlanLeg[]
-  seg: { t_s: number; o2_l: number; slope_deg: number; distance_m: number }[]
+  seg: {
+    t_s: number
+    o2_l: number
+    slope_deg: number
+    distance_m: number
+    cost_terms?: { distance_m?: number } & Record<string, number>
+  }[]
   cum: { t_s: number[]; o2_l: number[] }
   back: { t_s: number[]; o2_l: number[] }
   /** Optional fastest way home from each point (app/public/data/README.md); drives the switch to it. */

@@ -32,7 +32,11 @@ function memberAsRoute(plan: PlanFile, m: PlanMember): EngineRoute {
     budget_l: plan.budget_l,
     constants_hash: '',
     coords: m.coords,
-    seg: m.seg.map(({ distance_m, ...s }) => ({ ...s, cost_terms: { distance_m } })),
+    ...(m.elev_m ? { elev_m: m.elev_m } : {}),
+    seg: m.seg.map(({ distance_m, cost_terms, ...s }) => ({
+      ...s,
+      cost_terms: { distance_m, ...cost_terms },
+    })),
     cum: m.cum,
     back: m.back,
     ...(m.back_fast ? { back_fast: m.back_fast } : {}),
@@ -79,6 +83,7 @@ function routeToPlan(route: EngineRoute): PlanFile {
     label: route.crew === 2 ? 'Both astronauts' : 'Astronaut',
     targets: [route.stop],
     coords: route.coords,
+    ...(route.elev_m ? { elev_m: route.elev_m } : {}),
     legs: [
       {
         kind: 'walk',
@@ -94,6 +99,7 @@ function routeToPlan(route: EngineRoute): PlanFile {
       o2_l: s.o2_l,
       slope_deg: s.slope_deg,
       distance_m: s.cost_terms.distance_m,
+      cost_terms: s.cost_terms,
     })),
     cum: route.cum,
     back: route.back,
@@ -151,6 +157,12 @@ function isRoute(raw: unknown): raw is EngineRoute {
 interface Loaded {
   key: string
   plans: Partial<Record<EngineRouteMode, PlanFile>>
+  routes: Partial<Record<EngineRouteMode, EngineRoute>>
+}
+
+interface LoadedRoutes {
+  key: string
+  routes: Partial<Record<EngineRouteMode, EngineRoute>>
 }
 
 export function PlanProvider({ children }: { children: ReactNode }) {
@@ -162,6 +174,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
   const [map, setMap] = useState<MapLibreMap | null>(null)
   const [o2BudgetL, setO2BudgetL] = useState<number | null>(null)
   const [loaded, setLoaded] = useState<Loaded | null>(null)
+  const [loadedContract, setLoadedContract] = useState<LoadedRoutes | null>(null)
   const [limits, setLimits] = useState<{ key: string; line: FeatureCollection | null } | null>(null)
 
   const wantCrew = state.config.crewCount
@@ -184,15 +197,19 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       : (goalTargets[0]?.id ?? null)
 
   const legacy = !engine.planIndex
+  const routePick = useMemo(() => {
+    if (!selectedTargetId || !engine.routeIndex) return null
+    return pickRoutes(engine.routeIndex, selectedTargetId, { crew: wantCrew, load: wantLoad, rover: false })
+  }, [engine.routeIndex, selectedTargetId, wantCrew, wantLoad])
   const pick = useMemo(() => {
     if (!selectedTargetId) return null
     const want: Want = { crew: wantCrew, load: wantLoad, rover: wantRover }
     if (engine.planIndex) return pickPlans(engine.planIndex, selectedTargetId, want)
-    if (engine.routeIndex) return pickRoutes(engine.routeIndex, selectedTargetId, want)
-    return null
-  }, [engine.planIndex, engine.routeIndex, selectedTargetId, wantCrew, wantLoad, wantRover])
+    return routePick
+  }, [engine.planIndex, routePick, selectedTargetId, wantCrew, wantLoad, wantRover])
 
   const key = pick ? `${selectedTargetId}|${JSON.stringify(pick.files)}` : null
+  const routeKey = routePick ? `${selectedTargetId}|${JSON.stringify(routePick.files)}` : null
 
   useEffect(() => {
     if (!pick || !key) return
@@ -202,16 +219,39 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     ).then((results) => {
       if (cancelled) return
       const plans: Partial<Record<EngineRouteMode, PlanFile>> = {}
+      const routes: Partial<Record<EngineRouteMode, EngineRoute>> = {}
       for (const [m, raw] of results) {
         if (isPlan(raw)) plans[m] = raw
-        else if (isRoute(raw)) plans[m] = routeToPlan(raw)
+        else if (isRoute(raw)) {
+          plans[m] = routeToPlan(raw)
+          routes[m] = raw
+        }
       }
-      setLoaded({ key, plans })
+      setLoaded({ key, plans, routes })
     })
     return () => {
       cancelled = true
     }
   }, [pick, key])
+
+  // Load §15 route files when plan/*.json is active so seg[].cost_terms is available for breakdown.
+  useEffect(() => {
+    if (legacy || !routePick || !routeKey) return
+    let cancelled = false
+    void Promise.all(
+      MODES.map(async (m) => [m, routePick.files[m] ? await fetchData<unknown>(routePick.files[m]) : null] as const),
+    ).then((results) => {
+      if (cancelled) return
+      const routes: Partial<Record<EngineRouteMode, EngineRoute>> = {}
+      for (const [m, raw] of results) {
+        if (isRoute(raw)) routes[m] = raw
+      }
+      setLoadedContract({ key: routeKey, routes })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [legacy, routePick, routeKey])
 
   // The no-return line for the preset actually shown.
   const limitsFile = pick && !legacy
@@ -231,6 +271,9 @@ export function PlanProvider({ children }: { children: ReactNode }) {
   const store = useMemo<PlanStore>(() => {
     const current = loaded && loaded.key === key ? loaded.plans : null
     const plans = current ?? {}
+    const contractRoutes = legacy
+      ? (loaded && loaded.key === key ? loaded.routes : {})
+      : (loadedContract && loadedContract.key === routeKey ? loadedContract.routes : {})
     const status = !selectedTargetId
       ? 'idle'
       : !pick
@@ -255,6 +298,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       crewMode: canSplit ? crewMode : 'together',
       setCrewMode,
       plans,
+      contractRoutes,
       status,
       activePlan,
       activeMembers,
@@ -268,7 +312,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       map,
       setMap,
     }
-  }, [goalTargets, goalUnmatched, selectedTargetId, mode, crewMode, loaded, key, pick, limits, limitsFile, legacy, map, o2BudgetL])
+  }, [goalTargets, goalUnmatched, selectedTargetId, mode, crewMode, loaded, key, loadedContract, routeKey, pick, limits, limitsFile, legacy, map, o2BudgetL])
 
   return <PlanContext.Provider value={store}>{children}</PlanContext.Provider>
 }

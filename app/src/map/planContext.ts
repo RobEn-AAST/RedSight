@@ -44,6 +44,8 @@ export interface PlanStore {
   setCrewMode: (mode: CrewMode) => void
   /** Plan files for the selected target, by mode. */
   plans: Partial<Record<EngineRouteMode, PlanFile>>
+  /** §15 route contract files for the selected target (carry seg[].cost_terms). */
+  contractRoutes: Partial<Record<EngineRouteMode, EngineRoute>>
   status: PlanStatus
   /** The plan for the selected target and mode, if loaded. */
   activePlan: PlanFile | null

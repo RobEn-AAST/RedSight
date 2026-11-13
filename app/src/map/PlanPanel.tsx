@@ -17,6 +17,7 @@ import {
   summarizeCrew,
   summarizeMember,
 } from '@/map/format'
+import { RouteBreakdown } from '@/map/RouteBreakdown'
 import { usePlan } from '@/map/usePlan'
 import { Button } from '@/ui/Button'
 
@@ -345,6 +346,7 @@ export function PlanPanel({ onOpenSources }: { onOpenSources: () => void }) {
 
       <Section step={2} title="Pick a route">
         <RouteChoice />
+        <RouteBreakdown />
       </Section>
 
       {activePlan?.split && (

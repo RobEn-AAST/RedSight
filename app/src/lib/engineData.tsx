@@ -75,6 +75,7 @@ function parseStops(raw: unknown): EngineStop[] | null {
         : [],
       panorama: typeof p.panorama === 'string' ? p.panorama : null,
       science: typeof p.science === 'string' ? p.science : undefined,
+      elevM: isObject(p.card) && isNumber(p.card.elev_m) ? p.card.elev_m : undefined,
       badge: (p.badge as EngineStop['badge']) ?? 'Observed',
     })
   }
