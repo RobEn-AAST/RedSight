@@ -23,6 +23,14 @@ style rules come from the outer AGENTS files; this file adds only what is specif
 
 ## Hard rules
 
+**Stay within scope.** Every AI session must keep its work within the current user request, the
+user-approved RedSight scope, and the applicable NASA Space Apps Martian Map requirements in
+`requirements/`. Do not add features, change the project purpose or site, or expand architecture,
+research, or implementation beyond that scope unless the user explicitly directs it. Optional NASA
+suggestions, stretch ideas, and research recommendations are not approval to implement them. If a
+task requires expanding scope, explain the need and wait for explicit user direction before doing
+the additional work.
+
 1. **New factual claims need a primary source** (NASA / Space Apps / JPL / USGS / PDS / peer-reviewed),
    linked and dated. Organizer-specific unknowns (leader-only submit, local edit lock, Cairo cutoff)
    stay flagged in `requirements/open-questions.md` until answered in writing — do not silently
