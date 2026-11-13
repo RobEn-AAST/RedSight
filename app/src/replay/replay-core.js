@@ -69,12 +69,22 @@ function arrays(route) {
   const hasBack =
     Array.isArray(route.back?.t_s) && route.back.t_s.length === n &&
     Array.isArray(route.back?.o2_l) && route.back.o2_l.length === n;
+  // Optional back_fast: the fastest way home from each vertex (O2, time, path). Ignored on a fastest route.
+  const bf = route.back_fast;
+  const hasFast = route.mode !== "fastest" &&
+    Array.isArray(bf?.t_s) && bf.t_s.length === n && Array.isArray(bf?.o2_l) && bf.o2_l.length === n;
+  const hasFastPath = hasFast && Array.isArray(bf.path) && bf.path.length === n;
   return {
     P: route.coords.map((p) => [...p]),
     T: [...route.cum.t_s],
     U: [...route.cum.o2_l],
     BT: hasBack ? [...route.back.t_s] : [...route.cum.t_s],
     BO: hasBack ? [...route.back.o2_l] : [...route.cum.o2_l],
+    BFT: hasFast ? [...bf.t_s] : null,
+    BFO: hasFast ? [...bf.o2_l] : null,
+    // Without a path, the fastest way home is drawn back along this route (its cost still from back_fast).
+    BFP: hasFast ? route.coords.map((p, i) => (hasFastPath && bf.path[i]?.length > 1 ? bf.path[i] : route.coords.slice(0, i + 1).reverse())) : null,
+    fast: hasFast,
     assumed: !hasBack,
   };
 }
@@ -87,8 +97,10 @@ function insertAtTime(a, t) {
   while (T[i + 1] < t) i++;
   if (T[i + 1] === t) return i + 1;
   const f = (t - T[i]) / (T[i + 1] - T[i]);
-  for (const k of ["T", "U", "BT", "BO"]) a[k].splice(i + 1, 0, lerp(a[k][i], a[k][i + 1], f));
-  a.P.splice(i + 1, 0, lerpPt(a.P[i], a.P[i + 1], f));
+  for (const k of ["T", "U", "BT", "BO", "BFT", "BFO"]) if (a[k]) a[k].splice(i + 1, 0, lerp(a[k][i], a[k][i + 1], f));
+  const pt = lerpPt(a.P[i], a.P[i + 1], f);
+  a.P.splice(i + 1, 0, pt);
+  if (a.BFP) a.BFP.splice(i + 1, 0, [pt, ...a.BFP[i].slice(1)]);
   return i + 1;
 }
 
@@ -121,6 +133,11 @@ export function buildTimeline(route, opts = {}) {
   const usedAt = (i) => (a.T[i] <= tD ? a.U[i] : a.U[drillIdx] + k * (a.U[i] - a.U[drillIdx]));
   const homeMult = (i) => (a.T[i] >= tD ? k : 1);
   const need = (i) => f * (usedAt(i) + m * homeMult(i) * a.BO[i]);
+  // demo-focus-plan §9: with back_fast known, the "don't go beyond" rule uses the fastest way home, and
+  // the recommended return switches from this route's own way back to the fastest one where the former
+  // stops fitting the budget.
+  const needF = (i) => f * (usedAt(i) + m * homeMult(i) * a.BFO[i]);
+  const needT = a.fast ? (i) => Math.min(need(i), needF(i)) : need; // any modeled way home that fits
 
   const frames = [];
   const events = [];
@@ -132,34 +149,55 @@ export function buildTimeline(route, opts = {}) {
   };
   const result = (extra) => finish(extra);
 
-  if (need(0) > B) {
+  if (needT(0) > B) {
     push(0, 0, a.P[0], "home");
     events.push({ t: 0, type: "no-go", label: "Budget too small to leave the habitat (modeled)" });
-    return result({ reachStop: false, turnPoint: null, forced: false });
+    return result({ reachStop: false, turnPoint: null, forced: false, switchPoint: null, switchT: null, fastHome: false });
   }
   events.push({ t: 0, type: "depart", label: "Leaving the habitat" });
 
-  const reachStop = need(n - 1) + f * dwellO2 <= B;
+  const reachStop = needT(n - 1) + f * dwellO2 <= B;
   let turnIdx = n - 1, turnFrac = 0, forced = false;
   if (!reachStop) {
     let j = 0;
-    while (j + 1 < n && need(j + 1) <= B) j++;
+    while (j + 1 < n && needT(j + 1) <= B) j++;
     if (drillIdx > 0 && j === drillIdx - 1) {
       forced = true; // the drill made the trip home too expensive right now: turn on the spot
       turnIdx = drillIdx;
     } else {
-      const d = need(j + 1) - need(j);
-      turnFrac = j + 1 < n && d > 0 ? Math.min(1, Math.max(0, (B - need(j)) / d)) : 0;
+      const d = needT(j + 1) - needT(j);
+      turnFrac = j + 1 < n && d > 0 ? Math.min(1, Math.max(0, (B - needT(j)) / d)) : 0;
       turnIdx = j;
     }
   }
   const turnPt = turnFrac > 0 ? lerpPt(a.P[turnIdx], a.P[turnIdx + 1], turnFrac) : a.P[turnIdx];
 
-  for (let i = 0; i <= turnIdx; i++) push(a.T[i], a.U[i], a.P[i], "out", a.BO[i] * homeMult(i));
   const at = (arr) => (turnFrac > 0 ? lerp(arr[turnIdx], arr[turnIdx + 1], turnFrac) : arr[turnIdx]);
-  let t = at(a.T), o2 = at(a.U);
-  const backT = at(a.BT), backO2 = at(a.BO);
+  const tTurn = at(a.T);
+
+  // Switch point: where this route's own way back stops fitting (only matters before the turn/stop).
+  let switchT = null, switchPt = null;
+  const stayT = reachStop ? Infinity : tTurn; // after arriving, the dwell O2 also counts
+  if (a.fast) {
+    const ownFits = (i) => need(i) + (i === n - 1 && reachStop ? f * dwellO2 : 0) <= B;
+    let j = -1;
+    while (j + 1 < n && a.T[j + 1] <= Math.min(stayT, a.T[n - 1]) && ownFits(j + 1)) j++;
+    if (j < 0) { switchT = 0; switchPt = a.P[0]; }
+    else if (j < n - 1) {
+      const d = need(j + 1) - need(j);
+      const fr = d > 0 ? Math.min(1, Math.max(0, (B - need(j)) / d)) : 0;
+      switchT = lerp(a.T[j], a.T[j + 1], fr); switchPt = lerpPt(a.P[j], a.P[j + 1], fr);
+      if (switchT > tTurn) { switchT = null; switchPt = null; }
+    }
+  }
+  const fastHome = a.fast && (switchT != null || forced);
+  const homeAt = (i) => (switchT != null && a.T[i] >= switchT ? a.BFO[i] : a.BO[i]) * homeMult(i);
+
+  for (let i = 0; i <= turnIdx; i++) push(a.T[i], a.U[i], a.P[i], "out", homeAt(i));
+  let t = tTurn, o2 = at(a.U);
+  const backT = fastHome ? at(a.BFT) : at(a.BT), backO2 = fastHome ? at(a.BFO) : at(a.BO);
   if (turnFrac > 0) push(t, o2, turnPt, "out", backO2 * (t >= tD ? k : 1));
+  if (switchT != null) events.push({ t: switchT, type: "switch-fast", label: "O₂ getting low: switching to the fastest way back" });
 
   if (reachStop) {
     events.push({ t, type: "arrive", label: `Arrived at ${route.stop_name ?? route.stop ?? "the stop"}` });
@@ -168,17 +206,27 @@ export function buildTimeline(route, opts = {}) {
   } else {
     const label = forced
       ? `${drill.label ?? "Contingency"}: return now by the fastest way home`
-      : "Modeled turn-back point reached: heading home";
+      : fastHome ? "Modeled turn-back point reached: heading home by the fastest way" : "Modeled turn-back point reached: heading home";
     events.push({ t, type: forced ? "forced-return" : "turnback", label });
     const ahead = opts.aheadS ?? 600;
     if (!forced && t - ahead > 0) events.push({ t: t - ahead, type: "turnback-ahead", label: "Turn-back point ahead" });
   }
 
   const t0 = t, o0 = o2;
-  const firstHome = turnFrac > 0 ? turnIdx : turnIdx - 1;
-  for (let i = firstHome; i >= 0; i--) push(t0 + (backT - a.BT[i]), o0 + (backO2 - a.BO[i]), a.P[i], "back");
+  if (fastHome) {
+    // Walk the fastest way home; time and O2 spread along it by distance.
+    // BFP[i] starts at vertex i; a turn point past vertex i walks back to it first.
+    const path = turnFrac > 0 ? [turnPt, ...a.BFP[turnIdx]] : [turnPt, ...a.BFP[turnIdx].slice(1)];
+    const cd = [0]; for (let i = 1; i < path.length; i++) cd.push(cd[i - 1] + distanceM(path[i - 1], path[i]));
+    const L = cd[cd.length - 1] || 1;
+    for (let i = 1; i < path.length; i++) push(t0 + backT * (cd[i] / L), o0 + backO2 * (cd[i] / L), path[i], "back");
+    if (path.length < 2) push(t0, o0, turnPt, "back");
+  } else {
+    const firstHome = turnFrac > 0 ? turnIdx : turnIdx - 1;
+    for (let i = firstHome; i >= 0; i--) push(t0 + (backT - a.BT[i]), o0 + (backO2 - a.BO[i]), a.P[i], "back");
+  }
   events.push({ t: frames[frames.length - 1].t, type: "home", label: "Back at the habitat" });
-  return result({ reachStop, turnPoint: reachStop ? null : turnPt, forced });
+  return result({ reachStop, turnPoint: reachStop ? null : turnPt, forced, switchPoint: switchPt, switchT, fastHome });
 
   function finish(extra) {
     // Drill: O2 use after tD runs at k × the modeled rate (time unchanged).

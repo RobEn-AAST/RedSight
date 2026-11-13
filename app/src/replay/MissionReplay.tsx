@@ -28,7 +28,7 @@ function modelFromConstants(c: EngineConstants | null): Omit<ReplayOptions, 'rou
 
 export function MissionReplay() {
   const engine = useEngineData()
-  const { map, activeRoute, routesStatus, o2BudgetL } = usePlan()
+  const { map, activeRoute, routesStatus, o2BudgetL, mode } = usePlan()
   const hostRef = useRef<HTMLDivElement>(null)
   const replayRef = useRef<Replay | null>(null)
   const routeRef = useRef(activeRoute)
@@ -50,6 +50,7 @@ export function MissionReplay() {
       showEnds: false,
     })
     replayRef.current = replay
+    if (import.meta.env.DEV) (window as unknown as { __replay?: Replay }).__replay = replay // for headless checks
     return () => {
       replay.destroy()
       replayRef.current = null
@@ -60,6 +61,11 @@ export function MissionReplay() {
   useEffect(() => {
     if (activeRoute) replayRef.current?.setRoute(activeRoute)
   }, [activeRoute])
+
+  // The map redraws the chosen route on top when the mode changes; keep the replay above it.
+  useEffect(() => {
+    replayRef.current?.raise()
+  }, [mode, activeRoute, hasRoute])
 
   // Follow the turn-back slider so both show the same turn-back point.
   const capacityL = engine.constants?.o2_usable_primary_l?.value

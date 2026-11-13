@@ -10,7 +10,7 @@ const DRILLS = [
   { id: "work", label: "Hard work", factor: 1.5 },
 ];
 // Trail/crew colours chosen to stand out from the app's route lines (fastest amber, lowest-hazard green).
-const OUT = "#f4f1ea", BACK = "#4cc9f0", CREW_A = "#ff5fd2", CREW_B = "#b98cff";
+const OUT = "#f4f1ea", BACK = "#4cc9f0", CREW_A = "#ff5fd2", CREW_B = "#b98cff", SWITCH = "#ffb347";
 const pct = (x, c) => `${Math.round((x / c) * 100)}%`;
 
 export function createReplay(map, opts) {
@@ -40,7 +40,7 @@ export function createReplay(map, opts) {
       layout: { "line-cap": "round", "line-join": "round" },
       paint: { "line-color": ["get", "color"], "line-width": ["get", "width"], "line-opacity": 0.95 } });
     if (!map.getLayer(SRC.turn)) map.addLayer({ id: SRC.turn, type: "circle", source: SRC.turn,
-      paint: { "circle-radius": 7, "circle-color": "#ef476f", "circle-stroke-color": "#fff", "circle-stroke-width": 2 } });
+      paint: { "circle-radius": 7, "circle-color": ["get", "color"], "circle-stroke-color": "#fff", "circle-stroke-width": 2 } });
     if (!map.getLayer(SRC.crew)) map.addLayer({ id: SRC.crew, type: "circle", source: SRC.crew,
       paint: { "circle-radius": 6, "circle-color": ["get", "color"], "circle-stroke-color": "#111", "circle-stroke-width": 2 } });
   }
@@ -60,7 +60,10 @@ export function createReplay(map, opts) {
       pointF(route.coords[0], { color: "#ffffff" }), // habitat
       pointF(route.coords[route.coords.length - 1], { color: "#9b5de5" }), // stop
     ]));
-    map.getSource(SRC.turn).setData(fc(tl.turnPoint ? [pointF(tl.turnPoint, {})] : []));
+    map.getSource(SRC.turn).setData(fc([
+      ...(tl.switchPoint ? [pointF(tl.switchPoint, { color: SWITCH })] : []), // own way back stops fitting
+      ...(tl.turnPoint ? [pointF(tl.turnPoint, { color: "#ef476f" })] : []),
+    ]));
 
     // Tank gauge: [reserve | home needed | spare margin] … empty. Fill = O2 left (worst member).
     const left = Math.max(0, s.o2Left), home = Math.max(0, s.homeL);
@@ -77,7 +80,9 @@ export function createReplay(map, opts) {
       : "";
     ui.clock.textContent = `T+${formatClock(t)}`;
     ui.dist.textContent = `${(s.distM / 1000).toFixed(2)} km`;
-    ui.phase.textContent = { out: "Walking out", stop: "At the stop", back: "Walking home", home: "At the habitat" }[s.phase];
+    const fastNow = tl.switchT != null && t >= tl.switchT && s.phase !== "home";
+    ui.phase.textContent = { out: "Walking out", stop: "At the stop", back: "Walking home", home: "At the habitat" }[s.phase]
+      + (fastNow ? (s.phase === "back" ? " (fastest way)" : " · return: fastest way") : "");
     ui.scrub.value = tl.totalS > 0 ? String((t / tl.totalS) * 1000) : "0";
     ui.play.textContent = playing ? "❚❚" : "▶";
     ui.summary.textContent = t >= tl.totalS && tl.totalS > 0 ? arrivalText() : "";
@@ -164,7 +169,7 @@ export function createReplay(map, opts) {
       <div class="replay-need"></div>
       <div class="replay-members"></div>
       <div class="replay-legend"><i style="background:${CREW_A}"></i>crew ${showEnds ? '<i style="background:#fff"></i>habitat <i style="background:#9b5de5"></i>stop' : ""}
-        <i style="background:#ef476f"></i>turn-back <i style="background:${OUT}"></i>walked out <i style="background:${BACK}"></i>walked home</div>
+        <i style="background:${SWITCH}"></i>switch to fastest way home <i style="background:#ef476f"></i>turn-back <i style="background:${OUT}"></i>walked out <i style="background:${BACK}"></i>walked home</div>
       <div class="replay-row replay-stats"><span class="replay-phase"></span><span class="replay-clock"></span><span class="replay-dist"></span></div>
       <ul class="replay-log" aria-live="polite"></ul>
       <div class="replay-summary"></div>
@@ -209,6 +214,8 @@ export function createReplay(map, opts) {
     setRoute(r2) { route = r2; rebuild({ keepTime: false }); },
     drill(factor, label = "Contingency") { model.drill = { atS: t, factor, label }; rebuild(); },
     clearDrill() { delete model.drill; rebuild(); },
+    /** Move the replay layers above anything the host map added or reordered since. */
+    raise() { for (const id of [SRC.trail, SRC.ends, SRC.turn, SRC.crew]) if (map.getLayer(id)) map.moveLayer(id); },
     get timeline() { return tl; },
     voice,
     destroy() {

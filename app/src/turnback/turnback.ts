@@ -77,6 +77,9 @@ export interface TurnBackRoute {
   seg?: { cost_terms?: { distance_m?: number } }[]
   cum: { t_s: number[]; o2_l: number[] }
   back?: { t_s?: number[]; o2_l?: number[] }
+  /** Optional fastest way home from each vertex (demo-focus-plan §9 Back_fast); ignored on a fastest route. */
+  back_fast?: { t_s?: number[]; o2_l?: number[] }
+  mode?: string
 }
 
 export type TurnBackStatus = 'reaches-stop' | 'turns-back' | 'no-go'
@@ -112,6 +115,22 @@ export interface TurnBackResult {
 
 const lerp = (a: number, b: number, f: number) => a + (b - a) * f
 
+/**
+ * Cost of the way home from each vertex. With back_fast (§9), whichever modeled way home is cheaper is
+ * used — the same rule as Mission Replay, so the slider and the replay keep agreeing.
+ */
+function wayHome(route: TurnBackRoute, ownO: number[], ownT: number[]): { BO: number[]; BT: number[] } {
+  const n = ownO.length
+  const bf = route.back_fast
+  const fo = bf?.o2_l
+  const ft = bf?.t_s
+  if (route.mode === 'fastest' || fo?.length !== n || ft?.length !== n) return { BO: ownO, BT: ownT }
+  return {
+    BO: ownO.map((o, i) => Math.min(o, fo[i])),
+    BT: ownT.map((t, i) => (fo[i] < ownO[i] ? ft[i] : t)),
+  }
+}
+
 /** Returns null when the route arrays are not usable (wrong lengths, < 2 points). */
 export function turnBackPoint(
   route: TurnBackRoute,
@@ -125,8 +144,7 @@ export function turnBackPoint(
   if (n < 2 || U?.length !== n || T?.length !== n) return null
   const hasBack = route.back?.o2_l?.length === n && route.back?.t_s?.length === n
   // Same fallback as the replay: without the engine's return field, home costs what the way out cost.
-  const BO = hasBack ? (route.back!.o2_l as number[]) : U
-  const BT = hasBack ? (route.back!.t_s as number[]) : T
+  const { BO, BT } = wayHome(route, hasBack ? (route.back!.o2_l as number[]) : U, hasBack ? (route.back!.t_s as number[]) : T)
   const f = memberFactor
   const m = returnMargin
   const need = (i: number) => f * (U[i] + m * BO[i])
@@ -177,7 +195,8 @@ export function budgetToReachStop(route: TurnBackRoute, returnMargin: number, me
   const n = route.coords?.length ?? 0
   const U = route.cum?.o2_l
   if (n < 2 || U?.length !== n) return null
-  const BO = route.back?.o2_l?.length === n ? route.back.o2_l : U
+  const own = route.back?.o2_l?.length === n ? route.back.o2_l : U
+  const { BO } = wayHome(route, own, own)
   let worst = 0
   for (let i = 0; i < n; i++) worst = Math.max(worst, memberFactor * (U[i] + returnMargin * BO[i]))
   return worst

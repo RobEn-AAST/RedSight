@@ -38,7 +38,8 @@ tell the team first, then update this README + the generator in the same PR.
 | `back.t_s`, `back.o2_l` | time / O₂ to walk **home from** each point (return field sampled on the route) |
 | `budget_l` | usable O₂ per member after reserve (385 L × 0.75 by default) |
 | `pnr_index` | last point where `cum.o2_l + back.o2_l ≤ budget_l` |
+| `back_fast` *(optional, added 2026-11-13; safest routes only)* | the **fastest** way home from each point (demo-focus-plan §9 `Back_fast`): `t_s[]`, `o2_l[]` (N values, plain expected O₂ like `back`), `path[]` (N polylines, each starting at that point and ending at the habitat), `via` (id of the fastest route it follows). Lets the replay and the turn-back slider switch to the fastest return when O₂ gets low. Without `path` the way home is drawn back along the route; without `back_fast` there is no switch |
 | `id`, `stop`, `mode` (`fastest`/`safest`), `crew`, `load_kg`, `badge`, `constants_hash` | labels |
 
-Regenerate mocks: `node app/public/data/_mock/make-mock.mjs` (overwrites ALL files — don't run it after real
-data has landed).
+Regenerate mocks: `node app/public/data/_mock/make-mock.mjs`. It only overwrites files that still have
+`"_mock": true`; real files (no flag, e.g. Ayman's `stops.json` and cards) are skipped.

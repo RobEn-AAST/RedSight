@@ -24,6 +24,7 @@
 .replay-log li:first-child { opacity: 1; }
 .replay-log li[data-type="turnback"], .replay-log li[data-type="forced-return"], .replay-log li[data-type="reserve"],
 .replay-log li[data-type="emergency"], .replay-log li[data-type="drill"], .replay-log li[data-type="no-go"] { color: #ff8fa8; font-weight: 600; }
+.replay-log li[data-type="switch-fast"] { color: #ffb347; font-weight: 600; }
 .replay-summary { font-weight: 600; margin-top: 4px; color: #ffd166; }
 .replay-drills { flex-wrap: wrap; font-size: 12px; }
 .replay-drills button, .replay-step { background: #2b211d; color: inherit; border: 1px solid #5a4a42; border-radius: 6px; padding: 2px 6px; cursor: pointer; }
