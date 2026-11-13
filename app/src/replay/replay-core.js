@@ -49,6 +49,21 @@ export function distanceM(a, b) {
   return 2 * MARS_RADIUS_M * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
+/** Describe whether the exported route ends at an Observed stop or a Derived approach point. */
+export function routeGoalInfo(route) {
+  const goalAccess = route?.goal_access;
+  const approachOnly = goalAccess?.status === "approach_only";
+  const observedStop = approachOnly
+    ? goalAccess.observed_stop_lonlat ?? route.observed_stop_lonlat ?? null
+    : null;
+  return {
+    approachOnly,
+    endpointLonlat: route?.coords?.[route.coords.length - 1] ?? null,
+    observedStopLonlat: Array.isArray(observedStop) ? observedStop : null,
+    offsetM: approachOnly && Number.isFinite(goalAccess.offset_m) ? goalAccess.offset_m : null,
+  };
+}
+
 const lerp = (a, b, f) => a + (b - a) * f;
 const lerpPt = (a, b, f) => [lerp(a[0], b[0], f), lerp(a[1], b[1], f)];
 
@@ -111,6 +126,7 @@ export function buildTimeline(route, opts = {}) {
   const drill = opts.drill && opts.drill.factor > 0 ? opts.drill : null;
 
   const a = arrays(route);
+  const goalInfo = routeGoalInfo(route);
   const drillIdx = drill ? insertAtTime(a, drill.atS) : -1; // -1 = drill not during the way out
   const n = a.P.length;
   const k = drill?.factor ?? 1;
@@ -159,8 +175,23 @@ export function buildTimeline(route, opts = {}) {
   if (turnFrac > 0) push(t, o2, turnPt, "out", backO2 * (t >= tD ? k : 1));
 
   if (reachStop) {
-    events.push({ t, type: "arrive", label: `Arrived at ${route.stop_name ?? route.stop ?? "the stop"}` });
-    if (dwellS > 0) { t += dwellS; o2 += dwellO2; push(t, o2, turnPt, "stop"); }
+    if (goalInfo.approachOnly) {
+      const offset = goalInfo.offsetM === null ? "" : ` (${goalInfo.offsetM.toFixed(1)} m from the Observed stop)`;
+      events.push({
+        t,
+        type: "approach",
+        label: `Reached the Derived approach point${offset}; no final leg is modeled.`,
+      });
+      // Preserve a zero-duration approach phase at the route endpoint when no dwell is configured.
+      if (dwellS <= 0) push(t, o2, turnPt, "approach");
+    } else {
+      events.push({ t, type: "arrive", label: `Arrived at ${route.stop_name ?? route.stop ?? "the stop"}` });
+    }
+    if (dwellS > 0) {
+      t += dwellS;
+      o2 += dwellO2;
+      push(t, o2, turnPt, goalInfo.approachOnly ? "approach" : "stop");
+    }
     events.push({ t, type: "return", label: "Heading home" });
   } else {
     const label = forced
@@ -218,7 +249,10 @@ export function buildTimeline(route, opts = {}) {
       frames, events, ...plan, budgetL: B, members, worstFactor: f,
       totalS: last.t, arrivalL, arrivalMin: arrivalL / plan.walkbackLpm,
       reserveUsedL: Math.max(0, R - arrivalL), backAssumed: a.assumed, drill, ...extra,
+      // Keep reachStop as the legacy route-endpoint flag; the additive flags identify what endpoint it represents.
       reachStop: frames.length > 1 && extra.reachStop,
+      reachedApproachPoint: frames.length > 1 && extra.reachStop && goalInfo.approachOnly,
+      reachedObservedStop: frames.length > 1 && extra.reachStop && !goalInfo.approachOnly,
     };
     function crossing(lim, type, label) {
       for (let i = 1; i < frames.length; i++) {
@@ -260,7 +294,9 @@ export function sampleAt(tl, t) {
     usableLeft: o2Left - tl.reserveL, // what's left of the plan's budget (can go negative = in reserve)
     homeL: tl.worstFactor * lerp(a.home, b.home, k), // expected O2 to get home from here (worst member)
     minutesLeft: o2Left / tl.walkbackLpm,
-    distM: lerp(a.d, b.d, k), phase: b.phase, index: lo,
+    distM: lerp(a.d, b.d, k),
+    phase: k === 0 && a.phase === "approach" ? "approach" : b.phase,
+    index: lo,
   };
 }
 
