@@ -11,6 +11,7 @@ tell the team first, then update this README + the generator in the same PR.
 | `constants.json` | Ali | values are the cited team defaults (technical-approaches §3) |
 | `layers.json` | Youssef | layer list + sources; `available:false` until tiles exist |
 | `stops.json` | Ayman | real (no `_mock`): 5 stops from live MMGIS waypoints, per-sol/per-instrument NASA raw photos, PIA26559 / PIA26696 metadata, sourced science text & cards |
+| `curiosity_path.geojson` | Ayman | real (no `_mock`): Curiosity's Observed MMGIS rover traverse inside the ops box (`sols 3345–5073`, 464 waypoints across contiguous segments) |
 | `routes/index.json`, `routes/{stop}_{mode}_{crew}_{load}.json` | Ali | nothing: shapes only |
 | `hazards.geojson` | Ali | nothing |
 | `cards/rad.json`, `cards/rems.json` | Ayman | real (no `_mock`): RAD GCR baseline + Sept 2017 SEP (Si) + Scenario 4-h walk dose; REMS pressure, air/ground temp, Armstrong limit, PDS links |

@@ -490,9 +490,17 @@ def build_s3_spec(
     return spec, current_wp
 
 
-def build_stops(pin_s3_sol: int | None = None) -> dict[str, Any]:
+def build_stops(
+    pin_s3_sol: int | None = None,
+    mmgis_data: tuple[
+        dict[tuple[int, int], dict[str, Any]],
+        dict[int, list[dict[str, Any]]],
+        dict[str, Any],
+    ]
+    | None = None,
+) -> dict[str, Any]:
     """Build the GeoJSON FeatureCollection for all 5 stops from live NASA endpoints."""
-    by_sol_drive, by_sol, current_wp = load_mmgis_waypoints()
+    by_sol_drive, by_sol, current_wp = mmgis_data if mmgis_data is not None else load_mmgis_waypoints()
     print(
         f"Loaded {len(by_sol_drive)} MMGIS waypoints ({len(by_sol)} sols); "
         f"current rover position: sol {current_wp['sol']} (RMC {current_wp['rmc']})."
@@ -584,6 +592,76 @@ def build_stops(pin_s3_sol: int | None = None) -> dict[str, Any]:
                     "science": spec["science"],
                     "card": card,
                     "badge": "Observed",
+                },
+            }
+        )
+
+    return {"type": "FeatureCollection", "features": features}
+
+
+def build_curiosity_path(
+    by_sol_drive: dict[tuple[int, int], dict[str, Any]],
+    current_wp: dict[str, Any],
+    pin_s3_sol: int | None = None,
+) -> dict[str, Any]:
+    """Build Curiosity's Observed rover traverse inside the D11 ops box from MMGIS waypoints."""
+    merged: dict[tuple[int, int], dict[str, Any]] = dict(by_sol_drive)
+    curr_key = (current_wp["sol"], current_wp["drive"])
+    if curr_key not in merged:
+        merged[curr_key] = current_wp
+
+    ordered = sorted(
+        (
+            wp
+            for wp in merged.values()
+            if pin_s3_sol is None or wp["sol"] <= pin_s3_sol
+        ),
+        key=lambda w: (w["sol"], w["site"], w["drive"]),
+    )
+
+    # Split into contiguous in-box runs so brief excursions outside the box never
+    # create synthetic straight-line shortcuts across the border.
+    runs: list[list[dict[str, Any]]] = []
+    current_run: list[dict[str, Any]] = []
+    for wp in ordered:
+        if _in_ops_box(wp["lon"], wp["lat"]):
+            current_run.append(wp)
+        elif current_run:
+            if len(current_run) >= 2:
+                runs.append(current_run)
+            current_run = []
+    if len(current_run) >= 2:
+        runs.append(current_run)
+
+    if not runs:
+        raise RuntimeError("No contiguous Curiosity MMGIS waypoint runs found inside OPS_BOX.")
+
+    features: list[dict[str, Any]] = []
+    for seg_idx, run in enumerate(runs, start=1):
+        features.append(
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [[wp["lon"], wp["lat"]] for wp in run],
+                },
+                "properties": {
+                    "kind": "traverse",
+                    "segment": seg_idx,
+                    "sol_start": run[0]["sol"],
+                    "sol_end": run[-1]["sol"],
+                    "rmc_start": run[0]["rmc"],
+                    "rmc_end": run[-1]["rmc"],
+                    "dist_km_start": run[0]["dist_km"],
+                    "dist_km_end": run[-1]["dist_km"],
+                    "waypoint_count": len(run),
+                    "sols": [wp["sol"] for wp in run],
+                    "rmcs": [wp["rmc"] for wp in run],
+                    "elev_m": [wp["elev_m"] for wp in run],
+                    "dist_km": [wp["dist_km"] for wp in run],
+                    "badge": "Observed",
+                    "source": "NASA/JPL MSL MMGIS Waypoints (MSL_waypoints.json & MSL_waypoints_current.json)",
+                    "source_url": MMGIS_WAYPOINTS_URL,
                 },
             }
         )
@@ -802,14 +880,24 @@ def main() -> None:
     args = parser.parse_args()
 
     print("Fetching NASA MMGIS Curiosity waypoints, Raw Images, and REMS weather feed...")
-    stops_fc = build_stops(pin_s3_sol=args.pin_s3_sol)
+    mmgis_data = load_mmgis_waypoints()
+    by_sol_drive, _, current_wp = mmgis_data
+    stops_fc = build_stops(pin_s3_sol=args.pin_s3_sol, mmgis_data=mmgis_data)
+    path_fc = build_curiosity_path(by_sol_drive, current_wp, pin_s3_sol=args.pin_s3_sol)
 
     write_json(DATA_DIR / "stops.json", stops_fc)
+    write_json(DATA_DIR / "curiosity_path.geojson", path_fc)
     write_json(CARDS_DIR / "rad.json", build_rad_card())
     write_json(CARDS_DIR / "rems.json", build_rems_card())
 
     size_kb = (DATA_DIR / "stops.json").stat().st_size / 1024.0
-    print(f"Wrote app/public/data/stops.json ({size_kb:.1f} KB), cards/rad.json, cards/rems.json:")
+    path_kb = (DATA_DIR / "curiosity_path.geojson").stat().st_size / 1024.0
+    total_wps = sum(f["properties"]["waypoint_count"] for f in path_fc["features"])
+    print(
+        f"Wrote app/public/data/stops.json ({size_kb:.1f} KB), "
+        f"curiosity_path.geojson ({path_kb:.1f} KB, {total_wps} waypoints across {len(path_fc['features'])} segment(s)), "
+        "cards/rad.json, cards/rems.json:"
+    )
     for f in stops_fc["features"]:
         p = f["properties"]
         c = p["card"]

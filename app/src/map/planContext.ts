@@ -69,6 +69,9 @@ export interface PlanStore {
    */
   o2BudgetL: number | null
   setO2BudgetL: (l: number | null) => void
+  /** Whether Curiosity's Observed MMGIS traverse overlay is visible on the map. */
+  showCuriosityPath: boolean
+  setShowCuriosityPath: (show: boolean) => void
   map: MapLibreMap | null
   setMap: (map: MapLibreMap | null) => void
 }

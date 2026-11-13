@@ -4,6 +4,7 @@ import { useEngineData } from '@/lib/useEngineData'
 import { opsBox as fallbackOpsBox } from '@/lib/stopsData'
 import { MapCanvas } from '@/map/MapCanvas'
 import { PlanPanel } from '@/map/PlanPanel'
+import { usePlan } from '@/map/usePlan'
 import { MissionReplay } from '@/replay/MissionReplay'
 import { TurnBackPanel } from '@/turnback/TurnBackPanel'
 import { EmptyState } from '@/ui/EmptyState'
@@ -17,6 +18,7 @@ import { Toggle } from '@/ui/Toggle'
  */
 export function MapWorkspace({ onOpenSources }: { onOpenSources: () => void }) {
   const engine = useEngineData()
+  const { showCuriosityPath, setShowCuriosityPath } = usePlan()
   const [layerChoice, setLayerChoice] = useState<Record<string, boolean>>({})
   const [showImagery, setShowImagery] = useState(true)
 
@@ -43,13 +45,24 @@ export function MapWorkspace({ onOpenSources }: { onOpenSources: () => void }) {
           />
         )}
 
-        {/* Map layers: the orbital image plus any tiled data layers that exist. */}
-        {(engine.preview || available.length > 0) && (
+        {/* Map layers: the orbital image, Curiosity's real path, plus any tiled data layers that exist. */}
+        {(engine.preview || engine.curiosityPath || available.length > 0) && (
           <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 flex-wrap items-center justify-center gap-x-4 gap-y-2 border border-seam bg-hull/90 px-3 py-1.5">
             {engine.preview && (
               <label className="flex items-center gap-2 text-xs text-ink">
                 <Toggle size="sm" checked={showImagery} onChange={setShowImagery} label="Show orbital image" />
                 Orbital image
+              </label>
+            )}
+            {engine.curiosityPath && (
+              <label className="flex items-center gap-2 text-xs text-ink">
+                <Toggle
+                  size="sm"
+                  checked={showCuriosityPath}
+                  onChange={setShowCuriosityPath}
+                  label="Show Curiosity's real path"
+                />
+                Curiosity path
               </label>
             )}
             {available.map((l) => (

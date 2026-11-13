@@ -1,9 +1,10 @@
 import { useId, useMemo, useState } from 'react'
-import { ChevronDown, Mountain, Route } from 'lucide-react'
+import { ChevronDown, Compass, Mountain, Route } from 'lucide-react'
 
 import { cn } from '@/lib/cn'
 import type { EngineRoute, EngineRouteMode, PlanMember } from '@/lib/engineDataContext'
 import { useEngineData } from '@/lib/useEngineData'
+import { compareRouteWithCuriosity } from '@/map/curiosityPath'
 import { MODE_COLOR, MODE_LABEL, NO_RETURN_COLOR, formatDistance } from '@/map/format'
 import {
   buildElevationProfile,
@@ -90,6 +91,10 @@ export function RouteBreakdown() {
     crewMode,
     o2BudgetL,
     status,
+    goalTargets,
+    showCuriosityPath,
+    setShowCuriosityPath,
+    map,
   } = usePlan()
   const [memberIdx, setMemberIdx] = useState(0)
   const [hoverDistM, setHoverDistM] = useState<number | null>(null)
@@ -170,6 +175,42 @@ export function RouteBreakdown() {
 
   const stopTargetId = activeMember?.targets[0] ?? selectedTargetId
   const stopObserved = engine.stops?.find((s) => s.id === stopTargetId) ?? null
+  const goalTarget = goalTargets.find((t) => t.id === stopTargetId) ?? null
+
+  const curiosityComparison = useMemo(() => {
+    const cPath = engine.curiosityPath
+    if (!cPath) return null
+    const refPoint: [number, number] | undefined = stopObserved
+      ? [stopObserved.lon, stopObserved.lat]
+      : goalTarget?.site ?? activeMember?.coords[activeMember.coords.length - 1]
+    if (!refPoint) return null
+    return compareRouteWithCuriosity(cPath, refPoint, activeMember?.coords)
+  }, [engine.curiosityPath, stopObserved, goalTarget, activeMember])
+
+  const fitCuriosityTraverse = () => {
+    const cPath = engine.curiosityPath
+    if (!cPath) return
+    setShowCuriosityPath(true)
+    if (!map || cPath.waypoints.length === 0) return
+    let w = Infinity
+    let s = Infinity
+    let e = -Infinity
+    let n = -Infinity
+    for (const wp of cPath.waypoints) {
+      w = Math.min(w, wp.lon)
+      e = Math.max(e, wp.lon)
+      s = Math.min(s, wp.lat)
+      n = Math.max(n, wp.lat)
+    }
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    map.fitBounds(
+      [
+        [w, s],
+        [e, n],
+      ],
+      { padding: 48, duration: reduced ? 0 : 600 },
+    )
+  }
 
   if (status !== 'ready' || (!why && !profile)) return null
 
@@ -524,6 +565,49 @@ export function RouteBreakdown() {
         </div>
       )}
 
+      {engine.curiosityPath && curiosityComparison && (
+        <div className="flex flex-col gap-1.5 border-t border-seam pt-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="label-console flex items-center gap-1.5 text-ink-dim">
+              <Compass size={11} aria-hidden className="text-observed" />
+              Vs Curiosity&apos;s real path
+            </span>
+            <EvidenceBadge evidence="observed" />
+          </div>
+          <p className="text-[11px] leading-relaxed text-ink-dim">
+            <span className="data-readout text-ink">
+              Sols {engine.curiosityPath.solStart}–{engine.curiosityPath.solEnd}
+            </span>{' '}
+            ({engine.curiosityPath.waypointCount} MMGIS waypoints ·{' '}
+            {(engine.curiosityPath.inBoxOdomKm ?? engine.curiosityPath.inBoxLengthKm).toFixed(1)} km rover odometry in
+            ops box). Nearest rover station to {stopTargetId ?? 'target'}:{' '}
+            <span className="data-readout text-ink">
+              sol {curiosityComparison.nearestToTarget.waypoint.sol}
+            </span>{' '}
+            (RMC {curiosityComparison.nearestToTarget.waypoint.rmc}
+            {curiosityComparison.nearestToTarget.waypoint.elevM != null
+              ? `, ${curiosityComparison.nearestToTarget.waypoint.elevM.toFixed(0)} m`
+              : ''}
+            , {formatDistance(curiosityComparison.nearestToTarget.distanceM)} away).
+            {curiosityComparison.closestApproach &&
+              ` Modeled route passes within ${formatDistance(curiosityComparison.closestApproach.distanceM)} of the rover traverse.`}
+          </p>
+          <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-ink-faint">
+            <span>
+              Curiosity&apos;s multi-year traverse followed rover tilt/slip limits and science stops; our route links
+              the Scenario habitat to {stopTargetId ?? 'target'}.
+            </span>
+            <button
+              type="button"
+              onClick={fitCuriosityTraverse}
+              className="flex-none text-observed underline underline-offset-2 hover:text-ink"
+            >
+              {showCuriosityPath ? 'Fit traverse on map' : 'Show traverse on map'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {sourceOpen && (
         <div id={sourceId}>
           <SourceCard
@@ -536,6 +620,7 @@ export function RouteBreakdown() {
                   <span className="data-readout">{activeContract?.id ?? activePlan?.id ?? 'route'}</span> (HiRISE 1 m
                   DTM + THEMIS thermal inertia proxy).
                   {stopObserved?.elevM != null && ' Stop elevation from NASA MMGIS Curiosity waypoints (Observed).'}
+                  {engine.curiosityPath && ' Rover traverse from NASA MMGIS Curiosity waypoints (Observed).'}
                 </>
               ),
               note:

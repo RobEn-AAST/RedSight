@@ -1,5 +1,7 @@
 import { createContext } from 'react'
 
+import type { CuriosityPathData } from '@/map/curiosityPath'
+
 /**
  * Engine data contract (demo-focus-plan §15, shapes as committed in
  * app/public/data/README.md). The engine writes static JSON to
@@ -251,6 +253,7 @@ export interface EngineDataState {
   preview: PreviewBasemap | null
   targets: PlanTarget[] | null
   planIndex: PlanIndexEntry[] | null
+  curiosityPath: CuriosityPathData | null
   /** true when any loaded file carries the `_mock` flag. */
   mock: boolean
   /** true once the initial load finished (found or not). */
@@ -268,6 +271,7 @@ export const emptyEngineData: EngineDataState = {
   preview: null,
   targets: null,
   planIndex: null,
+  curiosityPath: null,
   mock: false,
   probed: false,
 }
