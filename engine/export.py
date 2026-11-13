@@ -1,11 +1,13 @@
 """Run a deterministic real-DTM pilot and write only Ali-owned contract artifacts."""
 
-from datetime import date
+from datetime import date, datetime
 import hashlib
 import json
 from collections import Counter
 from pathlib import Path
 import platform
+from time import perf_counter
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import rasterio
@@ -36,10 +38,52 @@ def _write_json(path: Path, value):
     path.write_bytes(_json_bytes(value))
 
 
+def _remove_stale_route_payload(path: Path):
+    """Remove only an Ali-owned payload whose supported stop/mode is now explicitly unreachable."""
+    if path.is_file():
+        path.unlink()
+        return True
+    return False
+
+
 def _read_manifest(manifest_path):
     path = Path(manifest_path).resolve()
     raw = path.read_bytes()
     return json.loads(raw), hashlib.sha256(raw).hexdigest()
+
+
+def _parse_timestamp(value):
+    if not value:
+        return None
+    result = datetime.fromisoformat(str(value))
+    if result.tzinfo is None:
+        result = result.replace(tzinfo=ZoneInfo("Africa/Cairo"))
+    return result
+
+
+def _pilot_timing(acquisition, build_started, build_completed, build_runtime_s):
+    start = _parse_timestamp(acquisition.get("first_recorded_primary_STAC_response"))
+    cache_ready = _parse_timestamp(acquisition.get("input_cache_ready"))
+    result = {
+        "acquisition_timing": acquisition,
+        "build_started_at": build_started.isoformat(timespec="seconds"),
+        "build_completed_at": build_completed.isoformat(timespec="seconds"),
+        "build_runtime_seconds": round(float(build_runtime_s), 3),
+        "g4_threshold_seconds": 3 * 60 * 60,
+    }
+    if start is None:
+        result.update({"g4_status": "unverified", "elapsed_seconds": None})
+        return result
+    elapsed = (build_completed - start).total_seconds()
+    result.update({
+        "pilot_started_at": start.isoformat(timespec="seconds"),
+        "input_cache_ready_at": cache_ready.isoformat(timespec="seconds") if cache_ready else None,
+        "pilot_completed_at": build_completed.isoformat(timespec="seconds"),
+        "elapsed_seconds": round(elapsed, 3),
+        "interval_scope": "first recorded STAC response through native-slope engine outputs; request began shortly before the recorded response, so this is a lower-bound wall interval",
+        "g4_status": "pass" if 0 <= elapsed <= 3 * 60 * 60 else "failed",
+    })
+    return result
 
 
 def _handoff_sources(manifest, primary_dem):
@@ -194,7 +238,23 @@ def _choose_habitat(dem, graph, stops):
         if labels[graph.node((row, col))] == shared_component:
             count = component_counts.get(shared_component, 0)
             return (row, col), f"Lowest neighborhood-slope candidate 150–600 m north and downslope of S1 in a component containing {count} supported stop(s) under the native-slope hard mask. Stops outside this component will be marked unreachable."
-    raise ValueError("no walkable habitat candidate lies in a component connected to the supported-stop area")
+    # If the planned north/downslope search region is separated by the native hard mask, keep the
+    # full ops area and stops, and site the Scenario habitat at the nearest reachable component cell.
+    fallback = [
+        (float(distance[r, c]), float(graph.slope_max_deg[r, c]), int(r), int(c))
+        for r, c in np.argwhere(graph.valid)
+        if labels[graph.node((int(r), int(c)))] == shared_component
+    ]
+    if not fallback:
+        raise ValueError("no walkable habitat cell exists in a component containing a supported stop")
+    distance_m, slope_deg, row, col = min(fallback)
+    count = component_counts.get(shared_component, 0)
+    note = (
+        f"Native hard mask separated all 150–600 m north/downslope habitat candidates from stop-accessible cells; "
+        f"selected the nearest walkable cell to S1 in the component containing {count} walkable supported stop(s) "
+        f"({distance_m:.1f} m from S1, {slope_deg:.2f}° native aggregated slope). Other stop cells remain explicit no-route outcomes."
+    )
+    return (row, col), note
 
 
 def _hazards_geojson(dem, graph, slope_limit_deg, slope_method):
@@ -224,20 +284,59 @@ def _hazards_geojson(dem, graph, slope_limit_deg, slope_method):
     return {"type": "FeatureCollection", "features": features_out}
 
 
+def _stop_target_diagnostics(dem, graph, stops, slope_limit_deg):
+    walkable_cells = np.argwhere(graph.valid)
+    result = {}
+    for stop_id in SUPPORTED_STOPS:
+        stop = stops[stop_id]
+        row, col = stop["cell"]
+        slope = float(graph.slope_max_deg[row, col])
+        target = {
+            "row_col": [row, col],
+            "lonlat": stop["lonlat"],
+            "primary_dem_valid": bool(dem.valid[row, col]),
+            "native_horn_slope_deg": slope if np.isfinite(slope) else None,
+            "walkable": bool(graph.valid[row, col]),
+        }
+        if not graph.valid[row, col] and len(walkable_cells):
+            offsets = walkable_cells - np.array([row, col])
+            distances = np.hypot(offsets[:, 0], offsets[:, 1]) * dem.resolution_m
+            nearest_idx = int(np.argmin(distances))
+            nr, nc = map(int, walkable_cells[nearest_idx])
+            target["nearest_walkable_cell_diagnostic"] = {
+                "row_col": [nr, nc],
+                "straight_line_offset_m": float(distances[nearest_idx]),
+                "native_horn_slope_deg": float(graph.slope_max_deg[nr, nc]),
+                "used_as_route_goal": False,
+            }
+            if not np.isfinite(slope):
+                target["block_reason"] = "native_slope_unavailable"
+            elif slope > slope_limit_deg + 1e-10:
+                target["block_reason"] = "native_slope_above_limit"
+            else:
+                target["block_reason"] = "not_walkable_under_native_mask"
+        else:
+            target["block_reason"] = None if graph.valid[row, col] else "no_walkable_cells"
+        result[stop_id] = target
+    return result
+
+
 def build_real_routes(
     *,
     input_manifest,
-    native_hazard_manifest,
+    native_hazard_manifest=None,
     constants_path,
     stops_path,
     output_dir,
     habitat_row_col=None,
 ):
     """Build fastest and lowest-hazard routes for all five supported locations."""
+    build_started = datetime.now(ZoneInfo("Africa/Cairo"))
+    build_started_mono = perf_counter()
     manifest, manifest_hash = _read_manifest(input_manifest)
     dem = read_primary_dem(input_manifest)
     sources = _handoff_sources(manifest, dem)
-    native_slope = read_native_hard_slope(native_hazard_manifest, dem)
+    native_slope = read_native_hard_slope(native_hazard_manifest or input_manifest, dem)
     slope_method = (
         f"Horn 3x3 {native_slope.aggregation} slope aggregated from "
         f"{native_slope.source_resolution_m:g} m source cells to "
@@ -255,6 +354,7 @@ def build_real_routes(
         "planning_resolution_m": native_slope.planning_resolution_m,
         "valid_cells": int(native_slope.valid.sum()),
         "total_cells": int(native_slope.valid.size),
+        "handoff_record": manifest.get("native_hazard", {}),
     }
     alignment_evidence = native_slope.alignment_evidence
     constants_raw, c = read_constants(constants_path)
@@ -288,6 +388,8 @@ def build_real_routes(
     if not graph.valid[habitat]:
         raise ValueError("selected habitat is hard-blocked")
 
+    stop_target_diagnostics = _stop_target_diagnostics(dem, graph, stops, c["slope_limit_foot_deg"])
+
     budget = c["o2_usable_primary_l"] - max(
         c["reserve_fraction"] * c["o2_usable_primary_l"],
         c["reserve_minutes"] * c["walkback_o2_lpm"],
@@ -298,6 +400,7 @@ def build_real_routes(
     route_index = {"routes": []}
     route_statuses = {}
     exported_files = []
+    stale_route_files_removed = []
     habitat_lonlat = _cell_lonlat(*habitat, dem)
 
     for stop_id in SUPPORTED_STOPS:
@@ -314,6 +417,14 @@ def build_real_routes(
                 "file": f"routes/{filename}",
             }
             try:
+                target_diag = stop_target_diagnostics[stop_id]
+                if not graph.valid[stop["cell"]]:
+                    if target_diag["block_reason"] == "native_slope_above_limit":
+                        raise ValueError(
+                            f"stop cell blocked: native Horn max slope {target_diag['native_horn_slope_deg']:.2f}° "
+                            f"exceeds {c['slope_limit_foot_deg']:g}°; endpoint kept at the declared stop, no adjacent-cell substitution"
+                        )
+                    raise ValueError("stop cell blocked: native slope support unavailable; no slope interpolation used")
                 path = shortest_path(graph, start=habitat, goal=stop["cell"], objective=objective)
                 arrays = route_arrays(
                     graph,
@@ -350,6 +461,8 @@ def build_real_routes(
                 record.update({"total_s": arrays["total_s"], "pnr_index": pnr.pnr_index, "status": "routed"})
                 route_statuses[route_id] = {"status": "routed", "time_s": path.time_s, "objective_cost": path.objective_cost}
             except ValueError as exc:
+                if _remove_stale_route_payload(routes_dir / filename):
+                    stale_route_files_removed.append(f"routes/{filename}")
                 record.update({"file": None, "status": "unreachable", "reason": str(exc)})
                 route_statuses[route_id] = {"status": "unreachable", "reason": str(exc)}
             route_index["routes"].append(record)
@@ -388,12 +501,45 @@ def build_real_routes(
         "constants_hash": constants_hash,
         "input_hash": manifest_hash,
     }
+    hazard_payload = _hazards_geojson(dem, graph, c["slope_limit_foot_deg"], slope_method)
+    _write_json(output_dir / "constants.json", constants_raw)
+    _write_json(output_dir / "meta.json", meta)
+    _write_json(routes_dir / "index.json", route_index)
+    _write_json(output_dir / "hazards.geojson", hazard_payload)
+    build_completed = datetime.now(ZoneInfo("Africa/Cairo"))
+    build_runtime = perf_counter() - build_started_mono
+    acquisition = manifest.get("acquisition_timing", {})
+    pilot_timing = _pilot_timing(acquisition, build_started, build_completed, build_runtime)
+    routed_count = sum(value["status"] == "routed" for value in route_statuses.values())
+    unreachable_ids = [key for key, value in route_statuses.items() if value["status"] != "routed"]
+    pilot_gates = {
+        "G1": {
+            "status": "pass" if dem.license and native_slope.license else "partial",
+            "primary_dtm_license": dem.license,
+            "native_slope_license": native_slope.license,
+            "primary_crop_sha256_verified": True,
+            "native_slope_cache_sha256_verified": True,
+        },
+        "G2": {
+            "status": "partial_visual_only",
+            "evidence": alignment_evidence,
+            "quantitative_tiepoint_residual": "unavailable",
+        },
+        "G3": {
+            "status": "pass" if not unreachable_ids else "partial",
+            "routed_stop_modes": routed_count,
+            "unreachable_stop_modes": unreachable_ids,
+            "native_slope_mask_enforced": True,
+            "pnr_arrays_checked": True,
+        },
+        "G4": {"status": pilot_timing["g4_status"], "timing": pilot_timing},
+    }
     # Keep this additive metadata deterministic and explicit rather than implying native 1 m routing.
     build_manifest = {
         "engine": "RedSight Python NumPy rasterio SciPy sparse Dijkstra",
         "engine_commit": _git_head(Path(__file__).resolve().parents[1]),
         "build_date": date.today().isoformat(),
-        "command": "python3 -m engine build --input-manifest <manifest> --native-hazard-manifest <native-slope-manifest> --constants <constants.json> --stops <stops.json> --out <app/public/data>",
+        "command": "python3 -m engine build --input-manifest <manifest-with-native-hazard> --constants <constants.json> --stops <stops.json> --out <app/public/data>",
         "inputs": sources,
         "s1_landmark_alignment": alignment_evidence,
         "stops_sha256": sha256_file(stops_path),
@@ -405,6 +551,10 @@ def build_real_routes(
         "constants": constants_raw,
         "runtime": {"python": platform.python_version(), "numpy": np.__version__, "rasterio": rasterio.__version__, "scipy": scipy_version},
         "route_status": route_statuses,
+        "stale_route_files_removed": stale_route_files_removed,
+        "stop_target_cells": stop_target_diagnostics,
+        "pilot_gates": pilot_gates,
+        "pilot_timing": pilot_timing,
         "limitations": [
             "The primary crop covers 78.2% of the 600x600 planning grid; complementary-only cells remain blocked.",
             "The overlapping companion DTM differs substantially from the primary scene; its cells are excluded instead of applying an unsupported vertical correction.",
@@ -415,11 +565,7 @@ def build_real_routes(
         ],
     }
 
-    _write_json(output_dir / "constants.json", constants_raw)
-    _write_json(output_dir / "meta.json", meta)
-    _write_json(routes_dir / "index.json", route_index)
     _write_json(output_dir / "engine-build-manifest.json", build_manifest)
-    _write_json(output_dir / "hazards.geojson", _hazards_geojson(dem, graph, c["slope_limit_foot_deg"], slope_method))
     return {
         "output_dir": str(output_dir),
         "meta": meta,

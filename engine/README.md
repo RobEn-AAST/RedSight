@@ -7,7 +7,6 @@ From the repository root, with Python 3 plus the already-installed NumPy, raster
 ```sh
 python3 -m engine build \
   --input-manifest /tmp/redsight-engine-pilot-inputs.json \
-  --native-hazard-manifest /tmp/redsight-native-hazard-inputs.json \
   --constants app/public/data/constants.json \
   --stops app/public/data/stops.json \
   --out app/public/data
@@ -15,8 +14,8 @@ python3 -m engine build \
 
 `--habitat-row-col ROW COL` overrides the deterministic habitat selection; any override is labeled
 Scenario in `meta.json`. The build writes only Ali-owned outputs: `constants.json`, `meta.json`,
-`hazards.geojson`, `engine-build-manifest.json`, `routes/index.json` and the ten fastest/safest route
-files. A nonzero exit or a `partial` summary means at least one supported stop/mode has an explicit
+`hazards.geojson`, `engine-build-manifest.json`, `routes/index.json` and a route file for each routed
+stop/mode. All ten supported stop/mode outcomes remain in the index. A nonzero exit or a `partial` summary means at least one outcome is explicitly
 no-route record; inspect the index and build manifest before using it. Input crops are checksum-checked
 against the handoff manifest. The command does not download data.
 
@@ -37,7 +36,8 @@ habitat connectivity and per-stop reachability; the earlier coarse-mask routes a
 this native input is used.
 
 The primary asset is native 1.0117 m/pixel, while the local mean-elevation crop is 600×600 at about
-9.879 m. The 15° hard mask requires a separate cached native DEM Horn 3×3 slope aggregate at maximum
+9.879 m. The 15° hard mask requires the hash-checked native DEM Horn 3×3 slope aggregate in the
+`native_hazard` block of the input manifest at maximum
 or 90th percentile, aligned to this exact planning grid. The CLI refuses a missing or mismatched
 cache; cells with unavailable native slope support remain blocked. Its manifest must identify the
 local path, bytes and SHA-256, degree units, Horn algorithm, aggregation, source and target resolution,

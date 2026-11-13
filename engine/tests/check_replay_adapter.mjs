@@ -15,6 +15,8 @@ for (const entry of index.routes) {
   if (entry.status === 'unreachable') {
     assert.equal(entry.file, null, `${entry.id} should not point at a nonexistent route file`);
     assert.ok(entry.reason, `${entry.id} should state why the route is unavailable`);
+    assert.equal(fs.existsSync(path.join(dataDir, 'routes', `${entry.id}.json`)), false,
+      `${entry.id} stale route payload must be removed`);
     unreachable += 1;
     continue;
   }
