@@ -1,79 +1,197 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Map as MapLibreMap } from 'maplibre-gl'
+import type { FeatureCollection } from 'geojson'
 
 import { fetchData } from '@/lib/dataUrl'
-import type { EngineRoute, EngineRouteIndexEntry, EngineRouteMode } from '@/lib/engineDataContext'
+import type {
+  EngineRoute,
+  EngineRouteIndexEntry,
+  EngineRouteMode,
+  PlanFile,
+  PlanIndexEntry,
+  PlanMember,
+  PlanTarget,
+} from '@/lib/engineDataContext'
 import { useEngineData } from '@/lib/useEngineData'
 import { useMission } from '@/lib/useMission'
-import { PlanContext, type PlanPreset, type PlanStore } from '@/map/planContext'
+import { PlanContext, type CrewMode, type PlanPreset, type PlanStore } from '@/map/planContext'
 import { nearestLoadBucket, perAstronautLoadKg } from '@/types/mission'
 
 const MODES: EngineRouteMode[] = ['fastest', 'safest']
 
+/** One plan member in the §15 route shape the turn-back slider and replay read. */
+function memberAsRoute(plan: PlanFile, m: PlanMember): EngineRoute {
+  return {
+    _mock: plan._mock,
+    id: `${plan.id}:${m.member}`,
+    stop: m.targets[m.targets.length - 1] ?? plan.target,
+    mode: plan.mode,
+    crew: plan.crew,
+    load_kg: plan.load_kg,
+    badge: plan.badge,
+    budget_l: plan.budget_l,
+    constants_hash: '',
+    coords: m.coords,
+    seg: m.seg.map(({ distance_m, ...s }) => ({ ...s, cost_terms: { distance_m } })),
+    cum: m.cum,
+    back: m.back,
+    pnr_index: m.pnr_index,
+  }
+}
+
+interface Want {
+  crew: number
+  load: number
+  rover: boolean
+}
+
 /**
- * Picks the route files to show for a stop. The engine ships routes only for
- * some crew × load presets (§15), so if the mission's own preset has no files
- * the first preset that does is shown, and the UI says so.
+ * Picks the plan files for a target. The engine ships plans only for some
+ * crew × load × rover presets, so if the mission's own preset has none, the
+ * closest preset that does is shown and the UI says so.
  */
-function pickRouteFiles(
-  index: EngineRouteIndexEntry[],
-  stopId: string,
-  crew: number,
-  loadKg: number,
-): { preset: PlanPreset; files: Partial<Record<EngineRouteMode, string>> } | null {
-  const forStop = index.filter((r) => r.stop === stopId)
-  if (forStop.length === 0) return null
-  const exact = forStop.filter((r) => r.crew === crew && r.load_kg === loadKg)
-  const chosen = exact.length > 0 ? exact : forStop.filter(
-    (r) => r.crew === forStop[0].crew && r.load_kg === forStop[0].load_kg,
+function pickPlans(index: PlanIndexEntry[], target: string, want: Want) {
+  const forTarget = index.filter((p) => p.target === target)
+  if (forTarget.length === 0) return null
+  const score = (p: PlanIndexEntry) =>
+    (p.crew === want.crew ? 0 : 4) + (p.rover === want.rover ? 0 : 2) + (p.load_kg === want.load ? 0 : 1)
+  const best = [...forTarget].sort((a, b) => score(a) - score(b))[0]
+  const chosen = forTarget.filter(
+    (p) => p.crew === best.crew && p.rover === best.rover && p.load_kg === best.load_kg,
+  )
+  const files: Partial<Record<EngineRouteMode, string>> = {}
+  for (const p of chosen) files[p.mode] = p.file
+  const preset: PlanPreset = {
+    crew: best.crew,
+    load_kg: best.load_kg,
+    rover: best.rover,
+    matchesMission: score(best) === 0,
+  }
+  return { preset, files }
+}
+
+/** Older contract: one route per stop and mode. Shown as a walk-only, together-only plan. */
+function routeToPlan(route: EngineRoute): PlanFile {
+  const last = route.coords.length - 1
+  const member: PlanMember = {
+    member: route.crew === 2 ? 'pair' : 'A',
+    label: route.crew === 2 ? 'Both astronauts' : 'Astronaut',
+    targets: [route.stop],
+    coords: route.coords,
+    legs: [
+      {
+        kind: 'walk',
+        from: 0,
+        to: last,
+        t_s: route.cum.t_s[last],
+        o2_l: route.cum.o2_l[last],
+        distance_m: route.seg.reduce((s, x) => s + x.cost_terms.distance_m, 0),
+      },
+    ],
+    seg: route.seg.map((s) => ({
+      t_s: s.t_s,
+      o2_l: s.o2_l,
+      slope_deg: s.slope_deg,
+      distance_m: s.cost_terms.distance_m,
+    })),
+    cum: route.cum,
+    back: route.back,
+    pnr_index: route.pnr_index,
+    park_index: null,
+  }
+  return {
+    _mock: route._mock,
+    id: route.id,
+    target: route.stop,
+    mode: route.mode,
+    crew: route.crew,
+    load_kg: route.load_kg,
+    rover: false,
+    badge: route.badge,
+    budget_l: route.budget_l,
+    together: [member],
+    split: null,
+  }
+}
+
+function pickRoutes(index: EngineRouteIndexEntry[], target: string, want: Want) {
+  const forTarget = index.filter((r) => r.stop === target)
+  if (forTarget.length === 0) return null
+  const exact = forTarget.filter((r) => r.crew === want.crew && r.load_kg === want.load)
+  const chosen = exact.length > 0 ? exact : forTarget.filter(
+    (r) => r.crew === forTarget[0].crew && r.load_kg === forTarget[0].load_kg,
   )
   const files: Partial<Record<EngineRouteMode, string>> = {}
   for (const r of chosen) files[r.mode] = r.file
-  return {
-    preset: { crew: chosen[0].crew, load_kg: chosen[0].load_kg, matchesMission: exact.length > 0 },
-    files,
+  const preset: PlanPreset = {
+    crew: chosen[0].crew,
+    load_kg: chosen[0].load_kg,
+    rover: false,
+    matchesMission: exact.length > 0 && !want.rover,
   }
+  return { preset, files }
+}
+
+function isPlan(raw: unknown): raw is PlanFile {
+  const p = raw as Partial<PlanFile> | null
+  return (
+    !!p &&
+    Array.isArray(p.together) &&
+    p.together.length > 0 &&
+    p.together.every((m) => Array.isArray(m.coords) && Array.isArray(m.cum?.o2_l) && Array.isArray(m.legs))
+  )
 }
 
 function isRoute(raw: unknown): raw is EngineRoute {
   const r = raw as Partial<EngineRoute> | null
-  return (
-    !!r &&
-    Array.isArray(r.coords) &&
-    r.coords.length > 1 &&
-    Array.isArray(r.seg) &&
-    Array.isArray(r.cum?.t_s) &&
-    Array.isArray(r.cum?.o2_l) &&
-    Array.isArray(r.back?.t_s) &&
-    Array.isArray(r.back?.o2_l)
-  )
+  return !!r && Array.isArray(r.coords) && Array.isArray(r.seg) && Array.isArray(r.cum?.o2_l)
 }
 
 interface Loaded {
   key: string
-  routes: Partial<Record<EngineRouteMode, EngineRoute>>
+  plans: Partial<Record<EngineRouteMode, PlanFile>>
 }
 
 export function PlanProvider({ children }: { children: ReactNode }) {
   const engine = useEngineData()
   const { state } = useMission()
-  const [selectedStopId, selectStop] = useState<string | null>(null)
+  const [chosenTargetId, selectTarget] = useState<string | null>(null)
   const [mode, setMode] = useState<EngineRouteMode>('fastest')
+  const [crewMode, setCrewMode] = useState<CrewMode>('together')
   const [map, setMap] = useState<MapLibreMap | null>(null)
   const [o2BudgetL, setO2BudgetL] = useState<number | null>(null)
   const [loaded, setLoaded] = useState<Loaded | null>(null)
+  const [limits, setLimits] = useState<{ key: string; line: FeatureCollection | null } | null>(null)
 
-  const crew = state.config.crewCount
-  const loadKg = nearestLoadBucket(perAstronautLoadKg(state.config))
+  const wantCrew = state.config.crewCount
+  const wantLoad = nearestLoadBucket(perAstronautLoadKg(state.config))
+  const wantRover = state.config.roverAvailable
+  const goal = state.config.scienceGoalId
 
-  const pick = useMemo(
-    () =>
-      selectedStopId && engine.routeIndex
-        ? pickRouteFiles(engine.routeIndex, selectedStopId, crew, loadKg)
-        : null,
-    [engine.routeIndex, selectedStopId, crew, loadKg],
-  )
-  const key = pick ? `${selectedStopId}|${pick.preset.crew}|${pick.preset.load_kg}` : null
+  const { goalTargets, goalUnmatched } = useMemo(() => {
+    const all: PlanTarget[] = engine.targets ?? []
+    const matched = all.filter((t) => t.goals.includes(goal))
+    return matched.length > 0
+      ? { goalTargets: matched, goalUnmatched: false }
+      : { goalTargets: all, goalUnmatched: all.length > 0 }
+  }, [engine.targets, goal])
+
+  // The chosen target, or the first one the goal offers.
+  const selectedTargetId =
+    chosenTargetId && goalTargets.some((t) => t.id === chosenTargetId)
+      ? chosenTargetId
+      : (goalTargets[0]?.id ?? null)
+
+  const legacy = !engine.planIndex
+  const pick = useMemo(() => {
+    if (!selectedTargetId) return null
+    const want: Want = { crew: wantCrew, load: wantLoad, rover: wantRover }
+    if (engine.planIndex) return pickPlans(engine.planIndex, selectedTargetId, want)
+    if (engine.routeIndex) return pickRoutes(engine.routeIndex, selectedTargetId, want)
+    return null
+  }, [engine.planIndex, engine.routeIndex, selectedTargetId, wantCrew, wantLoad, wantRover])
+
+  const key = pick ? `${selectedTargetId}|${JSON.stringify(pick.files)}` : null
 
   useEffect(() => {
     if (!pick || !key) return
@@ -82,19 +200,37 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       MODES.map(async (m) => [m, pick.files[m] ? await fetchData<unknown>(pick.files[m]) : null] as const),
     ).then((results) => {
       if (cancelled) return
-      const routes: Partial<Record<EngineRouteMode, EngineRoute>> = {}
-      for (const [m, raw] of results) if (isRoute(raw)) routes[m] = raw
-      setLoaded({ key, routes })
+      const plans: Partial<Record<EngineRouteMode, PlanFile>> = {}
+      for (const [m, raw] of results) {
+        if (isPlan(raw)) plans[m] = raw
+        else if (isRoute(raw)) plans[m] = routeToPlan(raw)
+      }
+      setLoaded({ key, plans })
     })
     return () => {
       cancelled = true
     }
   }, [pick, key])
 
+  // The no-return line for the preset actually shown.
+  const limitsFile = pick && !legacy
+    ? `plan/limits_c${pick.preset.crew}_l${pick.preset.load_kg}_${pick.preset.rover ? 'rover' : 'foot'}.geojson`
+    : null
+  useEffect(() => {
+    if (!limitsFile) return
+    let cancelled = false
+    void fetchData<FeatureCollection>(limitsFile).then((line) => {
+      if (!cancelled) setLimits({ key: limitsFile, line: line && Array.isArray(line.features) ? line : null })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [limitsFile])
+
   const store = useMemo<PlanStore>(() => {
-    const current = loaded && loaded.key === key ? loaded.routes : null
-    const routes = current ?? {}
-    const routesStatus = !selectedStopId
+    const current = loaded && loaded.key === key ? loaded.plans : null
+    const plans = current ?? {}
+    const status = !selectedTargetId
       ? 'idle'
       : !pick
         ? 'missing'
@@ -103,22 +239,35 @@ export function PlanProvider({ children }: { children: ReactNode }) {
           : Object.keys(current).length > 0
             ? 'ready'
             : 'missing'
+    // If only one mode's file exists, show that one instead of nothing.
+    const activePlan = plans[mode] ?? plans.fastest ?? plans.safest ?? null
+    const canSplit = !!activePlan?.split && activePlan.split.members.length > 1
+    const activeMembers =
+      crewMode === 'split' && canSplit ? activePlan!.split!.members : (activePlan?.together ?? [])
     return {
-      selectedStopId,
-      selectStop,
+      goalTargets,
+      goalUnmatched,
+      selectedTargetId,
+      selectTarget,
       mode,
       setMode,
-      routes,
-      routesStatus,
-      // If only one mode's file exists, show that one instead of nothing.
-      activeRoute: routes[mode] ?? routes.fastest ?? routes.safest ?? null,
+      crewMode: canSplit ? crewMode : 'together',
+      setCrewMode,
+      plans,
+      status,
+      activePlan,
+      activeMembers,
+      noReturnLine: limits && limits.key === limitsFile ? limits.line : null,
       preset: pick?.preset ?? null,
+      legacy,
+      activeRoute: activePlan && activeMembers[0] ? memberAsRoute(activePlan, activeMembers[0]) : null,
+      routesStatus: status,
       o2BudgetL,
       setO2BudgetL,
       map,
       setMap,
     }
-  }, [selectedStopId, mode, loaded, key, pick, map, o2BudgetL])
+  }, [goalTargets, goalUnmatched, selectedTargetId, mode, crewMode, loaded, key, pick, limits, limitsFile, legacy, map, o2BudgetL])
 
   return <PlanContext.Provider value={store}>{children}</PlanContext.Provider>
 }

@@ -1,13 +1,29 @@
 {
   "_preview": true,
-  "_note": "Temporary basemap until Youssef's tiles land in app/public/data/tiles/. One image of the D11 ops box, exported once (not loaded live from Trek).",
+  "_note": "Temporary basemap until Youssef's tiles land in app/public/data/tiles/. Two images exported once from Mars Trek (not loaded live): a sharp one of the D11 ops box and a wider, coarser one around it so the map has no hard edge.",
   "image": "hirise-ops-box.jpg",
-  "bounds": { "west": 137.335, "east": 137.435, "south": -4.85, "north": -4.75 },
+  "bounds": {
+    "west": 137.335,
+    "east": 137.435,
+    "south": -4.85,
+    "north": -4.75
+  },
   "name": "HiRISE preview image",
   "badge": "Observed",
   "resolution": "about 1.45 m/px (4096 px across 0.1°, downsampled from 0.25 m)",
   "source": "NASA/JPL Mars Trek, curiosity_hirise_mosaic (NASA/JPL-Caltech/Univ. of Arizona)",
   "source_url": "https://trek.nasa.gov/mars/trekarcgis/rest/services/curiosity_hirise_mosaic/ImageServer/exportImage?bbox=137.335,-4.85,137.435,-4.75&bboxSR=104905&imageSR=104905&size=4096,4096&format=jpg&f=image",
   "retrieved": "2026-11-13",
-  "alignment": "Placed by the requested bounding box; not yet checked against a landmark (pilot gate)."
+  "alignment": "Placed by the requested bounding box; not yet checked against a landmark (pilot gate).",
+  "context": {
+    "image": "context.jpg",
+    "bounds": {
+      "west": 137.235,
+      "east": 137.535,
+      "south": -4.92,
+      "north": -4.62
+    },
+    "resolution": "about 5.8 m/px (3072 px across 0.3°)",
+    "source_url": "https://trek.nasa.gov/mars/trekarcgis/rest/services/curiosity_hirise_mosaic/ImageServer/exportImage?bbox=137.235,-4.92,137.535,-4.62&bboxSR=104905&imageSR=104905&size=3072,3072&format=jpg&f=image"
+  }
 }

@@ -142,6 +142,86 @@ export interface PreviewBasemap {
   source_url?: string
   retrieved?: string
   alignment?: string
+  /** A wider, coarser image around the ops box, so the map has no hard edge. */
+  context: { url: string; bounds: PreviewBasemap['bounds']; resolution: string } | null
+}
+
+/* ---- Proposed plan files (docs/app-redesign.md §4) ------------------------- */
+
+/** An area worth sampling, drawn around a real rover-visited site. */
+export interface PlanTarget {
+  id: string
+  name: string
+  /** The real site the area is drawn around. */
+  site: [number, number]
+  /** Outer ring of the area, [lon, lat] pairs. */
+  ring: [number, number][]
+  substances: string[]
+  /** Science-goal ids (lib/materials.ts) this target serves. */
+  goals: string[]
+  evidence: string | null
+  badge: ContractBadge
+  extentNote?: string
+}
+
+export type LegKind = 'drive' | 'walk'
+
+export interface PlanLeg {
+  kind: LegKind
+  /** Point indices into the member's coords: the leg runs from → to. */
+  from: number
+  to: number
+  t_s: number
+  o2_l: number
+  distance_m: number
+}
+
+/** One astronaut's (or the pair's) route out to its targets. */
+export interface PlanMember {
+  member: string
+  label: string
+  targets: string[]
+  coords: [number, number][]
+  legs: PlanLeg[]
+  seg: { t_s: number; o2_l: number; slope_deg: number; distance_m: number }[]
+  cum: { t_s: number[]; o2_l: number[] }
+  back: { t_s: number[]; o2_l: number[] }
+  pnr_index: number
+  /** Where the rover parks and the walk starts; null on foot. */
+  park_index: number | null
+}
+
+export interface PlanSplit {
+  rule: string
+  max_separation_limit_m: number
+  planned_max_separation_m: number
+  members: PlanMember[]
+}
+
+export interface PlanFile {
+  _mock?: boolean
+  id: string
+  target: string
+  mode: EngineRouteMode
+  crew: number
+  load_kg: number
+  rover: boolean
+  badge: ContractBadge
+  budget_l: number
+  /** The crew walking together (one member entry for the pair). */
+  together: PlanMember[]
+  /** Two astronauts to two targets, staying in reach. Crew of 2 only. */
+  split: PlanSplit | null
+}
+
+export interface PlanIndexEntry {
+  id: string
+  target: string
+  mode: EngineRouteMode
+  crew: number
+  load_kg: number
+  rover: boolean
+  file: string
 }
 
 export interface EngineDataState {
@@ -153,6 +233,8 @@ export interface EngineDataState {
   hazards: EngineHazards | null
   cards: { rad: EngineCard | null; rems: EngineCard | null }
   preview: PreviewBasemap | null
+  targets: PlanTarget[] | null
+  planIndex: PlanIndexEntry[] | null
   /** true when any loaded file carries the `_mock` flag. */
   mock: boolean
   /** true once the initial load finished (found or not). */
@@ -168,6 +250,8 @@ export const emptyEngineData: EngineDataState = {
   hazards: null,
   cards: { rad: null, rems: null },
   preview: null,
+  targets: null,
+  planIndex: null,
   mock: false,
   probed: false,
 }

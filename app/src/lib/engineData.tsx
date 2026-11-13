@@ -13,6 +13,8 @@ import {
   type EngineMeta,
   type EngineRouteIndexEntry,
   type EngineStop,
+  type PlanIndexEntry,
+  type PlanTarget,
   type PreviewBasemap,
 } from '@/lib/engineDataContext'
 
@@ -106,11 +108,58 @@ function parseCard(raw: unknown): EngineCard | null {
     : null
 }
 
+function parseBounds(raw: unknown): PreviewBasemap['bounds'] | null {
+  if (!isObject(raw)) return null
+  return [raw.west, raw.east, raw.south, raw.north].every(isNumber)
+    ? (raw as unknown as PreviewBasemap['bounds'])
+    : null
+}
+
 function parsePreview(raw: unknown): PreviewBasemap | null {
-  if (!isObject(raw) || typeof raw.image !== 'string' || !isObject(raw.bounds)) return null
-  const b = raw.bounds
-  if (![b.west, b.east, b.south, b.north].every(isNumber)) return null
-  return { ...(raw as unknown as PreviewBasemap), url: previewUrl(raw.image) }
+  if (!isObject(raw) || typeof raw.image !== 'string' || !parseBounds(raw.bounds)) return null
+  const c = raw.context
+  const context =
+    isObject(c) && typeof c.image === 'string' && parseBounds(c.bounds)
+      ? {
+          url: previewUrl(c.image),
+          bounds: parseBounds(c.bounds)!,
+          resolution: typeof c.resolution === 'string' ? c.resolution : '',
+        }
+      : null
+  return { ...(raw as unknown as PreviewBasemap), url: previewUrl(raw.image), context }
+}
+
+/** targets.geojson: polygons around rover-visited sites (proposed file). */
+function parseTargets(raw: unknown): PlanTarget[] | null {
+  if (!isObject(raw) || !Array.isArray(raw.features)) return null
+  const out: PlanTarget[] = []
+  for (const f of raw.features) {
+    if (!isObject(f) || !isObject(f.properties) || !isObject(f.geometry)) continue
+    const p = f.properties
+    const rings = f.geometry.coordinates
+    const ring = Array.isArray(rings) ? rings[0] : null
+    if (typeof p.id !== 'string' || !Array.isArray(ring) || !Array.isArray(p.site)) continue
+    out.push({
+      id: p.id,
+      name: typeof p.name === 'string' ? p.name : p.id,
+      site: p.site as [number, number],
+      ring: ring as [number, number][],
+      substances: Array.isArray(p.substances) ? p.substances.filter((x): x is string => typeof x === 'string') : [],
+      goals: Array.isArray(p.goals) ? p.goals.filter((x): x is string => typeof x === 'string') : [],
+      evidence: typeof p.evidence === 'string' ? p.evidence : null,
+      badge: (p.badge as PlanTarget['badge']) ?? 'Scenario',
+      extentNote: typeof p.extent_note === 'string' ? p.extent_note : undefined,
+    })
+  }
+  return out
+}
+
+function parsePlanIndex(raw: unknown): PlanIndexEntry[] | null {
+  if (!isObject(raw) || !Array.isArray(raw.plans)) return null
+  return raw.plans.filter(
+    (r): r is PlanIndexEntry =>
+      isObject(r) && typeof r.target === 'string' && typeof r.file === 'string' && typeof r.rover === 'boolean',
+  )
 }
 
 export function EngineDataProvider({ children }: { children: ReactNode }) {
@@ -128,11 +177,12 @@ export function EngineDataProvider({ children }: { children: ReactNode }) {
       fetchData<unknown>('cards/rad.json'),
       fetchData<unknown>('cards/rems.json'),
       fetchJsonUrl<unknown>(previewUrl('basemap.json')),
+      fetchData<unknown>('targets.geojson'),
+      fetchData<unknown>('plan/index.json'),
     ]).then((results) => {
       if (cancelled) return
-      const raw = results.slice(0, 8)
-      const [meta, layers, stops, constants, routeIndex, hazards, rad, rems] = raw
-      const preview = results[8]
+      const [meta, layers, stops, constants, routeIndex, hazards, rad, rems, preview, targets, planIndex] =
+        results
       setState({
         meta: parseMeta(meta),
         layers: parseLayers(layers),
@@ -142,7 +192,9 @@ export function EngineDataProvider({ children }: { children: ReactNode }) {
         hazards: parseHazards(hazards),
         cards: { rad: parseCard(rad), rems: parseCard(rems) },
         preview: parsePreview(preview),
-        mock: raw.some(isMock),
+        targets: parseTargets(targets),
+        planIndex: parsePlanIndex(planIndex),
+        mock: results.some(isMock),
         probed: true,
       })
     })
