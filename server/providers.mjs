@@ -70,6 +70,24 @@ async function assertOk(res, label) {
   throw new ProviderError(msg, detail)
 }
 
+/** Retry only connection failures before any response is streamed. Never
+ * replay a partial reply, HTTP rejection, or operator cancellation. */
+async function fetchProvider(url, options, label) {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      return await fetch(url, options)
+    } catch (error) {
+      if (options.signal?.aborted || error.name === 'AbortError' || error.name === 'TimeoutError') throw error
+      if (!(error instanceof TypeError) || !/fetch failed/i.test(error.message)) throw error
+      if (attempt === 0) continue
+      throw new ProviderError(
+        `${label}: unable to connect after retrying — check the server internet connection and try again.`,
+        error.cause?.code ?? error.name,
+      )
+    }
+  }
+}
+
 /* ------------------------------------------------------------------ Groq --- */
 
 const GROQ_CHAT_URL = 'https://api.groq.com/openai/v1/chat/completions'
@@ -84,7 +102,7 @@ async function groqStreamChat({ system, messages, runTool, signal, onEvent, voic
   const maxTokens = voice ? config.voiceMaxTokens : config.maxTokens
 
   for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
-    const res = await fetch(GROQ_CHAT_URL, {
+    const res = await fetchProvider(GROQ_CHAT_URL, {
       method: 'POST',
       headers: { Authorization: `Bearer ${config.groqApiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -103,7 +121,7 @@ async function groqStreamChat({ system, messages, runTool, signal, onEvent, voic
         stream: true,
       }),
       signal,
-    })
+    }, 'Groq')
     await assertOk(res, 'Groq')
 
     let roundText = ''
@@ -195,7 +213,7 @@ async function geminiStreamChat({ system, messages, runTool, signal, onEvent }) 
     const tools = [{ ...geminiToolSchema() }]
     if (webSearch) tools.push({ google_search: {} })
 
-    const res = await fetch(geminiUrl(), {
+    const res = await fetchProvider(geminiUrl(), {
       method: 'POST',
       headers: { 'x-goog-api-key': config.geminiApiKey, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -205,7 +223,7 @@ async function geminiStreamChat({ system, messages, runTool, signal, onEvent }) 
         generationConfig: { temperature: config.temperature, maxOutputTokens: config.maxTokens },
       }),
       signal,
-    })
+    }, 'Gemini')
     await assertOk(res, 'Gemini')
 
     let roundText = ''

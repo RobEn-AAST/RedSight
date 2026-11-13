@@ -101,33 +101,38 @@ export async function startMicRecording(opts: MicOptions = {}): Promise<MicSessi
     opts.silenceAutoStopMs && opts.onAutoStop
       ? watchSilence(stream, opts.silenceAutoStopMs, opts.onAutoStop)
       : null
-  // VAD firing must not double-fire with a manual stop.
+  // Manual stop and VAD may overlap; both must receive the same audio.
   let finished = false
-  const once = (fn: () => void) => () => {
-    if (finished) return
-    finished = true
-    stopVad?.()
-    fn()
-  }
+  let capture: Promise<CapturedAudio> | null = null
 
   return {
-    stop: once(async () => {
+    stop: () => {
+      if (capture) return capture
+      if (finished) return Promise.reject(new Error('Recording cancelled.'))
+      finished = true
+      stopVad?.()
+      capture = (async () => {
+        if (recorder.state !== 'inactive') recorder.stop()
+        release()
+        await stopped
+        const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' })
+        let pcm: Float32Array | undefined
+        try {
+          pcm = await decodeTo16kMono(blob)
+        } catch {
+          /* decode failure — cloud path still works */
+        }
+        return { blob, pcm }
+      })()
+      return capture
+    },
+    abort: () => {
+      if (finished) return
+      finished = true
+      stopVad?.()
       if (recorder.state !== 'inactive') recorder.stop()
       release()
-      await stopped
-      const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' })
-      let pcm: Float32Array | undefined
-      try {
-        pcm = await decodeTo16kMono(blob)
-      } catch {
-        /* decode failure — cloud path still works */
-      }
-      return { blob, pcm }
-    }) as () => Promise<CapturedAudio>,
-    abort: once(() => {
-      if (recorder.state !== 'inactive') recorder.stop()
-      release()
-    }),
+    },
   }
 }
 
