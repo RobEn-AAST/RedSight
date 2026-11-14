@@ -1,4 +1,4 @@
-// AR route guide drawn into the 360 stop view (helmet AR simulation). Owner: Marwan.
+// AR route guide drawn into the 360 stop view (AR helmet view). Owner: Marwan.
 // No tracking: the route's own coordinates are turned into directions as seen from the camera at the stop and
 // drawn once; only the flowing chevrons animate. With a terrain grid (app/public/hud/terrain-<stop>.json, Derived
 // from the Trek 2.5 m DEM) the route sits on the real ground height and the parts hidden behind a ridge are shown

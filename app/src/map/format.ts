@@ -100,13 +100,31 @@ export interface MemberSummary {
   spareO2L: number
 }
 
+/** O₂ scaling for a crew with a non-reference body mass (lib/memberFactor.ts). */
+export interface O2Scale {
+  /** Worst member's O₂ factor (1 = the plan's reference astronaut). */
+  factor: number
+  /** constants.json return_cost_margin, used to move the no-return point when factor ≠ 1. */
+  returnMargin: number
+}
+
 /**
- * Reads the totals a route card shows. Sums and maxima of engine values only:
- * no model runs in the browser.
+ * Reads the totals a route card shows. Sums and maxima of engine values only, plus the optional body-mass
+ * factor; with a factor ≠ 1 the no-return point is recomputed with the engine's rule
+ * (engine/route/pnr.py: factor × (out + margin × back) ≤ budget).
  */
-export function summarizeMember(m: PlanMember, budgetL: number): MemberSummary {
+export function summarizeMember(m: PlanMember, budgetL: number, scale?: O2Scale): MemberSummary {
   const last = m.coords.length - 1
-  const pnr = Math.min(Math.max(m.pnr_index, 0), last)
+  const f = scale?.factor ?? 1
+  let pnr = Math.min(Math.max(m.pnr_index, 0), last)
+  if (scale && f !== 1) {
+    pnr = -1
+    for (let i = 0; i <= last; i++) {
+      if (f * (m.cum.o2_l[i] + scale.returnMargin * m.back.o2_l[i]) <= budgetL) pnr = i
+      else break
+    }
+    pnr = Math.max(pnr, 0)
+  }
   let distanceM = 0
   let pnrDistanceM = 0
   let maxSlopeDeg = 0
@@ -115,7 +133,7 @@ export function summarizeMember(m: PlanMember, budgetL: number): MemberSummary {
     if (i < pnr) pnrDistanceM += s.distance_m
     maxSlopeDeg = Math.max(maxSlopeDeg, Math.abs(s.slope_deg))
   })
-  const roundTripO2L = m.cum.o2_l[last] + m.back.o2_l[last]
+  const roundTripO2L = f * (m.cum.o2_l[last] + m.back.o2_l[last])
   return {
     distanceM,
     roundTripS: m.cum.t_s[last] + m.back.t_s[last],
@@ -133,8 +151,8 @@ export function summarizeMember(m: PlanMember, budgetL: number): MemberSummary {
  * A crew's plan is as long as its slowest member and as tight as its
  * hungriest one: both leave and come home together (demo-focus-plan §8).
  */
-export function summarizeCrew(members: PlanMember[], budgetL: number) {
-  const each = members.map((m) => summarizeMember(m, budgetL))
+export function summarizeCrew(members: PlanMember[], budgetL: number, scale?: O2Scale) {
+  const each = members.map((m) => summarizeMember(m, budgetL, scale))
   return {
     each,
     roundTripS: Math.max(...each.map((s) => s.roundTripS)),

@@ -38,7 +38,7 @@ export function MissionSetup() {
 
   const validation = validateMission(config)
   const stepFields: FieldIssue['field'][][] = [
-    ['crewCount', 'bodyMassKg'],
+    ['crewCount', 'bodyMassKg', 'bodyMassKgB'],
     ['loadKg', 'sampleKgPerStop'],
     [],
     ['scienceGoal'],

@@ -15,6 +15,7 @@ import type {
 } from '@/lib/engineDataContext'
 import { useEngineData } from '@/lib/useEngineData'
 import { useMission } from '@/lib/useMission'
+import { memberO2Factors } from '@/lib/memberFactor'
 import { ringForBudget } from '@/map/noReturn'
 import { PlanContext, type CrewMode, type PlanPreset, type PlanStore } from '@/map/planContext'
 import { nearestLoadBucket, perAstronautLoadKg } from '@/types/mission'
@@ -22,6 +23,21 @@ import { nearestLoadBucket, perAstronautLoadKg } from '@/types/mission'
 const MODES: EngineRouteMode[] = ['fastest', 'safest']
 
 /** One plan member in the §15 route shape the turn-back slider and replay read. */
+/**
+ * One route object per plan member, so `activeRoute` keeps its identity while only unrelated store
+ * state changes (layers, the Curiosity path, the O₂ slider). The replay restarts whenever it gets a new
+ * route object, so without this it reset on every layer toggle.
+ */
+const routeForMember = new WeakMap<PlanMember, EngineRoute>()
+function cachedMemberRoute(plan: PlanFile, m: PlanMember): EngineRoute {
+  let route = routeForMember.get(m)
+  if (!route) {
+    route = memberAsRoute(plan, m)
+    routeForMember.set(m, route)
+  }
+  return route
+}
+
 function memberAsRoute(plan: PlanFile, m: PlanMember): EngineRoute {
   return {
     id: `${plan.id}:${m.member}`,
@@ -322,6 +338,16 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     const canSplit = !!activePlan?.split && activePlan.split.members.length > 1
     const activeMembers =
       crewMode === 'split' && canSplit ? activePlan!.split!.members : (activePlan?.together ?? [])
+    const activeRoute = validDynamic ?? (activePlan && activeMembers[0] ? cachedMemberRoute(activePlan, activeMembers[0]) : null)
+    // Per-astronaut O₂ factors from body mass (lib/memberFactor.ts), against the mass the route was modeled for.
+    const constant = (k: string) => {
+      const v = (engine.constants as Record<string, { value?: unknown } | undefined> | null)?.[k]?.value
+      return typeof v === 'number' && Number.isFinite(v) ? v : null
+    }
+    const referenceMassKg = validDynamic?.routing?.body_mass_kg ?? constant('body_mass_kg') ?? 82
+    const masses = state.config.crewCount === 2 ? [state.config.bodyMassKg, state.config.bodyMassKgB] : [state.config.bodyMassKg]
+    const memberFactors = memberO2Factors(activeRoute, masses, referenceMassKg, activeRoute?.load_kg ?? perAstronautLoadKg(state.config))
+    const o2Scale = { factor: Math.max(...memberFactors), returnMargin: constant('return_cost_margin') ?? 1.2 }
     return {
       goalTargets,
       goalUnmatched,
@@ -344,7 +370,9 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       noReturnRing: ring ? { budgetL: ring.budgetL, clipped: ring.clipped } : null,
       preset: pick?.preset ?? null,
       legacy,
-      activeRoute: validDynamic ?? (activePlan && activeMembers[0] ? memberAsRoute(activePlan, activeMembers[0]) : null),
+      activeRoute,
+      memberFactors,
+      o2Scale,
       routesStatus: status,
       o2BudgetL,
       setO2BudgetL,
@@ -355,7 +383,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       map,
       setMap,
     }
-  }, [goalTargets, goalUnmatched, selectedTargetId, mode, crewMode, loaded, key, loadedContract, routeKey, pick, ring, legacy, map, o2BudgetL, showImagery, showCuriosityPath, dynamicRoute, state.config, chooseMode, applyDynamicRoute, clearDynamicRoute, layerVisibility, setLayerVisibility])
+  }, [goalTargets, goalUnmatched, selectedTargetId, mode, crewMode, loaded, key, loadedContract, routeKey, pick, ring, legacy, map, o2BudgetL, showImagery, showCuriosityPath, dynamicRoute, state.config, engine.constants, chooseMode, applyDynamicRoute, clearDynamicRoute, layerVisibility, setLayerVisibility])
 
   return <PlanContext.Provider value={store}>{children}</PlanContext.Provider>
 }

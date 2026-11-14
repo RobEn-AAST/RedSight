@@ -330,7 +330,7 @@ export function StopHud({
         setLeg('home')
         setHint(false)
         v()?.panTo(aheadYaw + 70, 4, 0.1)
-        setCaption({ title: 'HELMET AR · SIMULATION', text: `What an astronaut would see through the visor. ${where}` })
+        setCaption({ title: 'AR HELMET VIEW', text: `What an astronaut would see through the visor. ${where}` })
       }],
       [600, () => v()?.panTo(aheadYaw + 25, 4, 5)],
       [6000, () => {
@@ -431,7 +431,7 @@ export function StopHud({
       {/* Top left: what this is, where the photo is from, view options. */}
       <div className="hud-id hud-in">
         <div className="hud-kicker">
-          <span className="hud-chip hud-sim">AR HELMET · SIMULATION</span>
+          <span className="hud-chip hud-view">AR HELMET VIEW</span>
         </div>
         <div className="hud-title">
           {pano.stopId} · {stopName}

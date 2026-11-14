@@ -1,10 +1,11 @@
 import { missionLimits, perAstronautLoadKg, type MissionConfig } from '@/types/mission'
+import { scienceGoalOptions } from '@/lib/materials'
 
 /** Field-level validation results for the mission setup flow.
  *  All limits are TEAM MODEL CHOICES (demo-focus-plan §8), not NASA rules —
  *  messages say so where it matters. */
 export interface FieldIssue {
-  field: 'crewCount' | 'bodyMassKg' | 'loadKg' | 'sampleKgPerStop' | 'scienceGoal'
+  field: 'crewCount' | 'bodyMassKg' | 'bodyMassKgB' | 'loadKg' | 'sampleKgPerStop' | 'scienceGoal'
   level: 'error' | 'warning'
   message: string
 }
@@ -49,6 +50,17 @@ export function validateMission(config: MissionConfig): MissionValidation {
     })
   }
 
+  if (
+    config.crewCount === 2 &&
+    (!Number.isFinite(config.bodyMassKgB) || config.bodyMassKgB < L.bodyMassMin || config.bodyMassKgB > L.bodyMassMax)
+  ) {
+    issues.push({
+      field: 'bodyMassKgB',
+      level: 'error',
+      message: `Astronaut B's body mass must be ${L.bodyMassMin}–${L.bodyMassMax} kg (crew mass range, NASA JSC ICES-2026-127).`,
+    })
+  }
+
   const perAstronaut = perAstronautLoadKg(config)
   const maxForBasis =
     config.loadBasis === 'perAstronaut'
@@ -87,17 +99,12 @@ export function validateMission(config: MissionConfig): MissionValidation {
     })
   }
 
-  if (config.scienceGoalId.length === 0) {
+  // A goal saved before the list changed (e.g. the removed survey or custom goals) must be picked again.
+  if (config.scienceGoalId.length === 0 || !scienceGoalOptions.some((g) => g.id === config.scienceGoalId)) {
     issues.push({
       field: 'scienceGoal',
       level: 'error',
       message: 'Select a science goal — it frames the stop cards once stops.json ships.',
-    })
-  } else if (config.scienceGoalId === 'custom' && config.scienceGoalNote.trim().length < 3) {
-    issues.push({
-      field: 'scienceGoal',
-      level: 'error',
-      message: 'Describe the custom goal in the note field, or pick a listed target.',
     })
   }
 

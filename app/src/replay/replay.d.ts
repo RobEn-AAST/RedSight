@@ -43,6 +43,7 @@ export interface Replay {
   pause(): void
   seek(t: number): void
   setBudget(l: number): void
+  setMemberFactors(f: number[]): void
   setCapacity(l: number): void
   setRoute(route: unknown): void
   drill(factor: number, label?: string): void

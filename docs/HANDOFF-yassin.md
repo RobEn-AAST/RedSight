@@ -184,7 +184,7 @@ Ali changed the O₂ model on main (`fix/engine-o2`), but **the routes haven't b
     - One-finger map panning is back on phones (the map is no longer inside a scrolling page).
     - A drag ends with a click; a `justDragged` flag stops that click from also stepping the size.
 
-- **2026-11-14, no-return line coming back (branch `ui-rework`, uncommitted, waiting on a network):** the red
+- **2026-11-14, no-return line coming back (merged to main as PR #11; ring files generated in `20ca92c`):** the red
   dashed line was gone because Marwan removed the mock `plan/limits_*.geojson` files. User chose a line that
   **follows the O₂ slider**. Finding: at a full tank (288.75 L usable) the crew could walk out about 4 km, so
   that ring sits at or past the edge of the ~5.9 km ops box; the line only matters when the budget is lowered.
@@ -200,7 +200,7 @@ Ali changed the O₂ model on main (`fix/engine-o2`), but **the routes haven't b
   - Verified with temporary made-up rings (deleted after): legend shows, the O₂ text names the ring, and the slider
     at 110 L picks the 100 L ring. 37/37 app tests, build green. `check:data` shows 54 hash "differs/stale" errors
     locally: Windows line endings (`core.autocrlf=true`), not this change.
-  - **Blocked:** this network blocks PyPI and S3 (`curl` exit 35). On the phone hotspot run:
+  - **Done since:** the real ring files were generated and merged (`20ca92c`, "Complete native no-return ring export"). How they were made:
     ```sh
     python -m pip install "rasterio>=1.4" pytest
     python -m pytest engine/tests/test_reach.py
@@ -209,6 +209,29 @@ Ali changed the O₂ model on main (`fix/engine-o2`), but **the routes haven't b
     cd app && npm run check:data
     ```
     Then look at the line on the map with the slider at a few budgets before committing the two files.
+- **2026-11-14, branch `bug-fixes` (PR to main):**
+  - **Replay reset on layer toggle, fixed.** The plan store built a new `activeRoute` object on every recompute
+    (layers, Curiosity path, O₂ slider); the replay restarts on any new route (`setRoute` → `keepTime:false`).
+    `activeRoute` is now cached per plan member (`cachedMemberRoute`, a WeakMap) in `map/planStore.tsx`.
+    Checked: replay at T+0:25 stays at T+0:25 through layer and imagery toggles.
+  - **Per-astronaut body mass.** New `bodyMassKgB` (default 82). The Crew step shows two steppers for a pair
+    (A, B) and one for a solo walk. `lib/memberFactor.ts` turns each mass into an O₂ factor against the mass the
+    route was modeled for: Pandolf power out and back per segment (speed does not depend on mass in the model);
+    3 tests, incl. a match with the engine's stored power on 200 real S1 segments. The store shares
+    `memberFactors` + `o2Scale`; the "Your walk" card, timeline turn-back, O₂ row (`summarizeMember` recomputes
+    the no-return point with the engine rule), turn-back slider and replay (`setMemberFactors`) all use them.
+    Checked: B at 105 kg drops spare O₂ from 200 to 178 L; the replay shows A 99 % · B 98 % ten minutes in.
+  - **360° view opens on arrival.** The replay's `arrive` event pauses the walk and opens the 360° view + HUD
+    at stops with a panorama (S1, S2). Checked in the browser.
+  - **Error boundary** (`ui/ErrorBoundary.tsx`) around the lazy 360° view: a chunk that fails to load (dev
+    "Outdated Optimize Dep", or an old tab after a redeploy) now shows a message instead of blanking the app.
+  - **Goals:** "Open survey traverse" and "Custom goal" removed; an old saved goal that no longer exists must
+    be picked again (`lib/validation.ts`). `targets.geojson` still tags `survey`; nothing reads it now.
+  - **HUD label:** the 360° view's chip and demo-tour caption now read "AR HELMET VIEW" (user rule: never label
+    the 360° view a "simulation" or "proof of concept" in the repo). `hud/StopHud.tsx` and `hud.css` are
+    Marwan's: tell him. `docs/hud-plan.md` updated to match.
+  - Dev note: the browser pane throttles animation frames when it is in the background, so maps and replays
+    can look stuck there; a fresh tab or a screenshot makes it draw.
 
 ## 6. Next steps (suggested order)
 

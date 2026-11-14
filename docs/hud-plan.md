@@ -99,9 +99,9 @@ npm run dev                  # Set up → Show routes → stop S1 → Mission Re
 
 ## Demo tour for the hackathon (2026-11-14, Marwan)
 
-The 360 view is a **simulation of a pass-through helmet with an AR HUD**. On a real EVA the background would be
-the live visor camera; in the demo it is the Observed NASA Mastcam photo from the stop. The top bar says
-**AR SIM · NASA PHOTO**. **▶ DEMO TOUR** plays a ~48 s guided sequence with slow camera moves and captions:
+The 360 view shows **a pass-through helmet with an AR HUD**. On a real EVA the background would be
+the live visor camera; in the demo it is an Observed NASA photo. The top bar says **AR HELMET VIEW**
+(renamed 2026-11-14 at the team's request: the view is not labelled a "simulation" anywhere). **▶ DEMO TOUR** plays a ~48 s guided sequence with slow camera moves and captions:
 title → AR route on the ground → home beacon → suit and route data (Details) → message to Earth (light-time
 countdown) → emergency (red fastest way home) → "Plan on the map · walk with the HUD". It works live at the
 judges' table and as a screen recording for the video. Dragging takes over the camera; **■ STOP** ends the tour.

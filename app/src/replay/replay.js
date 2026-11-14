@@ -362,6 +362,8 @@ export function createReplay(map, opts) {
     get timeS() { return t; },
     /** Turn-back slider (Jana): usable O2 budget per member (capacity − reserve). */
     setBudget(l) { model.budgetL = l; rebuild(); },
+    /** O₂ factor per crew member from body mass (A first); the plan follows the worse one. Keeps the time. */
+    setMemberFactors(f) { model.memberFactors = f; rebuild(); },
     /** Suit capacity (full tank); reserve is recomputed from it. */
     setCapacity(l) { model.capacityL = l; delete model.budgetL; delete model.reserveL; rebuild(); },
     setRoute(r2) { route = r2; roverHeading = initialHeading(); rebuild({ keepTime: false }); },
