@@ -232,3 +232,18 @@ cd app && npm install && npm run build && npx oxlint src && npm run check:data
 node --experimental-strip-types --test src/lib/mars24.test.mjs src/map/*.test.mjs
 git stash show -p stash@{1}        # look at the restyle without applying it
 ```
+
+### PR #11 review completion (2026-11-14)
+
+Generated both on-foot crew rings from the original local native input manifest
+(`data/raw/engine-pilot/input-manifest.json`) with real rasterio/SciPy dependencies.
+Added the exporter's scikit-image dependency. The UI labels the smoothed rings as
+Scenario reference outlines for the default 82 kg / 15 kg fastest same-path model,
+before sample pickup; other routes and mission factors can consume more O₂.
+A clipped ring does not establish any O₂ limit outside the terrain model.
+
+Review checks: engine pytest 57 passed / 7 skipped; ring, replay and turn-back unit
+tests 35 passed; app build and lint passed; final data check 0 errors (existing
+hazards size warning). The extra replay-adapter script still fails on its stale
+`backAssumed === false` assertion; that checker, replay implementation and route
+inputs are identical to main at `924bbfc`, so this is a pre-existing failure.

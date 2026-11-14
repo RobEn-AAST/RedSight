@@ -422,10 +422,10 @@ function OxygenFold({ plan, members }: { plan: PlanFile; members: PlanMember[] }
         <span>
           {noReturnLine ? (
             <>
-              The red dashed line is the no-return line
-              {noReturnRing?.budgetL != null ? ` for ${Math.round(noReturnRing.budgetL)} L of O₂` : ''}: walking out
-              past it leaves too little modeled O₂ to get home. It moves in as you lower the budget below.
-              {noReturnRing?.clipped && ' Where it meets the edge of the terrain model, the real limit is further out.'}{' '}
+              The red dashed line is an approximate Scenario reference ring
+              {noReturnRing?.budgetL != null ? ` for ${Math.round(noReturnRing.budgetL)} L of O₂` : ''}. It models an 82 kg astronaut carrying 15 kg, walking the fastest path out and back, before sample pickup.
+              It moves in as you lower the budget below; the selected route may use more O₂.
+              {noReturnRing?.clipped && ' Where it meets the edge of the terrain model, the limit beyond that edge is unknown.'}{' '}
             </>
           ) : s.reachesAll ? (
             'This route gets there and back on the modeled O₂. '
