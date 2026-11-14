@@ -16,8 +16,7 @@ import { Toggle } from '@/ui/Toggle'
  */
 export function MapWorkspace({ onOpenSources }: { onOpenSources: () => void }) {
   const engine = useEngineData()
-  const { showCuriosityPath, setShowCuriosityPath, layerVisibility, setLayerVisibility } = usePlan()
-  const [showImagery, setShowImagery] = useState(true)
+  const { showImagery, setShowImagery, showCuriosityPath, setShowCuriosityPath, layerVisibility, setLayerVisibility } = usePlan()
   const [layersOpen, setLayersOpen] = useState(false)
 
   const layers = engine.layers ?? []

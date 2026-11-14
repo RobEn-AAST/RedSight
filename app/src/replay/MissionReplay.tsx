@@ -9,6 +9,10 @@ import { markerSprite } from '@/lib/dataUrl'
 import type { EngineConstants } from '@/lib/engineDataContext'
 import { useEngineData } from '@/lib/useEngineData'
 import { usePlan } from '@/map/usePlan'
+import { missionControl } from '@/simulation/missionControl'
+import { attachReplay } from '@/simulation/replayBridge'
+import { SimulationPanel } from '@/simulation/SimulationPanel'
+import { buildTimeline, sampleAt } from '@/replay/replay-core.js'
 import { ErrorBoundary } from '@/ui/ErrorBoundary'
 import { Panel } from '@/ui/Panel'
 
@@ -38,12 +42,15 @@ function modelFromConstants(c: EngineConstants | null): Omit<ReplayOptions, 'rou
 /** `bare`: no card frame, for embedding inside another panel (the routes screen's plan steps). */
 export function MissionReplay({ bare = false }: { bare?: boolean } = {}) {
   const engine = useEngineData()
-  const { map, activeRoute, routesStatus, o2BudgetL, mode, memberFactors } = usePlan()
+  const { map, activeRoute, activeMembers, crewMode, routesStatus, o2BudgetL, mode, memberFactors } = usePlan()
   const hostRef = useRef<HTMLDivElement>(null)
   const replayRef = useRef<Replay | null>(null)
   // Tier 2 prototype: 360° stop view + HUD, opened with the replay's own timeline (same numbers).
   const [hud, setHud] = useState<Timeline | null>(null)
   const routeRef = useRef(activeRoute)
+  const membersRef = useRef({activeMembers,crewMode})
+  useEffect(()=>{membersRef.current={activeMembers,crewMode}},[activeMembers,crewMode])
+  const lastFrameRef = useRef(0)
   // Runs before the creation effect below (effects run in order).
   useEffect(() => {
     routeRef.current = activeRoute
@@ -54,9 +61,11 @@ export function MissionReplay({ bare = false }: { bare?: boolean } = {}) {
   // replay (created once per map) always calls the current version.
   const onArrive = useRef<() => void>(() => {})
   useEffect(() => {
+    const close = () => setHud(null)
+    window.addEventListener('redsight:close-360',close)
     const open = () => replayRef.current && setHud(replayRef.current.timeline as unknown as Timeline)
     window.addEventListener(OPEN_360_EVENT, open)
-    return () => window.removeEventListener(OPEN_360_EVENT, open)
+    return () => { window.removeEventListener(OPEN_360_EVENT, open);window.removeEventListener('redsight:close-360',close) }
   }, [])
 
   // One replay per map + constants; the route is swapped in place.
@@ -67,6 +76,21 @@ export function MissionReplay({ bare = false }: { bare?: boolean } = {}) {
     const replay = createReplay(map, {
       ...modelFromConstants(engine.constants),
       route,
+      onFrame: ({timeS,sample,timeline,playing}) => {
+        const now=performance.now()
+        if(playing && now-lastFrameRef.current<250)return
+        lastFrameRef.current=now
+        const members=membersRef.current
+        const ids=Object.keys(missionControl.getSnapshot().members)
+        for(const [i,id] of ids.entries()) {
+          const separate=members.crewMode==='split' && members.activeMembers[i]
+          const memberRoute=separate ? {...routeRef.current,...separate} : routeRef.current
+          const tl=separate ? buildTimeline(memberRoute,modelFromConstants(engine.constants) as Record<string,unknown>) : timeline
+          const own=separate ? sampleAt(tl,Math.min(timeS,tl.totalS)) : sample
+          const remaining=own.members[i]??own.o2Left
+          missionControl.observe({member:id,position:!separate && i>0 && routeRef.current?.park_index==null ? sampleAt(tl,Math.max(0,timeS-45)).pt : own.pt,remainingL:remaining,capacityL:tl.capacityL,reserveL:tl.reserveL,returnRequiredL:own.homeL,timeS,phase:own.phase,route:memberRoute})
+        }
+      },
       panelContainer: host,
       showEnds: false,
       figure: markerSprite('astronaut'),
@@ -76,8 +100,13 @@ export function MissionReplay({ bare = false }: { bare?: boolean } = {}) {
       },
     })
     replayRef.current = replay
+    const detach=attachReplay(replay)
+    replay.setHeld(Object.values(missionControl.getSnapshot().members).some(m=>m.hold||!!m.incident))
+    const unlisten=missionControl.subscribe(()=>replay.setHeld(Object.values(missionControl.getSnapshot().members).some(m=>m.hold||!!m.incident)))
     if (import.meta.env.DEV) (window as unknown as { __replay?: Replay }).__replay = replay // for headless checks
     return () => {
+      detach()
+      unlisten()
       replay.destroy()
       replayRef.current = null
     }
@@ -156,6 +185,7 @@ export function MissionReplay({ bare = false }: { bare?: boolean } = {}) {
           </p>
         )}
         <div ref={hostRef} />
+        <SimulationPanel />
         {activeRoute && pano && stop && habitat && (
           <div className="p-3 pt-0">
             <button

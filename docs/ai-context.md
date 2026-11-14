@@ -26,6 +26,9 @@ Per-person status and next steps: [`team-plan.md`](team-plan.md) §4c. Data chec
 
 ## 2. Document map (read order for a new agent)
 
+Implemented extension on `feat/copilot-mission-control`: [Copilot mission control and emergency simulation](superpowers/specs/2026-11-14-copilot-mission-control-design.md)
+— mission read/action coverage, oxygen readback, exact-position red return and illustrative rover pickup; local verification in [function execution](ai/function-execution.md).
+
 | Priority | Doc | Role |
 |---|---|---|
 | — | [`../deploy/README.md`](../deploy/README.md) | Live deploy of https://mars.roben.club (landing `/` + app `/demo/`): CI/CD on push to `main`, VPS layout, services, voice keys (2026-11-14) |

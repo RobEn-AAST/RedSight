@@ -510,6 +510,7 @@ export function PlanSheet({ onOpenSources }: { onOpenSources: () => void }) {
   const wantLoad = nearestLoadBucket(perAstronautLoadKg(config))
   const goal = scienceGoalOptions.find((g) => g.id === config.scienceGoalId)
   const [tab, setTab] = useState('stop')
+  useEffect(()=>{window.dispatchEvent(new CustomEvent('redsight:plan-tab',{detail:tab}))},[tab])
 
   return (
     <BottomSheet tabs={TABS} active={tab} onTab={setTab} label="Plan">

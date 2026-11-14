@@ -133,3 +133,9 @@ test('set_mission_factors and the route weights are exposed to the model with ra
   assert.equal(tools.set_route_preference.parameters.properties.hazardWeight.maximum, 1)
   assert.deepEqual(await runTool('set_mission_factors', { sepEvent: true }), { clientAction: true, name: 'set_mission_factors', args: { sepEvent: true } })
 })
+
+test('mission controller and data queries are exposed as acknowledged app tools', async () => {
+  const {runTool}=await import('./providers.mjs')
+  assert.deepEqual(await runTool('mission_control',{op:'report_incident',kind:'injury',member:'A'}),{clientAction:true,name:'mission_control',args:{op:'report_incident',kind:'injury',member:'A'}})
+  assert.deepEqual(await runTool('read_app_data',{section:'oxygen'}),{clientAction:true,name:'read_app_data',args:{section:'oxygen'}})
+})

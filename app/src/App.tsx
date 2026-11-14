@@ -7,6 +7,7 @@ import { useMission } from '@/lib/useMission'
 import { EngineDataProvider } from '@/lib/engineData'
 import { MissionSetup } from '@/mission/MissionSetup'
 import { PlanProvider } from '@/map/planStore'
+import { SimulationBridge, OPEN_SOURCES_EVENT } from '@/simulation/SimulationBridge'
 import { cn } from '@/lib/cn'
 
 const MapWorkspace = lazy(() => import('@/map/MapWorkspace').then((m) => ({ default: m.MapWorkspace })))
@@ -160,6 +161,7 @@ function CopilotDrawer({ onClose }: { onClose: () => void }) {
 function Console() {
   const { state, confirmMission } = useMission()
   const [sourcesOpen, setSourcesOpen] = useState(false)
+  useEffect(()=>{const open=()=>setSourcesOpen(true);window.addEventListener(OPEN_SOURCES_EVENT,open);return ()=>window.removeEventListener(OPEN_SOURCES_EVENT,open)},[])
   const [copilotOpen, setCopilotOpen] = useState(false)
   const active = state.status === 'active'
 
@@ -206,6 +208,7 @@ export default function App() {
       <EngineDataProvider>
         <MissionProvider>
           <PlanProvider>
+            <SimulationBridge />
             <Console />
           </PlanProvider>
         </MissionProvider>

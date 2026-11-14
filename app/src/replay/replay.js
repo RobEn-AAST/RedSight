@@ -32,6 +32,7 @@ export function createReplay(map, opts) {
   let tl = build();
   let roverHeading = initialHeading(); // degrees; rover plans only (set before the first render)
   let t = 0, playing = false, raf = 0, last = 0, firedUpTo = -1;
+  let held = false;
   const log = [];
 
   addLayers();
@@ -210,6 +211,7 @@ export function createReplay(map, opts) {
       notes.push(`Route ends at the Derived approach point${offset ? ` ${offset} from the Observed stop` : ""}; no final leg is modeled.`);
     }
     ui.note.textContent = notes.join(" ");
+    opts.onFrame?.({ timeS: t, playing, sample: s, timeline: tl });
     if (playing) fireEvents();
   }
 
@@ -264,6 +266,7 @@ export function createReplay(map, opts) {
   }
 
   function play() {
+    if (held) return;
     if (playing) return;
     if (t >= tl.totalS) seek(0);
     playing = true;
@@ -273,6 +276,7 @@ export function createReplay(map, opts) {
   }
   function pause() { playing = false; cancelAnimationFrame(raf); render(); }
   function seek(sec) {
+    if (held) return;
     t = Math.max(0, Math.min(tl.totalS, sec));
     // Jumping doesn't fire skipped events; the log shows the latest ones before t.
     firedUpTo = t === 0 ? -1 : t;
@@ -351,6 +355,11 @@ export function createReplay(map, opts) {
 
   return {
     play, pause, seek,
+    setHeld(value) { if (held === value) return; held = value; if (held) pause(); ui.play.disabled = held; ui.scrub.disabled = held; ui.el.hidden = held; if (hud) { hud.play.disabled = held; hud.el.hidden = held; } for (const id of [SRC.crew, CREW_FIGURE, SRC.rover, ROVER_FIGURE]) { if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", held ? "none" : "visible"); } },
+    setDuration(seconds) { durationS = seconds; ui.speed.value = String(seconds); },
+    setCallouts(enabled) { voice.setEnabled(enabled); ui.voice.textContent = enabled ? "🔊" : "🔇"; },
+    setStatusInterval(percent) { model.statusStep = percent / 100; ui.step.value = String(model.statusStep); rebuild(); },
+    get timeS() { return t; },
     /** Turn-back slider (Jana): usable O2 budget per member (capacity − reserve). */
     setBudget(l) { model.budgetL = l; rebuild(); },
     /** O₂ factor per crew member from body mass (A first); the plan follows the worse one. Keeps the time. */

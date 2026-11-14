@@ -275,8 +275,8 @@ async function handleChat(req, res, ip) {
     const result = await runTool(name, args)
     if (!result?.clientAction) return result
     const fingerprint = `${name}:${JSON.stringify(args)}`
-    if (actionFingerprint !== null) return { applied:false, error:'Only one app-changing command is permitted per assistant turn.' }
-    actionFingerprint = fingerprint
+    if (name !== 'read_app_data' && actionFingerprint !== null) return { applied:false, error:'Only one app-changing command is permitted per assistant turn.' }
+    if (name !== 'read_app_data') actionFingerprint = fingerprint
     let route = null
     if (name === 'set_route_preference' || name === 'reset_route_constraints') {
       const mission = context.missionState ?? {}
@@ -312,7 +312,7 @@ async function handleChat(req, res, ip) {
     const callId = randomUUID()
     const key = `${sessionId}:${callId}`
     const actionPromise = new Promise((resolve, reject) => {
-      const timer = setTimeout(() => { pendingActions.delete(key); reject(new Error('App action timed out; no change was confirmed.')) }, 30_000)
+      const timer = setTimeout(() => { pendingActions.delete(key); reject(new Error('App action timed out; no change was confirmed.')) }, name === 'mission_control' ? 105_000 : 30_000)
       const onAbort = () => { clearTimeout(timer); pendingActions.delete(key); reject(Object.assign(new Error('Action cancelled.'), { name:'AbortError' })) }
       abort.signal.addEventListener('abort', onAbort, { once:true })
       pendingActions.set(key, { resolve: (value) => { abort.signal.removeEventListener('abort', onAbort); clearTimeout(timer); resolve(value) } })
@@ -363,7 +363,7 @@ async function handleChat(req, res, ip) {
   }
 }
 
-async function handleRoute(req, res, ip) {
+async function handleRoute(req, res, ip, endpoint = 'route') {
   if (!rateCheck(ip, 1)) return send(res, 429, { message: 'Too many routing requests; retry shortly.' })
   let body
   try { body = JSON.parse((await readBody(req, 4096)).toString('utf8')) }
@@ -371,7 +371,7 @@ async function handleRoute(req, res, ip) {
   const controller = new AbortController()
   res.on('close', () => controller.abort())
   try {
-    const upstream = await fetch(`${(process.env.ROUTING_API_URL || 'http://127.0.0.1:8790').replace(/\/$/, '')}/route`, {
+    const upstream = await fetch(`${(process.env.ROUTING_API_URL || 'http://127.0.0.1:8790').replace(/\/$/, '')}/${endpoint}`, {
       method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body),
       signal:AbortSignal.any([controller.signal, AbortSignal.timeout(95_000)]),
     })
@@ -383,7 +383,7 @@ async function handleRoute(req, res, ip) {
 
 async function handleActionResult(req, res) {
   let body
-  try { body = JSON.parse((await readBody(req, 16_000)).toString('utf8') || '{}') } catch { return send(res, 400, { error: 'bad-json' }) }
+  try { body = JSON.parse((await readBody(req, 256_000)).toString('utf8') || '{}') } catch { return send(res, 400, { error: 'bad-json' }) }
   const sessionId = String(req.headers['x-copilot-session'] ?? '')
   const callId = String(body.callId ?? '')
   if (!SESSION_RE.test(sessionId) || !/^[0-9a-f-]{36}$/i.test(callId)) return send(res, 400, { error: 'bad-action-id' })
@@ -508,7 +508,9 @@ const server = createServer(async (req, res) => {
   if (!originAllowed(req)) return send(res, 403, { error: 'origin-not-allowed' })
 
   try {
-    if (url.pathname === '/api/routing/route' && req.method === 'POST') {
+    if (url.pathname === '/api/routing/return' && req.method === 'POST') {
+      await handleRoute(req, res, ip, 'return')
+    } else if (url.pathname === '/api/routing/route' && req.method === 'POST') {
       await handleRoute(req, res, ip)
     } else if (url.pathname === '/api/copilot/health' && req.method === 'GET') {
       send(res, 200, health(), cors)
