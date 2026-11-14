@@ -9,7 +9,7 @@ export interface StopPanorama {
   source: string
   /** The image's 0° isn't tied to north yet, so the HUD can't point at the habitat on the photo. */
   northCalibrated: boolean
-  /** Compass bearing (°) the viewer faces at start (yaw 0). Estimate until calibrated. */
+  /** Compass bearing (°) the viewer faces at start (yaw 0). Derived from PDS Mastcam pointing (±3°). */
   northOffsetDeg: number
   /** Short on-screen reason for northOffsetDeg (shown in the HUD footer while not calibrated). */
   headingNote: string
@@ -27,10 +27,14 @@ export const PANORAMAS: Record<string, StopPanorama> = {
     taken: 'Mastcam, 291 images, 2025-05-15 to 05-18',
     source: 'https://images.nasa.gov/details/PIA26559',
     northCalibrated: false,
-    // Image centre ≈ north: NASA's caption puts the Gale crater rim at the top centre, and from S1 the rim lies
-    // north across the crater floor (images-api.nasa.gov PIA26559, read 2026-11-13). Approximate; [ ] adjust.
-    northOffsetDeg: 0,
-    headingNote: "from NASA's caption (crater rim at centre)",
+    // Derived from PDS pointing data (2026-11-14): NASA's caption puts the Gale crater rim at the top centre
+    // (images-api.nasa.gov PIA26559, read 2026-11-13), and Mastcam pointing confirms it within ~5°. Four Mastcam-left
+    // frames of the sol-4541 360° (sequence mcam07599, site 116 drive 408; PDS msl_mmm volume_0040_raw labels,
+    // geom:instrument_azimuth, north-referenced site frame) were located in this image by cross-correlation
+    // (az 33.1° → x 1690, 52.5° → 1851, 71.9° → 2006, 105.0° → 2270 of 2924; fit 8.04 px/° ≈ 360° wide,
+    // residuals ≤ 0.3°) → image centre x 1462 ≈ 4–5°. Uncertainty ≈ ±3° (matching + rover-attitude knowledge).
+    northOffsetDeg: 5,
+    headingNote: 'from Mastcam pointing data (PDS), ±3°',
     // Distant crater-floor haze sits ~18° above the mosaic's centre (by eye, at the default zoom).
     horizonDeg: 18,
   },
@@ -45,14 +49,16 @@ export const PANORAMAS: Record<string, StopPanorama> = {
     taken: 'Mastcam right (100 mm), 1,031 images, 2025-11-09 to 12-07 (sols 4714–4741)',
     source: 'https://science.nasa.gov/photojournal/curiosity-captures-a-360-degree-view-at-nevado-sajama/',
     northCalibrated: false,
-    // Estimate (±~30°). NASA's caption (Photojournal PIA26696, added 2026-04-28, read 2026-11-14) names no
-    // landmark directions, so the heading is read from the image: the only long view out over the Gale crater
-    // floor to the distant crater rim is centred ~146° left of the image centre (x ≈ 775 of 8192). From the
-    // boxwork on lower Mount Sharp the crater floor and rim lie downslope to the north (Bradbury Landing,
-    // ≈4.59°S 137.44°E, is ~15° from S2 at 4.808°S 137.381°E), so that view is taken as ≈ 5–15° → centre ≈ 146° + ~9° ≈ 155°.
-    // Mount Sharp's layered buttes fill the other side of the mosaic, consistent with upslope to the south.
-    northOffsetDeg: 155,
-    headingNote: 'estimated from the image (crater-floor view taken as north)',
+    // Derived from PDS pointing data (2026-11-14), replacing the earlier image-based estimate of 155° (±30°).
+    // PDS msl_mmm data_MSLMST volume_0042_raw labels for the mosaic's Mastcam-right frames (sols 4714–4741, all at
+    // site 120 drive 82; geom:instrument_azimuth, north-referenced site frame; cross-check: rover yaw 215.9° from the
+    // label quaternion + camera az 10.5° in rover frame ≈ 226.4° vs label 226.07°). Five frames located in the
+    // 8192-px browse JPEG by cross-correlation: az 31.15° → x 1660.5, 35.11° → 1751.5, 39.66° → 1856.5 (sequences
+    // mcam08636/08631) and 221.56° → 6016.5, 226.09° → 6122.5 (mcam08595/08593). Linear fit 22.88 px/° (a 360° wrap
+    // is 22.76), residuals ≤ 0.05° → centre x 4096 ≈ 137.6°; left edge ≈ 318°. Uncertainty ≈ ±3° (matching +
+    // rover-attitude knowledge). The crater-floor view on the left spans ≈ 318–40° (north), as the old estimate assumed.
+    northOffsetDeg: 138,
+    headingNote: 'from Mastcam pointing data (PDS), ±3°',
     // Distant crater-floor horizon sits ~15° above the mosaic's centre (by eye: y ≈ 500 of 1685 → atan(342·2π/8192)).
     horizonDeg: 15,
   },
