@@ -125,6 +125,13 @@ Ayman's stops + photos + RAD/REMS cards, Mission Replay (linked to the slider, a
 fastest way home, map bar, Earth-delay note), the data checker, and drafts for slides, demo script, project
 page and UI audit in [`submission/`](submission/). **Routes are still mock; tiles are one preview image.**
 
+**Update 2026-11-14 (Marwan):** everything is merged on `main`. Routes are re-exported with the Pandolf
+standing-load O₂ floor, `back_fast` (keyed `path_from`) and the current stops; all plans are built from real routes
+(rover, split and `limits_*.geojson` removed: no source); all 6 tile layers draw; S1/S2 panorama headings come from
+PDS Mastcam pointing. **Ali, next on your branch:** export the full return-cost field (`Back_fast` / `Back_safest`
+fields, §9) so the map's no-return line can come back, then regenerate with `node app/scripts/build-plans.mjs`.
+North arrow drawn on the 360 photo: not now.
+
 | Person | Status | Next (in order) | Changed by Marwan in your area (pull it) |
 |---|---|---|---|
 | **Ali** | Nothing pushed yet: **critical path** | 1. Pilot gate: DEM opens, slope sane, one real route. 2. Real `constants.json`, `meta.json` (habitat), routes for all stops, both modes, in the contract shape. 3. `back_fast` on lowest-hazard routes (note above). 4. `npm run check:data` → PR | none (route format: `back_fast` added as optional) |

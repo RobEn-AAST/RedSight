@@ -587,6 +587,9 @@ hits a named criterion.
 **Demo script (Presentation):** a 60-second click path judges can repeat, written into slide 4–5 notes:
 pick "boxwork + drill site" → crew of 2, 15 kg → compare fastest vs lowest-hazard → drag the budget down
 and watch the zones shrink → walk-along until the switch to the fastest return → open one source card.
+*(2026-11-14, Marwan's decision: on the re-exported routes a normal walk never reaches the turn-back point
+(longest round trip ≈ 88 L of the 289 L budget). The demo shows the turn-back with the replay stress buttons,
+Suit leak ×2 / Hard work ×1.5, plus the budget drag. No change to the budget or targets.)*
 
 ## 18. Doc-hygiene findings from this pass (2026-11-13)
 
