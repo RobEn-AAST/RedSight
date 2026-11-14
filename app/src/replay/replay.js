@@ -64,11 +64,11 @@ export function createReplay(map, opts) {
       if (!map.getSource(SRC.crew) || map.getLayer(CREW_FIGURE)) return; // destroyed meanwhile, or already added
       map.addLayer({ id: CREW_FIGURE, type: "symbol", source: SRC.crew,
         layout: { "icon-image": FIGURE_IMAGE, "icon-anchor": "center", "icon-allow-overlap": true, "icon-ignore-placement": true,
-          "icon-size": ["interpolate", ["linear"], ["zoom"], 13, 0.45, 16, 0.75, 18, 1] } });
+          "icon-size": ["interpolate", ["linear"], ["zoom"], 13, 0.6, 16, 0.95, 18, 1.2] } });
       map.setPaintProperty(SRC.crew, "circle-color", "rgba(0,0,0,0)");
       map.setPaintProperty(SRC.crew, "circle-stroke-color", ["get", "color"]);
       map.setPaintProperty(SRC.crew, "circle-stroke-width", 3);
-      map.setPaintProperty(SRC.crew, "circle-radius", 9);
+      map.setPaintProperty(SRC.crew, "circle-radius", 11);
     } catch { /* sprite missing: the plain crew dots remain */ }
   }
 

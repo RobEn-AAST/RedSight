@@ -604,7 +604,7 @@ export function MapCanvas({
       el.className = 'relative'
       const label = chip('HAB', 'border-scenario/70 bg-hull/90 text-scenario')
       label.classList.add('absolute', 'bottom-full', 'left-1/2', '-translate-x-1/2')
-      el.append(figure('habitat', 56, 'Habitat'), label)
+      el.append(figure('habitat', 72, 'Habitat'), label)
       markers.push(new Marker({ element: el, anchor: 'center' }).setLngLat(habitat.lonlat).addTo(map))
     }
 
@@ -612,7 +612,7 @@ export function MapCanvas({
       if (m.park_index !== null && m.coords[m.park_index]) {
         const el = document.createElement('div')
         el.title = 'Rover parks here; walk from here'
-        el.append(figure('rover', 40, 'Parked rover'))
+        el.append(figure('rover', 52, 'Parked rover'))
         add(el, m.coords[m.park_index])
       }
       // The turn-back marker is drawn by the turn-back slider (it moves with the O₂ budget).
