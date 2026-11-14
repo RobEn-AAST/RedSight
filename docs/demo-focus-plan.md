@@ -113,7 +113,7 @@ Owners and branches: [`team-plan.md`](team-plan.md).
 
 ### Not in this hackathon
 
-AI assistant · robot helpers beyond the rover-carries-samples option · splitting the pair onto different routes · in-browser re-routing (JS A\*) · orbiter relay-pass schedule (Unavailable) · storm
+~~AI assistant~~ (moved in scope 2026-11-14: Marwan merged PR #7, the voice/chat copilot; disclose AI use on the project page) · robot helpers beyond the rover-carries-samples option · splitting the pair onto different routes · in-browser re-routing (JS A\*) · orbiter relay-pass schedule (Unavailable) · storm
 re-route · spatial radiation/weather maps (**Unavailable**: never shown as maps) · street view *between*
 stops (no such imagery exists).
 

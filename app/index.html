@@ -10,22 +10,6 @@
     />
     <meta name="theme-color" content="#07090d" />
     <title>RedSight — Marswalk Mission Console</title>
-    <script>
-      /* Boot-error trap: surfaces startup failures into the DOM so a black
-         screen is diagnosable (temporary debug aid — remove after wiring). */
-      window.__bootErrors = []
-      function __reportBootError(m) {
-        window.__bootErrors.push(String(m))
-        var d = document.getElementById('root')
-        var b = document.body
-        var msg = window.__bootErrors.join(' | ')
-        if (d) d.setAttribute('data-boot-error', msg)
-        if (b) b.setAttribute('data-boot-error', msg)
-        document.title = 'BOOT ERROR: ' + msg
-      }
-      window.onerror = function (m) { __reportBootError(m) }
-      window.addEventListener('unhandledrejection', function (e) { __reportBootError(e.reason) })
-    </script>
   </head>
   <body>
     <div id="root"></div>

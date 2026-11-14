@@ -13,7 +13,8 @@ export function dataUrl(path: string): string {
  * root-relative URL has no page to resolve against.
  */
 export function absoluteDataUrl(path: string): string {
-  return new URL(dataUrl(path), window.location.href).href
+  // `new URL` percent-encodes `{` `}`, which breaks MapLibre tile templates ({z}/{x}/{y}): restore them.
+  return new URL(dataUrl(path), window.location.href).href.replace(/%7B/gi, '{').replace(/%7D/gi, '}')
 }
 
 /** URL of a file under app/public/preview/ (temporary assets, not engine output). */
