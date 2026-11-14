@@ -124,7 +124,29 @@ async function openFold(p, name, rec = false) {
   await f.evaluate((el) => el.scrollIntoView({ block: 'start', behavior: 'smooth' })); await sleep(900)
 }
 
+async function copilotShot(p, name, question, tailMs) {
+  await toRoutes(p)
+  await sel.play(p).click().catch(() => {}); await sleep(7000)
+  await sel.copilotBtn(p).click(); await sleep(2500)
+  const box = p.getByPlaceholder(/message the copilot/i)
+  const stop = await startRec(p, name)
+  await sleep(800)
+  await click(p, box, { pause: 300 })
+  await box.pressSequentially(question, { delay: 45 }); await sleep(500)
+  await box.press('Enter')
+  let prev = '', same = 0
+  for (let i = 0; i < 50 && same < 4; i++) { await sleep(1000); const t = await p.locator('body').innerText(); same = t === prev && i > 4 ? same + 1 : 0; prev = t }
+  await sleep(tailMs)
+  await stop(); await still(p, name)
+  await writeFile(`${OUT}stills/${name}.txt`, prev.slice(prev.lastIndexOf(question)))
+  if (/rate limited|ERROR/i.test(prev.slice(prev.lastIndexOf(question)))) console.log(`  !! ${name}: copilot error (see stills/${name}.txt)`)
+}
+
 const SHOTS = {
+  // Copilot (text chat, live backend): ask mid-walk, the copilot reads the app data and answers.
+  async 'copilot-ask'(p) { await copilotShot(p, 'copilot-ask', 'How much oxygen do I have left?', 8000) },
+  // Emergency: the copilot runs mission control (hold position, fastest return, rover dispatch) and answers.
+  async 'copilot-emergency'(p) { await copilotShot(p, 'copilot-emergency', 'I fell. I think my leg is broken. I need help.', 14000) },
   // Mission setup: crew, load, rover, goal (boxwork), review, show routes.
   async setup(p) {
     const stop = await startRec(p, 'setup')
