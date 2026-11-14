@@ -40,54 +40,68 @@ const numValue = (card: EngineCard | null | undefined, match: RegExp) => {
   return v ? { value: v.value, unit: v.unit ?? '' } : null
 }
 
-/** North-up route map: way out, way home, switch and turn-back points, crew at the stop. */
-function MiniMap({ frames, habitat, stop, switchPt, turnPt }: {
+/** Route radar, heading up: you at the centre, the map turns as you look around (the view direction is always up).
+ *  The rotation is applied directly to the SVG by `turnRadar` (no React re-render per frame). */
+const RADAR_S = 180
+const RADAR_C = RADAR_S / 2
+function MiniMap({ frames, habitat, stop, switchPt, turnPt, svgRef }: {
   frames: Frame[]
   habitat: LonLat
   stop: LonLat
   switchPt: LonLat | null
   turnPt: LonLat | null
+  svgRef: React.RefObject<SVGSVGElement | null>
 }) {
-  const pts = [...frames.map((f) => f.pt), habitat, stop]
-  const lat0 = pts.reduce((s, p) => s + p[1], 0) / pts.length
-  const k = Math.cos((lat0 * Math.PI) / 180)
-  const xs = pts.map((p) => p[0] * k)
-  const ys = pts.map((p) => -p[1])
-  const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)]
-  const span = Math.max(x1 - x0, y1 - y0) || 1e-6
-  const S = 168
-  const pad = 24
-  const P = (p: LonLat) =>
-    [pad + ((p[0] * k - x0) / span) * (S - 2 * pad) + ((span - (x1 - x0)) / span) * (S - 2 * pad) / 2,
-     pad + ((-p[1] - y0) / span) * (S - 2 * pad) + ((span - (y1 - y0)) / span) * (S - 2 * pad) / 2] as const
+  const r = Math.PI / 180
+  const kx = 3_389_500 * Math.cos(stop[1] * r) * r
+  const ky = 3_389_500 * r
+  const pts = [...frames.map((f) => f.pt), habitat]
+  const far = Math.max(50, ...pts.map((p) => Math.hypot((p[0] - stop[0]) * kx, (p[1] - stop[1]) * ky)))
+  const R = RADAR_C - 14
+  const sc = R / far
+  const P = (p: LonLat) => [RADAR_C + (p[0] - stop[0]) * kx * sc, RADAR_C - (p[1] - stop[1]) * ky * sc] as const
   const line = (fs: Frame[]) => fs.map((f) => P(f.pt).join(',')).join(' ')
   const out = frames.filter((f) => f.phase === 'out' || f.phase === 'stop')
   const back = frames.filter((f) => f.phase === 'back')
   if (back.length && out.length) back.unshift(out[out.length - 1])
   const [hx, hy] = P(habitat)
-  const [sx, sy] = P(stop)
-  const scaleM = distanceM(habitat, stop)
+  // Range ring at a round distance about half the radius.
+  const ringM = [100, 200, 250, 500, 1000, 2000].reduce((b, m) => (Math.abs(m - far / 2) < Math.abs(b - far / 2) ? m : b))
   return (
-    <svg className="hud-map" viewBox={`0 0 ${S} ${S}`} role="img" aria-label="Route map, north up">
-      <defs>
-        <pattern id="hudgrid" width="21" height="21" patternUnits="userSpaceOnUse">
-          <path d="M21 0H0V21" fill="none" stroke="rgba(120,230,255,0.12)" strokeWidth="1" />
-        </pattern>
-      </defs>
-      <rect width={S} height={S} fill="url(#hudgrid)" />
-      <circle cx={S / 2} cy={S / 2} r={S / 2 - 3} fill="none" stroke="rgba(120,230,255,0.25)" />
-      <polyline points={line(out)} fill="none" stroke="#f4f1ea" strokeWidth="2.5" strokeLinejoin="round" />
-      <polyline points={line(back)} fill="none" stroke="#4cc9f0" strokeWidth="2.5" strokeDasharray="5 3" strokeLinejoin="round" />
-      {switchPt && <circle cx={P(switchPt)[0]} cy={P(switchPt)[1]} r="4" fill="#ffb347" stroke="#000" />}
-      {turnPt && <circle cx={P(turnPt)[0]} cy={P(turnPt)[1]} r="4" fill="#ef476f" stroke="#fff" />}
-      <rect x={hx - 5} y={hy - 5} width="10" height="10" fill="#0b1014" stroke="#ffb224" strokeWidth="2" />
-      <text x={hx > S / 2 ? hx - 9 : hx + 9} y={hy + 4} textAnchor={hx > S / 2 ? 'end' : 'start'} className="hud-map-t">HAB</text>
-      <circle cx={sx} cy={sy} r="7" fill="none" stroke="#ff5fd2" strokeWidth="2" className="hud-pulse" />
-      <circle cx={sx} cy={sy} r="3" fill="#ff5fd2" />
-      <text x={S / 2} y="11" textAnchor="middle" className="hud-map-t">N</text>
-      <text x="4" y={S - 4} className="hud-map-t">{(scaleM / 1000).toFixed(2)} km straight HAB↔stop</text>
+    <svg ref={svgRef} className="hud-map" viewBox={`0 0 ${RADAR_S} ${RADAR_S}`} role="img" aria-label="Route radar, the direction you face is up">
+      <circle cx={RADAR_C} cy={RADAR_C} r={RADAR_C - 3} fill="rgba(4,18,26,0.25)" stroke="rgba(120,230,255,0.3)" />
+      <circle cx={RADAR_C} cy={RADAR_C} r={ringM * sc} fill="none" stroke="rgba(120,230,255,0.18)" strokeDasharray="3 3" />
+      {/* View cone (fixed, points up); its width follows the zoom. */}
+      <path data-cone d="" fill="rgba(127,227,255,0.16)" stroke="rgba(127,227,255,0.45)" strokeWidth="1" />
+      <g data-rot>
+        <polyline points={line(out)} fill="none" stroke="#f4f1ea" strokeWidth="2.5" strokeLinejoin="round" opacity="0.7" />
+        <polyline points={line(back)} fill="none" stroke="#2fb8ff" strokeWidth="3" strokeLinejoin="round" />
+        {switchPt && <circle cx={P(switchPt)[0]} cy={P(switchPt)[1]} r="4" fill="#ffb347" stroke="#000" />}
+        {turnPt && <circle cx={P(turnPt)[0]} cy={P(turnPt)[1]} r="4" fill="#ef476f" stroke="#fff" />}
+        <rect x={hx - 6} y={hy - 6} width="12" height="12" fill="#0b1014" stroke="#ffb224" strokeWidth="2.5" />
+        <text data-up x={hx} y={hy - 10} textAnchor="middle" className="hud-map-t hud-map-hab">HOME</text>
+        <text data-up x={RADAR_C} y="13" textAnchor="middle" className="hud-map-t hud-map-n">N</text>
+      </g>
+      <path d={`M${RADAR_C} ${RADAR_C - 8} L${RADAR_C + 6} ${RADAR_C + 6} L${RADAR_C} ${RADAR_C + 2} L${RADAR_C - 6} ${RADAR_C + 6} Z`} fill="#ff5fd2" stroke="#fff" strokeWidth="1" />
+      <text x="6" y={RADAR_S - 5} className="hud-map-t">ring {ringM >= 1000 ? `${ringM / 1000} km` : `${ringM} m`}</text>
     </svg>
   )
+}
+
+/** Turn the radar: map rotated by −heading around you; labels kept upright; cone width = horizontal field of view. */
+function turnRadar(svg: SVGSVGElement | null, heading: number, hfov: number) {
+  if (!svg) return
+  svg.querySelector('[data-rot]')?.setAttribute('transform', `rotate(${-heading} ${RADAR_C} ${RADAR_C})`)
+  svg.querySelectorAll<SVGTextElement>('[data-up]').forEach((t) => {
+    t.setAttribute('transform', `rotate(${heading} ${t.getAttribute('x')} ${t.getAttribute('y')})`)
+  })
+  const half = (Math.min(170, hfov) / 2) * (Math.PI / 180)
+  const L = RADAR_C - 6
+  const x = (a: number) => RADAR_C + Math.sin(a) * L
+  const y = (a: number) => RADAR_C - Math.cos(a) * L
+  svg
+    .querySelector('[data-cone]')
+    ?.setAttribute('d', `M${RADAR_C} ${RADAR_C} L${x(-half)} ${y(-half)} A${L} ${L} 0 0 1 ${x(half)} ${y(half)} Z`)
 }
 
 export function StopHud({
@@ -170,6 +184,7 @@ export function StopHud({
   northRef.current = northDeg
   const habBearingRef = useRef(bearingDeg(stopLonLat, habitatLonLat))
   const yawRef = useRef(0)
+  const radarRef = useRef<SVGSVGElement | null>(null)
   const setTape = () => {
     const heading = (((northRef.current - yawRef.current) % 360) + 360) % 360
     if (tapeRef.current) tapeRef.current.style.transform = `translateX(${-heading * 4}px)`
@@ -177,9 +192,11 @@ export function StopHud({
     const rel = ((habBearingRef.current - heading + 540) % 360) - 180
     if (navArrowRef.current) navArrowRef.current.style.transform = `rotate(${rel}deg)`
     const host = hostRef.current
-    if (navTurnRef.current && host) {
+    if (host) {
       const aspect = (host.clientWidth || 1) / (host.clientHeight || 1)
       const hfov = (2 * Math.atan(Math.tan((fovRef.current * Math.PI) / 360) * aspect) * 180) / Math.PI
+      turnRadar(radarRef.current, heading, hfov)
+      if (!navTurnRef.current) return
       navTurnRef.current.textContent =
         Math.abs(rel) < Math.min(12, hfov / 4) ? 'ahead' : `${Math.abs(Math.round(rel))}° ${rel < 0 ? 'left' : 'right'}`
     }
@@ -605,8 +622,8 @@ export function StopHud({
       </div>
 
       <div hidden={!details} className="hud-br hud-glass hud-in">
-        <div className="hud-label">ROUTE · NORTH UP</div>
-        <MiniMap frames={tl.frames} habitat={habitatLonLat} stop={stopLonLat} switchPt={tl.switchPoint} turnPt={tl.turnPoint} />
+        <div className="hud-label">RADAR · FACING UP</div>
+        <MiniMap svgRef={radarRef} frames={tl.frames} habitat={habitatLonLat} stop={stopLonLat} switchPt={tl.switchPoint} turnPt={tl.turnPoint} />
         <div className="hud-small">
           {standin
             ? 'Stand-in photo: route drawn on flat ground.'
