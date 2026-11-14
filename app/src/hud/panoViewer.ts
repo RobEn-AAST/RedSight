@@ -15,6 +15,8 @@ export interface PanoViewer {
   onFrame(cb: (tS: number) => void): void
   /** Turn the view to a yaw (degrees, same sign as yawDeg). Smooth unless `instant`. */
   setYaw(deg: number, instant?: boolean): void
+  /** Slow cinematic turn to a yaw/pitch (degrees) over `durS` seconds (guided tour). */
+  panTo(yawDeg: number, pitchDeg: number, durS: number): void
   /** Show the areas the camera never imaged as dark (true) or filled (false, default). */
   showGaps(on: boolean): void
   destroy(): void
@@ -328,10 +330,21 @@ export function createPanoViewer(
   el.addEventListener('dblclick', onDbl)
   window.addEventListener('keydown', onKey)
 
-  let lastYaw = NaN
-  let lastFov = NaN
+  let lastYaw = Infinity // so the first frame reports the view (NaN would never compare)
+  let lastFov = Infinity
   const frameCbs: ((tS: number) => void)[] = []
+  let pan: { y0: number; y1: number; p0: number; p1: number; t0: number; d: number } | null = null
   renderer.setAnimationLoop(() => {
+    if (pan) {
+      if (pts.size > 0) pan = null // the user took over
+      else {
+        const k = Math.min(1, (performance.now() - pan.t0) / pan.d)
+        const e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2 // ease in-out
+        tYaw = yaw = pan.y0 + (pan.y1 - pan.y0) * e
+        tPitch = pitch = pan.p0 + (pan.p1 - pan.p0) * e
+        if (k >= 1) pan = null
+      }
+    }
     if (pts.size === 0 && (Math.abs(vYaw) > 1e-5 || Math.abs(vPitch) > 1e-5)) {
       tYaw += vYaw
       tPitch = THREE.MathUtils.clamp(tPitch + vPitch, -PITCH_MAX, PITCH_MAX)
@@ -363,6 +376,12 @@ export function createPanoViewer(
       tYaw = yaw + (((tYaw - yaw + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) - Math.PI
       vYaw = vPitch = 0
       if (instant) yaw = tYaw
+    },
+    panTo(yawDeg, pitchDeg, durS) {
+      let y1 = THREE.MathUtils.degToRad(yawDeg)
+      y1 = yaw + ((((y1 - yaw + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) - Math.PI
+      vYaw = vPitch = 0
+      pan = { y0: yaw, y1, p0: pitch, p1: THREE.MathUtils.degToRad(pitchDeg), t0: performance.now(), d: durS * 1000 }
     },
     showGaps(on) {
       if (!mesh || !textures) return

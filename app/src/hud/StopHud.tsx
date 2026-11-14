@@ -149,6 +149,9 @@ export function StopHud({
   const [details, setDetails] = useState(false)
   const [gaps, setGaps] = useState(false)
   const [hint, setHint] = useState(true)
+  // Guided demo tour (hackathon showcase): scripted camera moves + captions, ~45 s. The user can stop it any time.
+  const [tour, setTour] = useState(false)
+  const [caption, setCaption] = useState<{ title: string; text: string } | null>(null)
   const [earthMin] = useState(() => Math.round(oneWayDelayS(new Date()) / 60))
   const fovRef = useRef(58)
   const hostRef = useRef<HTMLDivElement>(null)
@@ -280,6 +283,63 @@ export function StopHud({
     )
   }
 
+  // Yaw that faces a ground point from the stop (same convention as the route overlay).
+  const yawTo = (c: [number, number]) => northRef.current - bearingDeg(stopLonLat, c)
+  const startEmergencyRef = useRef(startEmergency)
+  startEmergencyRef.current = startEmergency
+  useEffect(() => {
+    if (!tour) return
+    const v = () => viewerRef.current
+    const ahead = wayHome.find((c) => distanceM(stopLonLat, c) > 40) ?? habitatLonLat
+    const aheadYaw = yawTo(ahead)
+    const homeYaw = yawTo(habitatLonLat)
+    const km = habKm.toFixed(2)
+    const steps: [number, () => void][] = [
+      [0, () => {
+        setEmergency(false)
+        setDetails(false)
+        setLeg('home')
+        setHint(false)
+        v()?.panTo(aheadYaw + 70, 4, 0.1)
+        setCaption({ title: 'HELMET AR · SIMULATION', text: `What an astronaut would see on the visor at ${pano.stopId}. Background: the real NASA Mastcam photo from this spot; on a real EVA it is the live visor camera.` })
+      }],
+      [600, () => v()?.panTo(aheadYaw + 25, 4, 5)],
+      [6000, () => {
+        v()?.panTo(aheadYaw, -14, 3.5)
+        setCaption({ title: 'AR ROUTE ON THE GROUND', text: 'Yellow = the modeled way home, fixed to the ground from the plan’s coordinates (no GPS). Arrows lead the way.' })
+      }],
+      [13000, () => {
+        v()?.panTo(homeYaw, 3, 4)
+        setCaption({ title: 'HOME BEACON', text: `Habitat ${km} km away. The beacon and the edge arrow keep it findable even when it is out of view.` })
+      }],
+      [20000, () => {
+        setDetails(true)
+        setCaption({ title: 'SUIT + ROUTE DATA', text: 'O₂ per suit, time home, reserve, Curiosity radiation and weather. Modeled estimates (Scenario) from the route plan.' })
+      }],
+      [27500, () => {
+        setDetails(false)
+        commsRef.current?.send('Arrived at the stop')
+        setCaption({ title: 'MESSAGE TO EARTH', text: `The habitat gets it by local radio now; Earth gets it after ${earthMin} min (light-time today), a reply after twice that.` })
+      }],
+      [34000, () => {
+        startEmergencyRef.current()
+        setCaption({ title: 'EMERGENCY', text: 'One button: the fastest way home in red, an O₂ check against the reserve, and an alert sent to the habitat and Earth.' })
+      }],
+      [42000, () => {
+        setEmergency(false)
+        v()?.panTo(aheadYaw, -6, 3)
+        setCaption({ title: 'PLAN ON THE MAP · WALK WITH THE HUD', text: 'RedSight: the same route and O₂ data drive the astronaut’s helmet.' })
+      }],
+      [48000, () => setTour(false)],
+    ]
+    const ids = steps.map(([t, f]) => window.setTimeout(f, t))
+    return () => {
+      ids.forEach((id) => window.clearTimeout(id))
+      setCaption(null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tour])
+
   const rate = numValue(cards.rad, /dose equivalent rate|dose rate/i)
   // Walk dose = the card's daily rate × walk time, in the card's own unit (mSv or µGy per day).
   const doseUnit = rate?.unit.replace(/\/\s*day$/i, '') ?? ''
@@ -318,7 +378,13 @@ export function StopHud({
       )}
       <div className="hud-visor" aria-hidden />
       <div className="hud-reticle" aria-hidden />
-      {hint && status === 'ready' && (
+      {caption && (
+        <div className="hud-caption" key={caption.title} role="status">
+          <b>{caption.title}</b>
+          <span>{caption.text}</span>
+        </div>
+      )}
+      {hint && !tour && status === 'ready' && (
         <div className="hud-hint" aria-hidden>
           Drag to look around · scroll or pinch to zoom · double-click to zoom in · H = details
         </div>
@@ -350,17 +416,20 @@ export function StopHud({
       </div>
 
       <div className="hud-top hud-in" style={{ animationDelay: '0.1s' }}>
-        <span className="hud-chip hud-obs">OBSERVED</span>
+        <span className="hud-chip hud-sim" title="Helmet AR simulation: on a real EVA this is the live visor camera; here it is an Observed NASA Mastcam photo">AR SIM · NASA PHOTO</span>
         <span className="hud-title">
           {pano.stopId} · {stopName.toUpperCase()}
           {sols ? ` · SOL ${sols}` : ''}
         </span>
         <span className="hud-seg" role="group" aria-label="Route drawn on the ground">
-          <button aria-pressed={leg === 'home'} onClick={() => setLeg('home')}>NEXT: WAY HOME ▸</button>
-          <button aria-pressed={leg === 'to'} onClick={() => setLeg('to')}>ROUTE WALKED</button>
+          <button aria-pressed={leg === 'home'} onClick={() => setLeg('home')}>WAY HOME ▸</button>
+          <button aria-pressed={leg === 'to'} onClick={() => setLeg('to')}>WALKED</button>
         </span>
+        <button className="hud-btn hud-tour" aria-pressed={tour} disabled={status !== 'ready'} onClick={() => setTour((t) => !t)}>
+          {tour ? '■ STOP' : '▶ DEMO TOUR'}
+        </button>
         <button className="hud-btn" aria-pressed={details} onClick={() => setDetails((d) => !d)} title="Show or hide the instrument panels (H)">
-          {details ? 'HIDE DETAILS' : 'DETAILS'}
+          {details ? 'LESS' : 'DETAILS'}
         </button>
         <button className="hud-close" onClick={onClose} aria-label="Close 360 view">✕</button>
       </div>
@@ -370,7 +439,7 @@ export function StopHud({
         <div className="hud-mono hud-xl">T+{formatClock(tAt)}</div>
         <div className="hud-row"><span>Walked</span><b>{(s.distM / 1000).toFixed(2)} km</b></div>
         <div className="hud-row"><span>Crew</span><b>{tl.members.length} · {routeMode === 'fastest' ? 'fastest' : 'lowest hazard'}</b></div>
-        <div className="hud-row"><span>Earth delay (one way)</span><b>{earthMin} min</b></div>
+        <div className="hud-row"><span>Earth delay</span><b>{earthMin} min</b></div>
       </div>
 
       <div hidden={!details} className="hud-left hud-glass hud-in" style={{ animationDelay: '0.3s' }}>
@@ -483,7 +552,8 @@ export function StopHud({
           ))}
         </div>
         <div className="hud-foot" hidden={details}>
-          <span className="hud-chip hud-scn">SCENARIO</span> Modeled estimates, not measurements · Photo {pano.pia},{' '}
+          <span className="hud-chip hud-scn">SCENARIO</span> Helmet AR simulation: a real EVA would use the live visor camera ·
+          Modeled estimates, not measurements · Photo {pano.pia},{' '}
           {pano.credit} · blurred areas = not photographed{' '}
           <button className="hud-link" onClick={() => setGaps((g) => !g)}>{gaps ? 'fill gaps' : 'show gaps'}</button>
         </div>

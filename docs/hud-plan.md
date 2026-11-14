@@ -28,8 +28,8 @@ are pending: decision D28). Design source: [`demo-focus-plan.md`](demo-focus-pla
 - **Fixed route on the photo (2026-11-13, user request):** the route's own coordinates are turned into
   directions seen from the stop (bearing + distance on flat ground, eye at Mastcam height 1.97 m) and drawn
   **once** as a yellow ribbon on the ground with moving arrows in the direction of travel. No GPS, no tracking.
-  Default **NEXT: WAY HOME** (arrows lead away from the viewer toward the habitat; the fastest-way-home path
-  when §9's switch fired) and the view opens facing it; **ROUTE WALKED** shows the way out without arrows
+  Default **WAY HOME** (was NEXT: WAY HOME) (arrows lead away from the viewer toward the habitat; the fastest-way-home path
+  when §9's switch fired) and the view opens facing it; **WALKED** (was ROUTE WALKED) shows the way out without arrows
   (user feedback 2026-11-13: arrows must never come toward the viewer). A HABITAT pin with its distance; heading tape with N/E/S/W.
   Limits, stated on screen: flat ground (hills don't hide the line), photo heading from Mastcam pointing data, ±3° (S1 image centre ≈ 5°, S2 ≈ 138°; Derived 2026-11-14 from PDS labels, see the S2 row below; `[` `]` rotate the drawn route to align it to a landmark), horizon set by eye
   (18° above the mosaic centre, `panoramas.ts`). Code: `app/src/hud/routeOverlay.ts`.
@@ -96,3 +96,12 @@ npm run dev                  # Set up → Show routes → stop S1 → Mission Re
   more opaque backgrounds and larger text.
 - **Limit:** one photo per stop, so you cannot walk around inside it the way Street View steps between photos;
   moving between stops is a jump.
+
+## Demo tour for the hackathon (2026-11-14, Marwan)
+
+The 360 view is a **simulation of a pass-through helmet with an AR HUD**. On a real EVA the background would be
+the live visor camera; in the demo it is the Observed NASA Mastcam photo from the stop. The top bar says
+**AR SIM · NASA PHOTO**. **▶ DEMO TOUR** plays a ~48 s guided sequence with slow camera moves and captions:
+title → AR route on the ground → home beacon → suit and route data (Details) → message to Earth (light-time
+countdown) → emergency (red fastest way home) → "Plan on the map · walk with the HUD". It works live at the
+judges' table and as a screen recording for the video. Dragging takes over the camera; **■ STOP** ends the tour.
