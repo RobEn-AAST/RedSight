@@ -138,3 +138,118 @@ def graph_crs(graph):
     if crs is None:
         raise ValueError("native routing graph has no analysis CRS")
     return crs
+
+
+def fastest_home_field(graph, *, home):
+    """Shortest modeled time from every pixel to ``home`` on the same directed graph.
+
+    Dijkstra runs from ``home`` on the transposed time matrix, so ``distances[v]`` is the time of the
+    fastest v -> home walk and ``predecessors[v]`` is the next pixel after v on that walk.
+    """
+    source = graph.node(home)
+    if not graph.walkable.flat[source]:
+        raise ValueError("home is hard-blocked in the native route grid")
+    return dijkstra(graph.time_csr.T.tocsr(), directed=True, indices=source, return_predecessors=True)
+
+
+def _simplify(points, tolerance_m):
+    """Ramer-Douglas-Peucker on projected points; keeps both ends. Returns kept indices."""
+    pts = np.asarray(points, dtype=np.float64)
+    keep = np.zeros(len(pts), dtype=bool)
+    keep[0] = keep[-1] = True
+    stack = [(0, len(pts) - 1)]
+    while stack:
+        i, j = stack.pop()
+        if j <= i + 1:
+            continue
+        a, b = pts[i], pts[j]
+        ab = b - a
+        norm = math.hypot(*ab)
+        seg = pts[i + 1:j] - a
+        if norm == 0:
+            dist = np.hypot(seg[:, 0], seg[:, 1])
+        else:
+            dist = np.abs(ab[0] * seg[:, 1] - ab[1] * seg[:, 0]) / norm
+        k = int(np.argmax(dist))
+        if dist[k] > tolerance_m:
+            keep[i + 1 + k] = True
+            stack.extend(((i, i + 1 + k), (i + 1 + k, j)))
+    return np.flatnonzero(keep)
+
+
+def _path_keys(graph, nodes, spacing_m):
+    """Route-point indices that carry a stored way-home path: the first, the last, and one every ``spacing_m``."""
+    if len(nodes) <= 2 or not spacing_m:
+        return list(range(len(nodes)))
+    rows, cols = np.divmod(np.asarray(nodes), graph.shape[1])
+    xs, ys = xy(graph.transform, rows, cols, offset="center")
+    step = np.hypot(np.diff(np.asarray(xs, dtype=np.float64)), np.diff(np.asarray(ys, dtype=np.float64)))
+    keys, since = [0], 0.0
+    for index, length in enumerate(step, start=1):
+        since += float(length)
+        if since >= spacing_m:
+            keys.append(index)
+            since = 0.0
+    if keys[-1] != len(nodes) - 1:
+        keys.append(len(nodes) - 1)
+    return keys
+
+
+def back_fast_arrays(graph, nodes, *, home, field, constants, path_tolerance_m=1.0, decimals=7, path_spacing_m=25.0):
+    """Fastest modeled way home from every route point (demo-focus-plan §9 ``Back_fast``).
+
+    Times and raw expected per-member O₂ are summed edge by edge with the same ``segment_cost`` model
+    as ``back``; the walk follows the shortest-time tree toward ``home`` on the same admissible graph.
+    Paths are stored only at key route points (``path_from``: the first, the last and one every
+    ``path_spacing_m`` of route length) to keep the files small: ``path[k]`` starts at route point
+    ``path_from[k]`` and ends at the habitat pixel. A reader draws the way home from point i as the route
+    walked back to the nearest key point at or before i, then ``path[k]``. Paths are simplified for display
+    (Ramer-Douglas-Peucker, ``path_tolerance_m`` in projected metres) and do not change the costs; ``t_s``
+    and ``o2_l`` stay exact for every route point.
+    """
+    distances, predecessors = field
+    home_node = graph.node(home)
+    memo_t = {home_node: 0.0}
+    memo_o = {home_node: 0.0}
+    nxt = {}
+
+    def resolve(node):
+        chain = []
+        while node not in memo_t:
+            if not np.isfinite(distances[node]):
+                raise ValueError("route point has no modeled way home inside the bounded corridor")
+            following = int(predecessors[node])
+            if following < 0 or following == node:
+                raise ValueError("route point has no modeled way home inside the bounded corridor")
+            chain.append(node)
+            nxt[node] = following
+            node = following
+        for item in reversed(chain):
+            cost, _ = _edge(graph, item, nxt[item], constants)
+            memo_t[item] = memo_t[nxt[item]] + cost.t_s
+            memo_o[item] = memo_o[nxt[item]] + cost.o2_l
+
+    nodes = tuple(map(int, nodes))
+    for node in nodes:
+        resolve(node)
+    crs = graph_crs(graph)
+    keys = _path_keys(graph, nodes, path_spacing_m)
+    paths = []
+    for node in (nodes[k] for k in keys):
+        walk = [node]
+        while walk[-1] != home_node:
+            walk.append(nxt[walk[-1]])
+        if len(walk) == 1:
+            walk.append(home_node)
+        rows, cols = np.divmod(np.asarray(walk), graph.shape[1])
+        xs, ys = xy(graph.transform, rows, cols, offset="center")
+        xs, ys = np.asarray(xs, dtype=np.float64), np.asarray(ys, dtype=np.float64)
+        kept = _simplify(np.column_stack((xs, ys)), path_tolerance_m)
+        lon, lat = transform(crs, MARS_GEOGRAPHIC_CRS, xs[kept].tolist(), ys[kept].tolist())
+        paths.append([[round(float(a), decimals), round(float(b), decimals)] for a, b in zip(lon, lat)])
+    return {
+        "t_s": [memo_t[node] for node in nodes],
+        "o2_l": [memo_o[node] for node in nodes],
+        "path": paths,
+        "path_from": keys,
+    }

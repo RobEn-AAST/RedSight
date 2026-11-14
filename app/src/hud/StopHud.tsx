@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom'
 import { createPanoViewer, type PanoViewer } from '@/hud/panoViewer'
 import { createRouteOverlay, type RouteOverlay } from '@/hud/routeOverlay'
 import { CommsPanel, type CommsHandle } from '@/hud/CommsPanel'
+import { oneWayDelayS } from '@/hud/earthDelay'
 import type { StopPanorama } from '@/hud/panoramas'
 import type { EngineCard } from '@/lib/engineDataContext'
 import {
@@ -144,6 +145,11 @@ export function StopHud({
   const homeEdgeRef = useRef<HTMLDivElement>(null)
   // Emergency: return on the displayed modeled route, turn toward the habitat, message habitat + Earth.
   const [emergency, setEmergency] = useState(false)
+  // Clean view by default (photo first, like Street View); Details opens the full instrument panels.
+  const [details, setDetails] = useState(false)
+  const [gaps, setGaps] = useState(false)
+  const [hint, setHint] = useState(true)
+  const [earthMin] = useState(() => Math.round(oneWayDelayS(new Date()) / 60))
   const fovRef = useRef(58)
   const hostRef = useRef<HTMLDivElement>(null)
   const tapeRef = useRef<HTMLDivElement>(null)
@@ -180,7 +186,10 @@ export function StopHud({
     if (!hostRef.current) return
     const viewer = createPanoViewer(hostRef.current, `${import.meta.env.BASE_URL}${pano.url}`, {
       horizonDeg: pano.horizonDeg,
-      onReady: () => setStatus('ready'),
+      onReady: () => {
+        setStatus('ready')
+        window.setTimeout(() => setHint(false), 6000)
+      },
       onError: () => setStatus('error'),
       // Heading tape follows the view directly (no React re-render per frame).
       onView: (yawDeg, fovDeg) => {
@@ -194,6 +203,7 @@ export function StopHud({
       if (e.key === 'Escape') onClose()
       if (e.key === '[') setNorthDeg((d) => d - 2)
       if (e.key === ']') setNorthDeg((d) => d + 2)
+      if (e.key === 'h' || e.key === 'H') setDetails((d) => !d)
     }
     window.addEventListener('keydown', onKey)
     return () => {
@@ -233,6 +243,10 @@ export function StopHud({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leg, emergency, fastestHome, wayOut, wayHome, stopLonLat[0], stopLonLat[1], habitatLonLat[0], habitatLonLat[1]])
+
+  useEffect(() => {
+    viewerRef.current?.showGaps(gaps)
+  }, [gaps, status])
 
   useEffect(() => {
     northRef.current = northDeg
@@ -302,9 +316,13 @@ export function StopHud({
       {status !== 'ready' && (
         <div className="hud-status">{status === 'error' ? 'Panorama failed to load.' : 'LOADING NASA PANORAMA…'}</div>
       )}
-      <div className="hud-scan" aria-hidden />
       <div className="hud-visor" aria-hidden />
       <div className="hud-reticle" aria-hidden />
+      {hint && status === 'ready' && (
+        <div className="hud-hint" aria-hidden>
+          Drag to look around · scroll or pinch to zoom · double-click to zoom in · H = details
+        </div>
+      )}
 
       {/* Home finder: shows only when the habitat is out of view; the 3D HOME beacon is drawn in the scene. */}
       <div ref={homeEdgeRef} className="hud-home-edge" hidden>
@@ -341,18 +359,21 @@ export function StopHud({
           <button aria-pressed={leg === 'home'} onClick={() => setLeg('home')}>NEXT: WAY HOME ▸</button>
           <button aria-pressed={leg === 'to'} onClick={() => setLeg('to')}>ROUTE WALKED</button>
         </span>
+        <button className="hud-btn" aria-pressed={details} onClick={() => setDetails((d) => !d)} title="Show or hide the instrument panels (H)">
+          {details ? 'HIDE DETAILS' : 'DETAILS'}
+        </button>
         <button className="hud-close" onClick={onClose} aria-label="Close 360 view">✕</button>
       </div>
 
-      <div className="hud-tl hud-glass hud-in" style={{ animationDelay: '0.2s' }}>
+      <div hidden={!details} className="hud-tl hud-glass hud-in" style={{ animationDelay: '0.2s' }}>
         <div className="hud-label">MISSION CLOCK</div>
         <div className="hud-mono hud-xl">T+{formatClock(tAt)}</div>
         <div className="hud-row"><span>Walked</span><b>{(s.distM / 1000).toFixed(2)} km</b></div>
         <div className="hud-row"><span>Crew</span><b>{tl.members.length} · {routeMode === 'fastest' ? 'fastest' : 'lowest hazard'}</b></div>
-        <div className="hud-row"><span>Earth delay</span><b>≤ 22 min</b></div>
+        <div className="hud-row"><span>Earth delay (one way)</span><b>{earthMin} min</b></div>
       </div>
 
-      <div className="hud-left hud-glass hud-in" style={{ animationDelay: '0.3s' }}>
+      <div hidden={!details} className="hud-left hud-glass hud-in" style={{ animationDelay: '0.3s' }}>
         <div className="hud-label">SUIT O₂ · WORST SUIT</div>
         <O2Ring leftL={s.o2Left} tankL={T} reserveL={tl.reserveL} homeL={s.homeL} />
         {s.members.map((l, i) => (
@@ -366,7 +387,7 @@ export function StopHud({
         <div className="hud-row"><span>Reserve</span><b>{pct(tl.reserveL)}</b></div>
       </div>
 
-      <div className="hud-right hud-glass hud-in" style={{ animationDelay: '0.4s' }}>
+      <div hidden={!details} className="hud-right hud-glass hud-in" style={{ animationDelay: '0.4s' }}>
         {arrive ? (
           <>
             <div className="hud-label">WAY HOME</div>
@@ -394,7 +415,7 @@ export function StopHud({
         {airT && <div className="hud-row hud-dim"><span>Air temp (day range)</span><span>{String(airT.value)} {airT.unit}</span></div>}
       </div>
 
-      <div className="hud-bl hud-glass hud-in" style={{ animationDelay: '0.5s' }}>
+      <div hidden={!details} className="hud-bl hud-glass hud-in" style={{ animationDelay: '0.5s' }}>
         <div className="hud-label">LOG</div>
         <ul className="hud-log">
           {log.map((e, i) => (
@@ -403,9 +424,19 @@ export function StopHud({
         </ul>
       </div>
 
-      <div className="hud-cm hud-glass hud-in" style={{ animationDelay: '0.5s' }}>
+      <div hidden={!details && !emergency} className="hud-cm hud-glass hud-in" style={{ animationDelay: '0.5s' }}>
         <CommsPanel ref={commsRef} />
       </div>
+
+      {!details && (
+        <div className="hud-strip hud-in" style={{ animationDelay: '0.2s' }}>
+          <span><i>O₂</i><b>{pct(s.o2Left)}</b></span>
+          <span><i>T+</i><b>{formatClock(tAt)}</b></span>
+          <span><i>Home</i><b>{formatDuration(homeS)}</b></span>
+          <span><i>⌂</i><b>{habKm.toFixed(2)} km · {habBearing.toFixed(0)}°</b></span>
+          <span><i>Earth delay</i><b>{earthMin} min</b></span>
+        </div>
+      )}
 
       {emergency && (
         <div className="hud-emergency" role="alert">
@@ -436,7 +467,7 @@ export function StopHud({
         </button>
       )}
 
-      <div className="hud-br hud-glass hud-in" style={{ animationDelay: '0.6s' }}>
+      <div hidden={!details} className="hud-br hud-glass hud-in" style={{ animationDelay: '0.6s' }}>
         <div className="hud-label">ROUTE · NORTH UP</div>
         <MiniMap frames={tl.frames} habitat={habitatLonLat} stop={stopLonLat} switchPt={tl.switchPoint} turnPt={tl.turnPoint} />
       </div>
@@ -451,11 +482,18 @@ export function StopHud({
             </span>
           ))}
         </div>
-        <div className="hud-foot">
+        <div className="hud-foot" hidden={details}>
+          <span className="hud-chip hud-scn">SCENARIO</span> Modeled estimates, not measurements · Photo {pano.pia},{' '}
+          {pano.credit} · blurred areas = not photographed{' '}
+          <button className="hud-link" onClick={() => setGaps((g) => !g)}>{gaps ? 'fill gaps' : 'show gaps'}</button>
+        </div>
+        <div className="hud-foot" hidden={!details}>
           <span className="hud-chip hud-scn">SCENARIO</span> O₂, route and times are modeled estimates, not
           measurements · RAD/REMS: Curiosity rover-local values · Photo: {pano.pia}, {pano.credit}, {pano.taken} ·
           Real imagery only at stops; moving between stops is a jump. · Yellow route: drawn from the route's coordinates onto the photo (flat ground, no hills; photo
-          heading {pano.northCalibrated ? 'aligned' : `≈${northDeg}° at centre, ${pano.headingNote}; [ ] adjust`}), not tracking.
+          heading {pano.northCalibrated ? 'aligned' : `≈${northDeg}° at centre, ${pano.headingNote}; [ ] adjust`}), not tracking. ·
+          Blurred areas were not photographed (filled from nearby colours){' '}
+          <button className="hud-link" onClick={() => setGaps((g) => !g)}>{gaps ? 'fill gaps' : 'show gaps'}</button>
         </div>
       </div>
     </div>,

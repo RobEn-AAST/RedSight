@@ -84,6 +84,19 @@ function validate(route) {
 }
 
 /** Alternate return is usable only with complete costs AND endpoint-matched geometry. */
+export function fastPathFrom(route, i) {
+  const bf = route?.back_fast;
+  const coords = route?.coords;
+  if (!bf || !Array.isArray(bf.path) || !Array.isArray(coords) || !(i >= 0 && i < coords.length)) return null;
+  const from = bf.path_from;
+  if (!Array.isArray(from)) return bf.path.length === coords.length && bf.path[i]?.length > 1 ? bf.path[i] : null;
+  let k = -1;
+  for (let j = 0; j < from.length && from[j] <= i; j++) k = j;
+  if (k < 0 || !Array.isArray(bf.path[k]) || bf.path[k].length < 1) return null;
+  const line = [...coords.slice(from[k], i + 1).reverse(), ...bf.path[k].slice(1)];
+  return line.length > 1 ? line : null;
+}
+
 export function hasCompleteAlternateReturn(route) {
   const n = route?.coords?.length ?? 0;
   const bf = route?.back_fast;

@@ -37,3 +37,5 @@ export function formatClock(s: number): string
 export function distanceM(a: [number, number], b: [number, number]): number
 
 export function hasCompleteAlternateReturn(route: unknown): boolean
+
+export function fastPathFrom(route: unknown, i: number): [number, number][] | null

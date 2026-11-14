@@ -3,7 +3,7 @@ import { PlayCircle, ScanEye } from 'lucide-react'
 
 import { PANORAMAS } from '@/hud/panoramas'
 import { StopHud } from '@/hud/StopHud'
-import type { Timeline } from '@/replay/replay-core.js'
+import { fastPathFrom, type Timeline } from '@/replay/replay-core.js'
 
 import type { EngineConstants } from '@/lib/engineDataContext'
 import { useEngineData } from '@/lib/useEngineData'
@@ -91,10 +91,10 @@ export function MissionReplay({ bare = false }: { bare?: boolean } = {}) {
   // Lines for the fixed route drawn in the 360 view: the way out, and the way home from the stop
   // (the fastest-way-home path when the replay switched to it, else the route walked back).
   const wayOut = useMemo(() => (activeRoute?.coords ?? []) as [number, number][], [activeRoute])
-  const fastFromStop = hud?.fastHome ? activeRoute?.back_fast?.path?.[(activeRoute?.coords.length ?? 1) - 1] : undefined
   const lastI = (activeRoute?.coords.length ?? 1) - 1
+  const bfPath = useMemo(() => (activeRoute ? fastPathFrom(activeRoute, lastI) ?? undefined : undefined), [activeRoute, lastI])
+  const fastFromStop = hud?.fastHome ? bfPath : undefined
   const bf = activeRoute?.back_fast
-  const bfPath = bf?.path?.[lastI]
   const bfFaster = !!bf && !!activeRoute && bf.t_s[lastI] < activeRoute.back.t_s[lastI]
   const fastestHome = useMemo(
     () => (bfFaster && bfPath?.length ? bfPath : wayOut.slice().reverse()) as [number, number][],

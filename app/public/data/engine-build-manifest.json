@@ -295,7 +295,7 @@
   },
   "constants_sha256": "87b14a922e6427720cba0365b4f66719c50b0a9519101af8b0448354256155df",
   "engine": "RedSight Python NumPy rasterio SciPy sparse Dijkstra",
-  "engine_commit": "f0c8b3abc16005996893057ea7f6d02cd25ebf0a",
+  "engine_commit": "860a4a4a98ba49dd7019402ae4870a023e067777",
   "habitat": {
     "badge": "Scenario",
     "lonlat": [
@@ -617,9 +617,9 @@
       "status": "unverified",
       "timing": {
         "acquisition_timing": {},
-        "build_completed_at": "2026-11-14T02:10:37+02:00",
-        "build_runtime_seconds": 71.086,
-        "build_started_at": "2026-11-14T02:09:26+02:00",
+        "build_completed_at": "2026-11-14T02:18:38+02:00",
+        "build_runtime_seconds": 45.91,
+        "build_started_at": "2026-11-14T02:17:52+02:00",
         "elapsed_seconds": null,
         "g4_status": "unverified",
         "g4_threshold_seconds": 10800
@@ -628,9 +628,9 @@
   },
   "pilot_timing": {
     "acquisition_timing": {},
-    "build_completed_at": "2026-11-14T02:10:37+02:00",
-    "build_runtime_seconds": 71.086,
-    "build_started_at": "2026-11-14T02:09:26+02:00",
+    "build_completed_at": "2026-11-14T02:18:38+02:00",
+    "build_runtime_seconds": 45.91,
+    "build_started_at": "2026-11-14T02:17:52+02:00",
     "elapsed_seconds": null,
     "g4_status": "unverified",
     "g4_threshold_seconds": 10800
@@ -711,14 +711,14 @@
     "access_goal_bound_m": 10.0,
     "component_count_in_bounded_extent": 842421,
     "edge_method": "8-neighbor; diagonal requires both orthogonal pixels walkable; absolute native endpoint-sampled grade at or below the same slope limit",
-    "graph_and_fields_runtime_seconds": 1.758,
+    "graph_and_fields_runtime_seconds": 1.399,
     "native_habitat_cell_rc": [
       4126,
       3051
     ],
     "native_habitat_component_pixels": 867641,
     "optimization_scope": "Fastest and lowest-modeled-hazard paths are minimized only inside the union of the existing Scenario habitat and Observed stop coordinates expanded by the stated source-data margin. This is a corridor-limited optimum.",
-    "process_peak_rss_bytes": 1207036805120,
+    "process_peak_rss_bytes": 1237940436992,
     "projected_bounds_m": [
       8142966.725607634,
       -286311.1901576792,
@@ -933,7 +933,7 @@
   "stale_route_files_removed": [],
   "stops_sha256": "5b576c3ecbc0f6addc977d7365c3dbfd76ce8f7d8ba988e77fcf37ed46d2b596",
   "return_data_revision": {
-    "reason": "Remove alternate-return payloads; only complete directed same-path return remains. No route geometry or same-path cost changes.",
+    "reason": "Retain latest main geometry/costs; omit keyed alternate-return geometry whose paths do not match its per-vertex cost fields.",
     "branch": "AI-functions"
   }
 }

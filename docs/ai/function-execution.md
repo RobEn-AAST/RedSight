@@ -84,3 +84,8 @@ three kilograms of return samples. Requests at 0° and 10° returned no matching
 rejected. Browser checks confirmed the chat tool call applied the real D1 route; a 10° manual request
 reported no route without silently relaxing its constraint. Production static GeoJSON and module-worker
 MIME types were corrected during that check.
+
+Latest-main integration retained the new panorama/HUD work and offline keyed-return helpers.
+Keyed display paths cannot activate the alternate-return recommendation because a reconstructed
+walk-to-key geometry does not match the independently exported per-vertex shortest-return costs.
+Production alternate payloads remain omitted under the user's complete-return-or-omit requirement.
