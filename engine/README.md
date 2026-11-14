@@ -22,30 +22,37 @@ against the handoff manifest. The command does not download data.
 
 ## Re-export status and how to run it (2026-11-14)
 
-**The route JSONs in `app/public/data/routes/` are NOT re-exported yet.** They still use the old 30 W
-downhill floor, have no `back_fast` block, and were built with the older `stops.json` (S3 has since
-moved about 26 m, beyond the 10 m access bound, so `node engine/tests/check_replay_adapter.mjs` fails
-on the S3 stop coordinate). The code fixes are in place; the re-export needs the input DTM, which was
-not reachable from the integration Mac (Ali's bundle is not there, and AWS S3 reset every connection).
+**Re-exported 2026-11-14 from a local rebuild (path (b) below).** The primary COG was reachable again,
+so the inputs were rebuilt with `engine/tools/rebuild_pilot_inputs.py` from the full
+[DTEEC_019698_1750_019988_1750_U01](https://astrogeo-ard.s3-us-west-2.amazonaws.com/mars/mro/hirise/controlled/dtm/ESP_019698_1750_ESP_019988_1750/DTEEC_019698_1750_019988_1750_U01.tif)
+COG (265,874,780 bytes, cut to the same 5,859 × 5,859 window locally) and all ten routes were rebuilt with the
+current `stops.json`. `engine-build-manifest.json` now says `input_provenance.kind: local_rebuild` and
+G2 `not_reproduced`; the habitat is still row 422, col 312. Native access cells moved only where
+`stops.json` moved the stops (D1, S1 by 1–2 px; S3 by about 26 m). The rebuilt crop has 281,327 valid
+cells (Ali's had 281,563, −0.08 %) and 2,196 hazard polygons (was 2,207). Plans were regenerated with
+`node app/scripts/build-plans.mjs`.
 
-Neither fix changes route geometry: the fastest objective is modeled time and the lowest-hazard objective
-is slope exposure, and neither depends on O₂. Re-costing the shipped geometry with the new floor gives
-this Scenario O₂ per crew member (raw expected, no reserve or margin; times unchanged):
+Scenario values per crew member, raw expected, no reserve or margin (old = previous shipped export with the
+30 W floor and old stops; new = this re-export). The turn-back index is the last route point on every route:
+the highest modeled round trip (about 88 L) is far below the 288.75 L usable budget, so no turn-back point
+triggers on any shipped route. `back_fast` is exported on the lowest-hazard routes only.
 
-| Route | Out min | Back min | Out O₂ L old → new | Back O₂ L old → new |
-|---|---|---|---|---|
-| D1 fastest | 46.7 | 51.7 | 13.74 → 26.05 | 56.83 → 57.98 |
-| D1 safest | 47.3 | 51.4 | 12.90 → 25.82 | 56.20 → 57.10 |
-| D2 fastest | 32.0 | 35.2 | 9.23 → 17.41 | 39.08 → 39.69 |
-| D2 safest | 32.3 | 35.2 | 8.45 → 17.24 | 38.96 → 39.38 |
-| S1 fastest | 50.1 | 55.3 | 14.09 → 27.02 | 60.56 → 61.40 |
-| S1 safest | 50.7 | 55.0 | 13.16 → 26.85 | 60.07 → 60.77 |
-| S2 fastest | 32.0 | 35.3 | 9.15 → 17.36 | 39.16 → 39.75 |
-| S2 safest | 32.3 | 35.2 | 8.37 → 17.20 | 39.06 → 39.46 |
-| S3 fastest | 14.0 | 12.4 | 17.75 → 17.75 | 1.58 → 6.09 |
-| S3 safest | 14.0 | 12.4 | 17.75 → 17.75 | 1.41 → 6.04 |
+| Route | Out min old → new | Back min old → new | Out O₂ L old → new | Back O₂ L old → new | back_fast | Turn-back triggers |
+|---|---|---|---|---|---|---|
+| D1 fastest | 46.7 → 46.4 | 51.7 → 51.4 | 13.74 → 25.69 | 56.83 → 57.81 | no | no |
+| D1 lowest-hazard | 47.3 → 47.1 | 51.4 → 51.0 | 12.90 → 25.44 | 56.20 → 56.91 | yes | no |
+| D2 fastest | 32.0 → 32.0 | 35.2 → 35.2 | 9.23 → 17.41 | 39.08 → 39.69 | no | no |
+| D2 lowest-hazard | 32.3 → 32.3 | 35.2 → 35.2 | 8.45 → 17.24 | 38.96 → 39.38 | yes | no |
+| S1 fastest | 50.1 → 50.1 | 55.3 → 55.3 | 14.09 → 27.03 | 60.56 → 61.43 | no | no |
+| S1 lowest-hazard | 50.7 → 50.7 | 55.0 → 55.0 | 13.16 → 26.86 | 60.07 → 60.79 | yes | no |
+| S2 fastest | 32.0 → 32.0 | 35.3 → 35.3 | 9.15 → 17.36 | 39.16 → 39.75 | no | no |
+| S2 lowest-hazard | 32.3 → 32.3 | 35.2 → 35.2 | 8.37 → 17.20 | 39.06 → 39.46 | yes | no |
+| S3 fastest | 14.0 → 14.6 | 12.4 → 13.0 | 17.75 → 18.57 | 1.58 → 6.48 | no | no |
+| S3 lowest-hazard | 14.0 → 14.6 | 12.4 → 12.8 | 17.75 → 18.56 | 1.41 → 6.26 | yes | no |
 
-S3 routes will change geometry on re-export because the stop moved.
+Size note: `back_fast.path` holds one simplified return path per route point, so the lowest-hazard route
+files grew (S1 0.6 → 9.0 MB; all routes 4.1 → 27 MB; about 3.2 MB gzipped together with the plans).
+`npm run check:data` warns on size only.
 
 **(a) Ali, from the original bundle (preferred; keeps the G2 evidence).** On the machine holding
 `data/raw/engine-pilot/`, on a branch with these fixes, run the build command at the top of this file
