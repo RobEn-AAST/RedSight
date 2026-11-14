@@ -160,3 +160,11 @@ on Mars; make the street track better; make the UI better and easier to understa
   mission, way home, environment, comms, log + progress and map panels. Demo-tour captions rewritten to match.
 - **Limit:** on flat ground at eye height the route beyond ~200 m lies within 1° of the horizon, so the far route is
   thin; the distance labels, turn sign and home pillar carry the far guidance.
+
+## Later (luxury, after submission): 3D walk / fly-along (decided 2026-11-14, Marwan)
+
+Feasible with data already on disk: a terrain mesh from the DEM (`app/public/hud/terrain-*.json` or the 2.5 m
+DEM) draped with the HiRISE orthoimage, the routes, stops, habitat and Curiosity's path drawn on it, and a camera
+that walks or flies along the route at eye height. Limit: orbital texture (~0.25–1 m/px) looks smooth up close.
+Effort: ~1 h for a plain height-coloured fly-along, a few hours with the HiRISE texture, walk/fly modes and
+polish. Postponed: Tier 3 (`AGENTS.md`), and Tier 1 deploy/submit come first.
