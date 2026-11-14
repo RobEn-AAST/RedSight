@@ -64,7 +64,7 @@ const COP = (n) => `${COPD}${n}.mp3`
 const replyOf = (k, fallback) => { try { return 'Copilot: ' + readFileSync(`${COPD}reply-${k}.txt`, 'utf8').trim() } catch { return fallback } }
 const REPLY = {
   normal: replyOf('normal', 'Copilot answers from the plan: O₂ left, minutes to the turn-back point, and minutes home.'),
-  emergency: replyOf('emergency', 'Copilot raises the alarm, sends the rover to your position, and guides you until it arrives. (Rover call-out: in progress.)'),
+  emergency: replyOf('emergency', 'Copilot holds you at your position, raises the alarm, sends the rover to you and shows the fastest way home. (Rover motion is illustrative.)'),
 }
 
 const slides = [
@@ -122,7 +122,7 @@ const slides = [
   [title('Talk to the copilot, hands-free'),
     { t: 'image', path: new URL('../assets/copilot-astronaut.png', import.meta.url).pathname, x: 0.5, y: 1.1, w: 4.2, h: 4.2 * 346 / 790 },
     { t: 'text', x: 0.5, y: 2.95, w: 4.2, h: 1.2, text: 'Ask out loud, mid-walk. The copilot knows your mission plan and answers out loud, so your hands stay free.', size: 13, color: BODY },
-    { t: 'text', x: 0.5, y: 4.15, w: 4.2, h: 0.9, text: 'IN PROGRESS: live voice version (Gemini Live) being finished now. Replies are modeled estimates, not a safety system.', size: 10, bold: true, color: ACC },
+    { t: 'text', x: 0.5, y: 4.15, w: 4.2, h: 0.9, text: 'Voice calls: Gemini Live (gemini-3.1-flash-live-preview), speech to speech. Replies use the modeled plan; a prototype aid, not a safety system.', size: 10, bold: true, color: ACC },
     { t: 'card', x: 5.0, y: 1.1, w: 4.5, h: 1.85 }, { t: 'card', x: 5.0, y: 3.1, w: 4.5, h: 1.95 },
     { t: 'audio', path: COP('ask-normal'), x: 5.15, y: 1.25, w: 0.42, h: 0.42 },
     { t: 'text', x: 5.7, y: 1.22, w: 3.7, h: 0.25, text: 'NORMAL ASK', size: 10, bold: true, color: '4CC38A' },
@@ -132,7 +132,7 @@ const slides = [
     { t: 'text', x: 5.7, y: 3.22, w: 3.7, h: 0.25, text: 'EMERGENCY', size: 10, bold: true, color: 'FF6B6B' },
     { t: 'text', x: 5.7, y: 3.46, w: 3.7, h: 0.3, text: '“I fell. I think my leg is broken.”', size: 13, bold: true, color: INK },
     { t: 'text', x: 5.15, y: 3.92, w: 4.25, h: 1.05, text: REPLY.emergency, size: 12, color: BODY },
-    note('Click the speaker icons to hear the two asks (AI voice, Kokoro TTS). The copilot replies are added from a real test of the live version. The rover call-out in an emergency is being built now.'), ...footer(6)],
+    note('Click the speaker icons to hear the two asks (AI voice, Kokoro TTS). The copilot replies are added from a real test of the live version. In an emergency the app holds the astronaut at the modeled position, draws the fastest return and dispatches an illustrative rover (mission-control simulation).'), ...footer(6)],
   // 7 · Get home: 360 view + helmet HUD
   [title('Get home: 360° view + helmet HUD'), gif('hud'), caption('Helmet HUD prototype on a NASA photo stand-in (PIA26363)'),
     rows([['360° view. ', 'At a stop, drag to look around a real Curiosity panorama.'],
@@ -192,8 +192,8 @@ const page = slides.map((els) => `<div class="s">${els.map((e) => {
   if (e.t === 'card') return `<div style="${pos(e)}background:#${CARD};border-radius:${px(0.08)}"></div>`
   return ''
 }).join('')}</div>`).join('')
-await writeFile(`${D}preview.html`, `<!doctype html><meta charset="utf-8"><style>*{margin:0;padding:0;box-sizing:border-box}
-.s{position:relative;width:1920px;height:1080px;background:#${BG};overflow:hidden;font-family:Arial}
+await writeFile(`${D}preview.html`, `<!doctype html><meta charset="utf-8"><style>@page{size:1920px 1080px;margin:0}*{margin:0;padding:0;box-sizing:border-box}
+.s{position:relative;width:1920px;height:1080px;break-after:page;background:#${BG};overflow:hidden;font-family:Arial}
 .box{line-height:1.2;outline:1px dashed rgba(255,0,255,.0)} ul.box{list-style:none} ul.box li{position:relative;padding-left:${pt(14 * 1.4)};margin-bottom:${pt(9)}}
 ul.box li:before{content:'•';position:absolute;left:0}</style>${page}`)
 const browser = await chromium.launch()
@@ -201,6 +201,7 @@ const p = await browser.newPage({ viewport: { width: 1920, height: 1080 } })
 await p.goto(`file://${D}preview.html`)
 const overflow = await p.evaluate(() => [...document.querySelectorAll('.s')].flatMap((s, i) => [...s.querySelectorAll('.box')]
   .filter((b) => b.scrollHeight > b.clientHeight + 2 || b.scrollWidth > b.clientWidth + 2).map((b) => `slide ${i + 1}: "${b.textContent.slice(0, 40)}"`)))
+await p.pdf({ path: `${D}redsight-deck.pdf`, width: '1920px', height: '1080px', printBackground: true, pageRanges: '' })
 const els = await p.$$('.s')
 for (const [i, el] of els.entries()) await el.screenshot({ path: `${D}preview/slide-${i + 1}.png` })
 await browser.close()
