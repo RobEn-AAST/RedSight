@@ -146,6 +146,15 @@ test("keyed alternate paths cannot activate mismatched per-vertex return costs",
   assert.deepEqual(fastPathFrom(withKeyed, 2), withFast.back_fast.path[2]);
 });
 
+test("keyed alternate paths with costs that match their geometry switch home by the fastest way", () => {
+  // Vertex 1 walks the route back to key 0 (600 s, 3 L); key 2 uses its own path (600 s, 3 L).
+  const consistent = { ...withKeyed, back_fast: { ...withKeyed.back_fast, t_s: [0, 600, 600], o2_l: [0, 3, 3] } };
+  const tl = buildTimeline(consistent, { ...base, capacityL: 24, reserveL: 10 });
+  assert.equal(tl.reachStop, true);
+  assert.equal(tl.fastHome, true);
+  assert.equal(tl.arrivalL, 24 - 13);
+});
+
 test("keyed back_fast paths: a point between keys walks the route back to the earlier key", () => {
   const line = fastPathFrom(withKeyed, 1);
   assert.deepEqual(line, [withKeyed.coords[1], withKeyed.coords[0]]);

@@ -18,7 +18,7 @@ const plannedReadouts = [
   {
     icon: Flag,
     label: 'Return recommendation',
-    detail: 'Current modeled return budget and route state; alternate fastest-return switching is unavailable without complete legal return geometry.',
+    detail: 'Current modeled return budget and route state; on lowest-hazard routes the replay switches to the fastest modeled way home (native DTM path, full legal geometry) when it is the one that fits.',
   },
 ]
 

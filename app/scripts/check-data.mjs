@@ -260,6 +260,27 @@ for (const name of existsSync(join(DATA, "plan")) ? readdirSync(join(DATA, "plan
   }
 }
 
+// Fastest way home (python3 -m engine.tools.fastest_home): must match its route's exact bytes, full arrays,
+// and every key path must start on the route and end at the habitat (route coords[0]).
+for (const name of existsSync(join(DATA, "return")) ? readdirSync(join(DATA, "return")) : []) {
+  if (!name.endsWith(".json")) continue;
+  const rel = `return/${name}`, f = load(rel);
+  if (!f) continue;
+  checkBadge(rel, "file", f.badge);
+  if (!f.generator || !f.method || typeof f.inputs?.native_dem_sha256 !== "string") err(rel, "generator, method and inputs.native_dem_sha256 required (provenance)");
+  if (typeof f.route_file !== "string" || !existsSync(join(DATA, f.route_file))) { err(rel, "route_file missing"); continue; }
+  if (sha256(f.route_file) !== f.route_sha256) { err(rel, `stale: ${f.route_file} changed (re-run python3 -m engine.tools.fastest_home)`); continue; }
+  const r = JSON.parse(readFileSync(join(DATA, f.route_file), "utf8")), bf = f.back_fast, n = r.coords?.length ?? 0;
+  if (r.mode === "fastest") err(rel, "back_fast is only used on non-fastest routes");
+  for (const k of ["t_s", "o2_l"]) if (!Array.isArray(bf?.[k]) || bf[k].length !== n || bf[k][0] !== 0 || !bf[k].every((x) => isNum(x) && x >= 0)) err(rel, `back_fast.${k} must have ${n} finite values starting at 0`);
+  const from = bf?.path_from;
+  if (!Array.isArray(from) || from[0] !== 0 || !nonDecreasing(from) || bf.path?.length !== from.length) { err(rel, "path_from must ascend from 0 with one path per key"); continue; }
+  const same = (a, b) => a?.[0] === b?.[0] && a?.[1] === b?.[1];
+  bf.path.forEach((p, j) => {
+    if (!same(p[0], r.coords[from[j]]) || !same(p.at(-1), r.coords[0])) err(rel, `path ${j} must start at route point ${from[j]} and end at the habitat`);
+  });
+}
+
 // Engine outputs must be byte-identical to what the engine wrote (engine-build-manifest.json output_sha256);
 // a hand-edited or substituted route/hazard/constants file fails here.
 const manifest = load("engine-build-manifest.json", { optional: true });

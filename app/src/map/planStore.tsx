@@ -21,6 +21,12 @@ import { nearestLoadBucket, perAstronautLoadKg } from '@/types/mission'
 const MODES: EngineRouteMode[] = ['fastest', 'safest']
 
 /** One plan member in the §15 route shape the turn-back slider and replay read. */
+interface ReturnFile {
+  route_file: string
+  route_sha256: string
+  back_fast: NonNullable<EngineRoute['back_fast']>
+}
+
 function memberAsRoute(plan: PlanFile, m: PlanMember): EngineRoute {
   return {
     id: `${plan.id}:${m.member}`,
@@ -179,6 +185,8 @@ export function PlanProvider({ children }: { children: ReactNode }) {
   const [loaded, setLoaded] = useState<Loaded | null>(null)
   const [loadedContract, setLoadedContract] = useState<LoadedRoutes | null>(null)
   const [limits, setLimits] = useState<{ key: string; line: FeatureCollection | null } | null>(null)
+  // Fastest modeled way home for the lowest-hazard route (engine/tools/fastest_home.py, real DTM data).
+  const [fastReturn, setFastReturn] = useState<{ file: string; data: ReturnFile | null } | null>(null)
 
   const wantCrew = state.config.crewCount
   const wantLoad = nearestLoadBucket(perAstronautLoadKg(state.config))
@@ -269,6 +277,18 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     }
   }, [legacy, routePick, routeKey])
 
+  const returnFile = selectedTargetId ? `return/${selectedTargetId}_safest_2_15.json` : null
+  useEffect(() => {
+    if (!returnFile) return
+    let cancelled = false
+    void fetchData<ReturnFile>(returnFile).then((data) => {
+      if (!cancelled) setFastReturn({ file: returnFile, data: data?.back_fast ? data : null })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [returnFile])
+
   // The no-return line for the preset actually shown.
   const limitsFile = pick && !legacy
     ? `plan/limits_c${pick.preset.crew}_l${pick.preset.load_kg}_${pick.preset.rover ? 'rover' : 'foot'}.geojson`
@@ -299,6 +319,15 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     if (level === undefined || !feature) return { noReturnLine: null, noReturnBudgetL: level ?? null, noReturnStatus: 'none-in-reach' }
     return { noReturnLine: { type: 'FeatureCollection', features: [feature] }, noReturnBudgetL: level, noReturnStatus: 'shown' }
   }, [limits, limitsFile, o2BudgetL])
+
+  // Only on foot (the rover drives the route), only on the lowest-hazard route, and only when the return file
+  // was built from the exact route bytes this plan copies (same SHA-256), so indices and costs line up.
+  const withFastReturn = useCallback((plan: PlanFile, route: EngineRoute): EngineRoute => {
+    const r = fastReturn && fastReturn.file === returnFile ? fastReturn.data : null
+    if (!r || plan.rover || plan.mode !== 'safest' || plan.derived_from?.route_sha256 !== r.route_sha256) return route
+    if (r.back_fast.t_s.length !== route.coords.length) return route
+    return { ...route, back_fast: r.back_fast }
+  }, [fastReturn, returnFile])
 
   const store = useMemo<PlanStore>(() => {
     const current = loaded && loaded.key === key ? loaded.plans : null
@@ -351,7 +380,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       ...noReturn,
       preset: pick?.preset ?? null,
       legacy,
-      activeRoute: validDynamic ?? (activePlan && activeMembers[0] ? memberAsRoute(activePlan, activeMembers[0]) : null),
+      activeRoute: validDynamic ?? (activePlan && activeMembers[0] ? withFastReturn(activePlan, memberAsRoute(activePlan, activeMembers[0])) : null),
       routesStatus: status,
       o2BudgetL,
       setO2BudgetL,
@@ -360,7 +389,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       map,
       setMap,
     }
-  }, [goalTargets, goalUnmatched, selectedTargetId, mode, crewMode, loaded, key, loadedContract, routeKey, pick, noReturn, legacy, map, o2BudgetL, showCuriosityPath, dynamicRoute, state.config, chooseMode, applyDynamicRoute, clearDynamicRoute, layerVisibility, setLayerVisibility])
+  }, [goalTargets, goalUnmatched, selectedTargetId, mode, crewMode, loaded, key, loadedContract, routeKey, pick, noReturn, withFastReturn, legacy, map, o2BudgetL, showCuriosityPath, dynamicRoute, state.config, chooseMode, applyDynamicRoute, clearDynamicRoute, layerVisibility, setLayerVisibility])
 
   return <PlanContext.Provider value={store}>{children}</PlanContext.Provider>
 }

@@ -106,10 +106,23 @@ export function hasCompleteAlternateReturn(route) {
         !bf[key].every(v => Number.isFinite(v) && v >= 0)) return false;
   }
   const same = (a,b) => Array.isArray(a) && Array.isArray(b) && a[0]===b[0] && a[1]===b[1];
-  return Array.isArray(bf.path) && bf.path.length === n && bf.path.every((path,i) =>
-    Array.isArray(path) && path.length >= (i===0 ? 1 : 2) &&
+  const okPath = (path, start, minLen) => Array.isArray(path) && path.length >= minLen &&
     path.every(p => Array.isArray(p) && p.length===2 && p.every(Number.isFinite)) &&
-    same(path[0],route.coords[i]) && same(path.at(-1),route.coords[0]));
+    same(path[0],route.coords[start]) && same(path.at(-1),route.coords[0]);
+  // Keyed form (engine/tools/fastest_home.py): from point i walk the route back to key path_from[k] <= i,
+  // then path[k] home. Keys ascend from 0; every key path is full legal geometry ending at the habitat.
+  if (Array.isArray(bf.path_from)) {
+    const from = bf.path_from;
+    return from.length > 0 && from[0] === 0 && Array.isArray(bf.path) && bf.path.length === from.length &&
+      from.every((k,j) => Number.isInteger(k) && k >= 0 && k < n && (j === 0 || k > from[j-1])) &&
+      bf.path.every((path,j) => okPath(path, from[j], from[j] === 0 ? 1 : 2)) &&
+      // Costs must describe that geometry: between keys, the extra cost over the key is the route walked back.
+      bf.t_s.every((_, i) => {
+        let k = 0; for (let j = 0; j < from.length && from[j] <= i; j++) k = from[j];
+        return ["t_s", "o2_l"].every(key => Math.abs((bf[key][i] - bf[key][k]) - (route.back[key][i] - route.back[key][k])) <= 1e-3);
+      });
+  }
+  return Array.isArray(bf.path) && bf.path.length === n && bf.path.every((path,i) => okPath(path, i, i===0 ? 1 : 2));
 }
 
 /** Copy complete outbound and directed same-path return arrays; never infer missing return costs. */
@@ -125,7 +138,11 @@ function arrays(route) {
     BO: [...route.back.o2_l],
     BFT: hasFast ? [...bf.t_s] : null,
     BFO: hasFast ? [...bf.o2_l] : null,
-    BFP: hasFast ? bf.path.map(path => path.map(p => [...p])) : null,
+    // Fastest-way-home path from vertex i of these arrays (lazy: keyed paths are not expanded per vertex).
+    BFP: hasFast ? { route, ins: null, at(i) {
+      if (this.ins && i === this.ins.at) return [this.ins.pt, ...(fastPathFrom(route, i - 1) ?? [])];
+      return fastPathFrom(route, this.ins && i > this.ins.at ? i - 1 : i) ?? [];
+    } } : null,
     fast: hasFast,
   };
 }
@@ -141,7 +158,7 @@ function insertAtTime(a, t) {
   for (const k of ["T", "U", "BT", "BO", "BFT", "BFO"]) if (a[k]) a[k].splice(i + 1, 0, lerp(a[k][i], a[k][i + 1], f));
   const pt = lerpPt(a.P[i], a.P[i + 1], f);
   a.P.splice(i + 1, 0, pt);
-  if (a.BFP) a.BFP.splice(i + 1, 0, [pt, ...a.BFP[i].slice(1)]);
+  if (a.BFP) a.BFP.ins = { at: i + 1, pt };
   return i + 1;
 }
 
@@ -273,7 +290,8 @@ export function buildTimeline(route, opts = {}) {
   if (fastHome) {
     // Walk the fastest way home; time and O2 spread along it by distance.
     // BFP[i] starts at vertex i; a turn point past vertex i walks back to it first.
-    const path = turnFrac > 0 ? [turnPt, ...a.BFP[turnIdx]] : [turnPt, ...a.BFP[turnIdx].slice(1)];
+    const from = a.BFP.at(turnIdx);
+    const path = turnFrac > 0 ? [turnPt, ...from] : [turnPt, ...from.slice(1)];
     const cd = [0]; for (let i = 1; i < path.length; i++) cd.push(cd[i - 1] + distanceM(path[i - 1], path[i]));
     const L = cd[cd.length - 1] || 1;
     for (let i = 1; i < path.length; i++) push(t0 + backT * (cd[i] / L), o0 + backO2 * (cd[i] / L), path[i], "back");

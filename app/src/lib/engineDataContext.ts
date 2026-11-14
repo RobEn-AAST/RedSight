@@ -256,6 +256,8 @@ export interface PlanFile {
   together: PlanMember[]
   /** Two astronauts to two targets, staying in reach. Crew of 2 only. */
   split: PlanSplit | null
+  /** The exact engine route bytes this plan was built from (build-plans.mjs). */
+  derived_from?: { route_file: string; route_sha256: string }
 }
 
 export interface PlanIndexEntry {

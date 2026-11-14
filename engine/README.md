@@ -216,6 +216,16 @@ disconnected Observed coordinate.
   and the actual capacity read from `constants.json`. PNR is the last passing sample in the same-path
   cumulative arrays.
 
+### Fastest way home, back_fast (2026-11-14, restored)
+
+`python3 -m engine.tools.fastest_home` writes `app/public/data/return/{stop}_safest_2_15.json` for the five
+lowest-hazard routes (route files untouched; each output names its route SHA-256). One directed time Dijkstra to the
+habitat on the full native DTM window (route rules). Keys every 25 m; from point i: walk the route back to the key at
+or before i, then the fastest native pixel path home. Geometry is lossless (only interior points of straight
+8-direction pixel runs are dropped) and the costs are summed edge by edge on exactly that geometry, which fixes the
+2026-11-14 removal reason (simplified polylines). The app checks the endpoints, keys and per-point cost consistency
+before using it; `check:data` rejects stale or inconsistent files.
+
 ### No-return line (2026-11-14)
 
 `python3 -m engine.tools.no_return_line` (about 25 s, about 4.4 GB peak RSS) builds the full native DTM window
