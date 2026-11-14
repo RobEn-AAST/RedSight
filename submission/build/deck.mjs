@@ -143,7 +143,7 @@ const slides = [
       ['Oxygen + time. ', 'O₂ left, minutes to walk home, O₂ spare at the door.'],
       ['Earth delay. ', 'Today’s signal time to Earth, so the crew knows help is not instant.'],
       ['Radar + emergency. ', 'Where home is from where you face; one press to raise an alarm.']], 1.1, 3.25),
-    { t: 'text', x: 5.95, y: 4.45, w: 3.55, h: 0.6, text: 'mars.roben.club/demo\ngithub.com/RobEn-AAST/RedSight', size: 12, bold: true, color: INK },
+    { t: 'text', x: 5.95, y: 4.45, w: 3.55, h: 0.6, text: 'mars.roben.club/demo', size: 12, bold: true, color: INK },
     { t: 'text', x: 0.5, y: 4.45, w: 5.2, h: 0.6, text: 'Team RobEn, AASTMT: Ali Omar · Marwan Mesbah · Yassin Abdallah · Youssef Nader · Mohamed Ayman · Jana Adham', size: 11, color: MUTED },
     note('The HUD is a prototype drawn over NASA photo PIA26363 (Gediz Vallis), not over the stop itself; the numbers are the walk’s modeled values. Messages to Earth are simulated.'), ...footer(7)],
 ]
