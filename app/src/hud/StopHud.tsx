@@ -155,8 +155,8 @@ export function StopHud({
   // Guided demo tour (hackathon showcase): scripted camera moves + captions, ~48 s. The user can stop it any time.
   const [tour, setTour] = useState(false)
   // Which photo: the full-sphere stand-in (demo default, user's choice) or the real photo taken at this stop.
-  const [photo, setPhoto] = useState<'standin' | 'stop'>('standin')
-  const standin = photo === 'standin'
+  // Demo uses the full-sphere NASA stand-in photo only (Marwan, 2026-11-14: real stop photos removed from the HUD).
+  const standin = true
   const active: StopPanorama = standin ? STANDIN_PANORAMA : pano
   // Terrain grid around the stop (Derived, Trek 2.5 m DEM) so the AR route sits on the real ground. Only with the
   // stop's own photo: on the stand-in photo the route is drawn on flat ground (its landforms are elsewhere).
@@ -453,10 +453,6 @@ export function StopHud({
           </div>
         )}
         <div className="hud-opts">
-          <span className="hud-seg" role="group" aria-label="Photo">
-            <button aria-pressed={standin} onClick={() => setPhoto('standin')}>Full 360 stand-in</button>
-            <button aria-pressed={!standin} onClick={() => setPhoto('stop')}>Real stop photo</button>
-          </span>
           <span className="hud-seg" role="group" aria-label="Route drawn on the ground">
             <button aria-pressed={leg === 'home'} onClick={() => setLeg('home')}>Way home</button>
             <button aria-pressed={leg === 'to'} onClick={() => setLeg('to')}>Walked</button>
