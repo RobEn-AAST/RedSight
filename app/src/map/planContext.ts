@@ -56,8 +56,15 @@ export interface PlanStore {
   activePlan: PlanFile | null
   /** Who walks where under the current crew mode. */
   activeMembers: PlanMember[]
-  /** The modeled no-return line for the current crew/load/rover setup. */
+  /** The modeled no-return line for the current crew/load/rover setup at the slider's budget. */
   noReturnLine: FeatureCollection | null
+  /** Budget level (L) of the line shown: the file's contour level at or just below the slider's budget. */
+  noReturnBudgetL: number | null
+  /**
+   * shown: a line is drawn. none-in-reach: at this budget all walkable ground in the terrain data can still get
+   * home, so there is no line. unavailable: no limits file for this setup (rover: no sourced traversal model).
+   */
+  noReturnStatus: 'loading' | 'shown' | 'none-in-reach' | 'unavailable'
   preset: PlanPreset | null
   /** true when plans come from the older single-route files (no legs, no split). */
   legacy: boolean

@@ -216,6 +216,17 @@ disconnected Observed coordinate.
   and the actual capacity read from `constants.json`. PNR is the last passing sample in the same-path
   cumulative arrays.
 
+### No-return line (2026-11-14)
+
+`python3 -m engine.tools.no_return_line` (about 25 s, about 4.4 GB peak RSS) builds the full native DTM window
+graph on the same rules as the routes, runs two directed O₂ Dijkstra fields from the habitat (out, and home with
+edges swapped), and writes `app/public/data/plan/limits_c{1,2}_l15_foot.geojson`: contours of
+`f·(out + m·back)` at every 10 L budget level up to the usable budget. Lowest-O₂ paths are a best case; a route's own
+`pnr_index` stays authoritative for that route. Check against the shipped routes (field vs route endpoint O₂):
+within 0.6 L out and 1.1 L back on all ten routes, field never above the route. At the full 288.75 L budget the
+highest need on any reachable cell is 284.7 L, so no line exists there in the terrain data. `--stride 2` is not
+usable (block-max slope disconnects the habitat from most stops).
+
 ### Route endpoint handoff to the app owner
 
 Keep the `stops.json` marker at its Observed coordinates. In each route payload, `coords[-1]` is the

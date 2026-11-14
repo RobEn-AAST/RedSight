@@ -125,6 +125,13 @@ In a split with a rover, the pair drives together: B's drive leg is the same as 
 One `LineString` feature, `kind: "no_return_line"`: the edge of the zone where the crew can still make it
 home (the red-zone boundary in demo-focus-plan §9). Scenario-badged.
 
+**Update 2026-11-14 (shipped, real data):** written by `python3 -m engine.tools.no_return_line` from the native
+HiRISE DTM walking graph (same 15° rules and Pandolf O₂ model as the routes): one `MultiLineString` feature per
+budget level in `budget_levels_l` (every 10 L up to the usable budget), `properties.budget_l` naming its level.
+The app draws the level at or below the turn-back slider's budget. At the full 288.75 L budget every walkable
+cell in the terrain data can still get home, so no line is drawn there. Foot only: there is no sourced rover
+traversal model for open ground.
+
 ## 5. Not done / owners
 
 | Item | Owner | Note |

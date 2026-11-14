@@ -284,6 +284,22 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     }
   }, [limitsFile])
 
+  // The file holds one real contour per budget level (engine/tools/no_return_line.py). Show the level at
+  // or just below the slider's budget, so the drawn line never sits further out than the budget allows.
+  const noReturn = useMemo((): Pick<PlanStore, 'noReturnLine' | 'noReturnBudgetL' | 'noReturnStatus'> => {
+    const file = limits && limits.key === limitsFile ? limits.line : null
+    const levels = (file as { budget_levels_l?: unknown } | null)?.budget_levels_l
+    if (!file || !Array.isArray(levels) || levels.length === 0) {
+      return { noReturnLine: null, noReturnBudgetL: null, noReturnStatus: !limitsFile || limits?.key === limitsFile ? 'unavailable' : 'loading' }
+    }
+    const sorted = levels.filter((v): v is number => typeof v === 'number' && Number.isFinite(v)).sort((a, b) => a - b)
+    const budget = o2BudgetL ?? sorted[sorted.length - 1]
+    const level = [...sorted].reverse().find((v) => v <= budget + 1e-9)
+    const feature = level === undefined ? undefined : file.features.find((f) => f.properties?.budget_l === level)
+    if (level === undefined || !feature) return { noReturnLine: null, noReturnBudgetL: level ?? null, noReturnStatus: 'none-in-reach' }
+    return { noReturnLine: { type: 'FeatureCollection', features: [feature] }, noReturnBudgetL: level, noReturnStatus: 'shown' }
+  }, [limits, limitsFile, o2BudgetL])
+
   const store = useMemo<PlanStore>(() => {
     const current = loaded && loaded.key === key ? loaded.plans : null
     const plans = current ?? {}
@@ -332,7 +348,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       status,
       activePlan,
       activeMembers,
-      noReturnLine: limits && limits.key === limitsFile ? limits.line : null,
+      ...noReturn,
       preset: pick?.preset ?? null,
       legacy,
       activeRoute: validDynamic ?? (activePlan && activeMembers[0] ? memberAsRoute(activePlan, activeMembers[0]) : null),
@@ -344,7 +360,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       map,
       setMap,
     }
-  }, [goalTargets, goalUnmatched, selectedTargetId, mode, crewMode, loaded, key, loadedContract, routeKey, pick, limits, limitsFile, legacy, map, o2BudgetL, showCuriosityPath, dynamicRoute, state.config, chooseMode, applyDynamicRoute, clearDynamicRoute, layerVisibility, setLayerVisibility])
+  }, [goalTargets, goalUnmatched, selectedTargetId, mode, crewMode, loaded, key, loadedContract, routeKey, pick, noReturn, legacy, map, o2BudgetL, showCuriosityPath, dynamicRoute, state.config, chooseMode, applyDynamicRoute, clearDynamicRoute, layerVisibility, setLayerVisibility])
 
   return <PlanContext.Provider value={store}>{children}</PlanContext.Provider>
 }

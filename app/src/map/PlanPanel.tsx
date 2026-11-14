@@ -403,7 +403,7 @@ function MemberTimeline({
 
 /** The no-return line and Jana's turn-back slider: one place for "how far can we go on this O₂". */
 function OxygenFold({ plan, members }: { plan: PlanFile; members: PlanMember[] }) {
-  const { map, noReturnLine } = usePlan()
+  const { map, noReturnLine, noReturnBudgetL, noReturnStatus } = usePlan()
   const s = summarizeCrew(members, plan.budget_l)
   return (
     <Fold
@@ -422,7 +422,8 @@ function OxygenFold({ plan, members }: { plan: PlanFile; members: PlanMember[] }
         <span>
           {noReturnLine ? (
             <>
-              The red dashed line is where walking out any further leaves too little O₂ to get home.
+              The red dashed line is where walking out any further leaves too little O₂ to get home, even on the
+              lowest-O₂ way back ({noReturnBudgetL} L budget; modeled on the HiRISE terrain).
               {s.reachesAll
                 ? ' This route stays inside it.'
                 : ' This route reaches it before the target, so the plan turns back there.'}{' '}
@@ -432,6 +433,10 @@ function OxygenFold({ plan, members }: { plan: PlanFile; members: PlanMember[] }
           ) : (
             'Partway out, too little modeled O₂ is left to get home, so the plan turns back there. '
           )}
+          {noReturnStatus === 'none-in-reach' &&
+            'At this budget every walkable spot in the terrain data can still get home, so there is no no-return line. '}
+          {noReturnStatus === 'unavailable' && plan.rover &&
+            'No no-return line by rover: there is no sourced rover traversal model for open ground. '}
           Drag the budget below to see where you would turn with less O₂.
           {map && noReturnLine && (
             <button
@@ -451,7 +456,11 @@ function OxygenFold({ plan, members }: { plan: PlanFile; members: PlanMember[] }
 
 function showWholeLine(map: MapLibreMap, line: FeatureCollection) {
   const pts = line.features.flatMap((f) =>
-    f.geometry.type === 'LineString' ? (f.geometry.coordinates as [number, number][]) : [],
+    f.geometry.type === 'LineString'
+      ? (f.geometry.coordinates as [number, number][])
+      : f.geometry.type === 'MultiLineString'
+        ? (f.geometry.coordinates as [number, number][][]).flat()
+        : [],
   )
   if (pts.length === 0) return
   const lons = pts.map((p) => p[0])

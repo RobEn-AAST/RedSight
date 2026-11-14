@@ -235,6 +235,31 @@ if (planIndex) {
   }
 }
 
+// No-return lines (python3 -m engine.tools.no_return_line): real contours per budget level. The top level must
+// equal today's usable budget from constants.json, or the file is stale.
+for (const name of existsSync(join(DATA, "plan")) ? readdirSync(join(DATA, "plan")) : []) {
+  if (!/^limits_.*\.geojson$/.test(name)) continue;
+  const rel = `plan/${name}`, f = load(rel);
+  if (!f) continue;
+  checkBadge(rel, "file", f.badge);
+  if (typeof f.inputs?.native_dem?.sha256 !== "string" || !f.method || !f.generator) err(rel, "inputs.native_dem.sha256, method and generator required (provenance)");
+  const levels = f.budget_levels_l;
+  if (!Array.isArray(levels) || levels.length === 0 || !levels.every(isNum) || !nonDecreasing(levels)) { err(rel, "budget_levels_l must be ascending numbers"); continue; }
+  const c = constants ?? {};
+  const v = (k) => c[k]?.value ?? c[k];
+  if ([v("o2_usable_primary_l"), v("reserve_fraction"), v("reserve_minutes"), v("walkback_o2_lpm")].every(isNum)) {
+    const cap = v("o2_usable_primary_l");
+    const budget = cap - Math.max(v("reserve_fraction") * cap, v("reserve_minutes") * v("walkback_o2_lpm"));
+    if (Math.abs(levels.at(-1) - budget) > 0.01) err(rel, `stale: top budget level ${levels.at(-1)} L ≠ usable budget ${budget.toFixed(2)} L from constants.json (re-run python3 -m engine.tools.no_return_line)`);
+  }
+  for (const feat of f.features ?? []) {
+    const p = feat?.properties ?? {};
+    if (p.kind !== "no_return_line" || !levels.includes(p.budget_l)) err(rel, `feature needs kind no_return_line and a budget_l from budget_levels_l`);
+    checkBadge(rel, `feature ${p.budget_l}`, p.badge);
+    if (feat?.geometry?.type !== "MultiLineString") err(rel, `feature ${p.budget_l}: MultiLineString geometry required`);
+  }
+}
+
 // Engine outputs must be byte-identical to what the engine wrote (engine-build-manifest.json output_sha256);
 // a hand-edited or substituted route/hazard/constants file fails here.
 const manifest = load("engine-build-manifest.json", { optional: true });
