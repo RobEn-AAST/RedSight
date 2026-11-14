@@ -1,6 +1,6 @@
 // Mission Replay — MapLibre layer + player panel. Owner: Marwan.
 // Usage: const r = createReplay(map, { route }); r.play();
-import { buildTimeline, routeGoalInfo, sampleAt, trailAt, formatClock, formatDuration } from "./replay-core.js";
+import { buildTimeline, distanceM, routeGoalInfo, sampleAt, trailAt, formatClock, formatDuration } from "./replay-core.js";
 import { createVoice, calloutFor } from "./voice.js";
 
 const SRC = { ends: "replay-ends", observed: "replay-observed-stop", trail: "replay-trail", turn: "replay-turn", crew: "replay-crew" };
@@ -121,11 +121,15 @@ export function createReplay(map, opts) {
     ui.dist.textContent = `${(s.distM / 1000).toFixed(2)} km`;
     const fastNow = tl.switchT != null && t >= tl.switchT && s.phase !== "home";
     const approachPhase = `At approach point${offset ? ` · ${offset} from Observed stop` : ""}`;
+    // Rover plans (park_index set): within the drive distance of the habitat the crew rides, beyond it they walk.
+    const parkD = driveDistanceM(route);
+    const lastD = tl.frames[tl.frames.length - 1].d;
+    const riding = parkD > 0 && (s.phase === "back" ? lastD - s.distM : s.distM) < parkD;
     ui.phase.textContent = {
-      out: "Walking out",
+      out: riding ? "Driving out" : "Walking out",
       stop: goal.approachOnly ? approachPhase : "At the stop",
       approach: approachPhase,
-      back: "Walking home",
+      back: riding ? "Driving home" : "Walking home",
       home: "At the habitat",
     }[s.phase]
       + (fastNow ? (s.phase === "back" ? " (fastest way)" : " · return: fastest way") : "");
@@ -313,5 +317,14 @@ export function createReplay(map, opts) {
 }
 
 const fc = (features) => ({ type: "FeatureCollection", features });
+
+/** Distance from the habitat to the rover park point (0 on foot), measured like the replay frames. */
+function driveDistanceM(route) {
+  const k = route?.park_index, P = route?.coords;
+  if (!Number.isInteger(k) || !Array.isArray(P)) return 0;
+  let d = 0;
+  for (let i = 1; i <= k && i < P.length; i++) d += distanceM(P[i - 1], P[i]);
+  return d;
+}
 const lineF = (coordinates, properties) => ({ type: "Feature", properties, geometry: { type: "LineString", coordinates } });
 const pointF = (pt, properties) => ({ type: "Feature", properties, geometry: { type: "Point", coordinates: pt } });

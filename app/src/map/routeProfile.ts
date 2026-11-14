@@ -375,12 +375,14 @@ export function buildWhyRoute(
   } else {
     const timePhrase =
       deltaTimeS < -1
-        ? `${formatDur(-deltaTimeS)} faster outbound`
-        : `${formatDur(deltaTimeS)} vs ${otherLabel}`
+        ? `${formatDur(-deltaTimeS)} faster outbound than ${otherLabel}`
+        : deltaTimeS > 1
+          ? `${formatDur(deltaTimeS)} slower outbound than ${otherLabel}`
+          : `About the same outbound time as ${otherLabel}`
     if (deltaDistM < -15) {
-      headline = `${timePhrase} and ${formatDist(-deltaDistM)} shorter than ${otherLabel}.`
+      headline = `${timePhrase}, ${formatDist(-deltaDistM)} shorter.`
     } else {
-      headline = `${timePhrase} than ${otherLabel} (minimizes travel time under the slope limit).`
+      headline = `${timePhrase} (minimizes travel time under the slope limit).`
     }
   }
 

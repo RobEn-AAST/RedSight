@@ -416,7 +416,7 @@ export function PlanPanel({ onOpenSources }: { onOpenSources: () => void }) {
           )}
           {config.roverAvailable && !preset?.rover && (
             <p className="text-xs leading-relaxed text-scenario">
-              Rover plans are not modeled yet (no sourced drive model for this terrain). This plan is on foot.
+              No rover plan for this stop (the route is too short to drive). This plan is on foot.
             </p>
           )}
         </Section>

@@ -120,6 +120,8 @@ export interface EngineRoute {
   back_fast?: { t_s: number[]; o2_l: number[]; path?: [number, number][][]; path_from?: number[]; via?: string }
   /** Last point where cum.o2_l + back.o2_l ≤ budget_l. */
   pnr_index: number
+  /** Rover plans only: where the rover parks (drive before it, walk after). */
+  park_index?: number
 }
 
 export interface EngineHazards {

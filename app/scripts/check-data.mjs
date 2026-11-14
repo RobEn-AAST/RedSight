@@ -186,6 +186,14 @@ if (targets) for (const f of targets.features ?? []) {
   targetIds.add(p.id);
   checkBadge("targets.geojson", `target ${p.id}`, p.badge);
 }
+// Rover model behind plan/*_rover.json: every number needs a value and a source (AGENTS rule 1).
+const roverModel = load("rover_model.json", { optional: true });
+if (roverModel) for (const k of ["drive_speed_mps", "riding_metabolic_kj_per_h", "park_walk_m"]) {
+  const v = roverModel[k];
+  if (!isNum(v?.value) || !(v.value > 0)) err("rover_model.json", `${k}.value must be a positive number`);
+  if (!v?.source || !v?.source_url) err("rover_model.json", `${k} needs source and source_url (AGENTS rule 1)`);
+  checkBadge("rover_model.json", k, v?.badge);
+}
 const planIndex = load("plan/index.json", { optional: true });
 if (planIndex) {
   if (!Array.isArray(planIndex.plans) || planIndex.plans.length === 0) err("plan/index.json", "plans[] empty");
@@ -206,6 +214,13 @@ if (planIndex) {
       checkRoute(where, { ...m, seg, stop: m?.targets?.at(-1), mode: plan.mode, crew: plan.crew, load_kg: plan.load_kg, badge: plan.badge, budget_l: plan.budget_l }, {});
       if (!Array.isArray(m?.legs) || m.legs.length === 0) err(where, "legs[] empty");
       if (plan.rover === false && m?.park_index != null) err(where, "park_index must be null on foot");
+      if (plan.rover === true) {
+        const n = m?.coords?.length ?? 0;
+        if (!Number.isInteger(m?.park_index) || m.park_index <= 0 || m.park_index >= n - 1) err(where, "rover plan needs park_index inside the route");
+        const kinds = (m?.legs ?? []).map((l) => l.kind).join(",");
+        if (kinds !== "drive,walk") err(where, `rover legs must be drive then walk (got ${kinds})`);
+        if (!roverModel) err(where, "rover plan without rover_model.json");
+      }
     }
   }
 }

@@ -73,8 +73,10 @@ a black page. The setup questions were the one part that worked. The request:
 
 New files, next to the §15 ones in `app/public/data/`. *(Update 2026-11-14: the mocks are gone. `node
 app/scripts/build-plans.mjs` writes `targets.geojson` and the on-foot crew-1/crew-2 plans from the real
-route files; rover plans, split plans and `limits_*.geojson` are not shipped because no primary-sourced
-model exists for them, and the app hides those options. The former generator `_mock/make-plan-mock.mjs`
+route files; split plans and `limits_*.geojson` are not shipped because no primary-sourced
+model exists for them, and the app hides those options. Rover plans are shipped again since 2026-11-14 from
+the same routes plus `app/public/data/rover_model.json` (Apollo LRV speed made good, NTRS 20250011301; LRV
+riding metabolic rate, NASA TN D-7883; park point a team choice), Scenario-badged. The former generator `_mock/make-plan-mock.mjs`
 is in git history.)* **The app still works with only the old route files**: it shows them
 as walk-only, together-only plans.
 

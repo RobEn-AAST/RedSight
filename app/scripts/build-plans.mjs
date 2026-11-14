@@ -13,10 +13,13 @@
 // 1.0 (engine/route/pnr.py), so one walker on the same route has the same per-person time, O2 and
 // turn-back point as each member of the pair. The plan says this in `derived_from.note`.
 //
-// Not written, because no primary-sourced model exists for them (they were mock until 2026-11-14 and are
-// deleted from disk here): rover plans (drive speed on this terrain, seated O2 rate and park point), split
-// plans (the separation limit), and the no-return limit lines (they need the engine's full return field,
-// which is not exported). The app hides those options when their files are absent.
+// Rover plans: plan/{stop}_{mode}_c{crew}_l{load}_rover.json, from the same route plus rover_model.json
+// (sourced drive speed and riding metabolic rate, team-choice park distance). The crew drives the route
+// from the habitat to the park point, walks the rest, walks back to the rover and drives home.
+//
+// Not written, because no primary-sourced model exists for them: split plans (the separation limit) and
+// the no-return limit lines (they need the engine's full return field, which is not exported). The app
+// hides those options when their files are absent.
 //
 // Run from anywhere:  node app/scripts/build-plans.mjs
 import { createHash } from "node:crypto";
@@ -102,6 +105,88 @@ write("targets.geojson", {
   features: targets,
 });
 
+// ---- Rover model (rover_model.json, every number sourced) ----
+const constants = read("constants.json");
+const C = (k) => {
+  const v = constants[k]?.value;
+  if (typeof v !== "number" || !Number.isFinite(v)) throw new Error(`constants.json ${k} missing`);
+  return v;
+};
+const roverModel = read("rover_model.json");
+const RV = (k) => {
+  const v = roverModel[k]?.value;
+  if (typeof v !== "number" || !(v > 0) || !roverModel[k].source) throw new Error(`rover_model.json ${k} needs a positive value and a source`);
+  return v;
+};
+const DRIVE_MPS = RV("drive_speed_mps");
+const RIDE_W = (RV("riding_metabolic_kj_per_h") * 1000) / 3600;
+const RIDE_O2_L_PER_S = (RIDE_W * C("watts_to_o2_ml_per_min")) / 60_000; // suited measurement: no kappa
+const PARK_WALK_M = RV("park_walk_m");
+const ROVER_SLOPE_DEG = C("slope_limit_rover_deg");
+
+// Same turn-back rule as the engine (engine/route/pnr.py), every member factor 1.0.
+function pnrIndex(used, home) {
+  const capacity = C("o2_usable_primary_l");
+  const reserve = Math.max(C("reserve_fraction") * capacity, C("reserve_minutes") * C("walkback_o2_lpm"));
+  const budget = capacity - reserve;
+  const margin = C("return_cost_margin");
+  let pnr = -1;
+  for (let i = 0; i < used.length; i++) {
+    if (used[i] + margin * home[i] <= budget) pnr = i;
+    else break;
+  }
+  return pnr;
+}
+
+/** Rover member: drive 0 → park, walk park → stop; or null when the route is too short to drive. */
+function roverMember(r, base) {
+  const n = r.coords.length;
+  const segD = r.seg.map((s) => s.cost_terms.distance_m);
+  const along = [0];
+  for (const d of segD) along.push(along.at(-1) + d);
+  const total = along[n - 1];
+  if (total <= PARK_WALK_M) return null;
+  let park = 0;
+  for (let i = 0; i < n; i++) if (total - along[i] >= PARK_WALK_M) park = i;
+  if (park === 0) return null;
+  for (let i = 0; i < park; i++) {
+    if (Math.abs(r.seg[i].slope_deg) > ROVER_SLOPE_DEG) throw new Error(`${r.id}: drive segment ${i} exceeds slope_limit_rover_deg`);
+  }
+  const driveT = (i) => along[i] / DRIVE_MPS;
+  const cumT = [], cumO = [], backT = [], backO = [];
+  for (let i = 0; i < n; i++) {
+    if (i <= park) {
+      cumT.push(driveT(i));
+      cumO.push(driveT(i) * RIDE_O2_L_PER_S);
+      backT.push(driveT(i));
+      backO.push(driveT(i) * RIDE_O2_L_PER_S);
+    } else {
+      cumT.push(cumT[park] + r.cum.t_s[i] - r.cum.t_s[park]);
+      cumO.push(cumO[park] + r.cum.o2_l[i] - r.cum.o2_l[park]);
+      backT.push(backT[park] + r.back.t_s[i] - r.back.t_s[park]);
+      backO.push(backO[park] + r.back.o2_l[i] - r.back.o2_l[park]);
+    }
+  }
+  const seg = base.seg.map((s, i) => {
+    if (i >= park) return s;
+    const t = segD[i] / DRIVE_MPS;
+    return { ...s, t_s: t, o2_l: t * RIDE_O2_L_PER_S, cost_terms: { ...s.cost_terms, power_w: RIDE_W } };
+  });
+  const walkD = total - along[park];
+  return {
+    ...base,
+    seg,
+    legs: [
+      { kind: "drive", from: 0, to: park, t_s: cumT[park], o2_l: cumO[park], distance_m: along[park] },
+      { kind: "walk", from: park, to: n - 1, t_s: cumT[n - 1] - cumT[park], o2_l: cumO[n - 1] - cumO[park], distance_m: walkD },
+    ],
+    cum: { t_s: cumT, o2_l: cumO },
+    back: { t_s: backT, o2_l: backO },
+    pnr_index: pnrIndex(cumO, backO),
+    park_index: park,
+  };
+}
+
 // ---- Plans ----
 const written = [];
 for (const { entry: e, text, r } of routes) {
@@ -148,6 +233,32 @@ for (const { entry: e, text, r } of routes) {
       split: null,
     });
     written.push(id);
+
+    const rover = roverMember(r, member);
+    if (!rover) continue;
+    const rid = `${r.stop}_${r.mode}_c${crew}_l${load}_rover`;
+    write(`plan/${rid}.json`, {
+      _contract: CONTRACT,
+      id: rid,
+      target: r.stop,
+      mode: r.mode,
+      crew,
+      load_kg: load,
+      rover: true,
+      badge: "Scenario",
+      budget_l: r.budget_l,
+      derived_from: {
+        badge: "Derived",
+        route_file: e.file,
+        route_sha256: createHash("sha256").update(text).digest("hex"),
+        constants_hash: r.constants_hash,
+        rover_model: "rover_model.json",
+        note: `Rover plan on the same engine route: drive ${Math.round(rover.legs[0].distance_m)} m at ${DRIVE_MPS} m/s (Apollo LRV speed made good, NTRS 20250011301) breathing suit O2 at the Apollo LRV-operations metabolic rate (NASA TN D-7883), park ${PARK_WALK_M} m of route before the stop (team choice), walk the rest with the engine's own walking costs. Lunar rover data applied to Mars: Scenario.`,
+      },
+      together: [rover],
+      split: null,
+    });
+    written.push(rid);
   }
 }
 

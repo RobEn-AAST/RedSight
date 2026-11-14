@@ -1,0 +1,30 @@
+{
+ "_contract": "docs/app-redesign.md §4 (rover legs); read by app/scripts/build-plans.mjs",
+ "badge": "Scenario",
+ "vehicle": "Unpressurized rover; the crew rides in suits and breathes suit O2 while driving (Apollo Lunar Roving Vehicle analog).",
+ "drive_speed_mps": {
+  "value": 1.7,
+  "unit": "m/s",
+  "badge": "Scenario",
+  "source": "Apollo LRV speed made good, as traversed: mean 2.0 m/s (Apollo 15), 1.7 m/s (Apollo 16); the lower one is used (NTRS 20250011301, Table 1)",
+  "source_url": "https://ntrs.nasa.gov/citations/20250011301",
+  "note": "Measured on the Moon; applying it to Gale crater terrain is a Scenario."
+ },
+ "riding_metabolic_kj_per_h": {
+  "value": 518,
+  "unit": "kJ/h",
+  "badge": "Scenario",
+  "source": "Apollo 15-17 mean metabolic rate for 'Lunar roving vehicle operations', crew suited (NASA TN D-7883, Waligora et al. 1975, Table I)",
+  "source_url": "https://ntrs.nasa.gov/citations/19750010199",
+  "note": "Already a suited measurement, so the suit factor kappa is not applied again. Converted to O2 with constants.json watts_to_o2_ml_per_min."
+ },
+ "park_walk_m": {
+  "value": 100,
+  "unit": "m",
+  "badge": "Scenario",
+  "source": "Team choice: the rover parks this far (along the route) before the sample stop and the crew walks the last stretch, as Apollo crews parked the LRV at a station and worked on foot",
+  "source_url": "https://github.com/RobEn-AAST/RedSight/blob/main/docs/app-redesign.md",
+  "note": "Routes shorter than this get no rover plan."
+ },
+ "drive_path": "The rover drives the engine's own walking route (every segment within slope_limit_foot_deg, below constants.json slope_limit_rover_deg); no separate rover route is computed."
+}

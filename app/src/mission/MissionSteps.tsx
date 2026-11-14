@@ -197,8 +197,8 @@ export function LoadStep() {
 
 /* -- Step 3: rover ---------------------------------------------------------------- */
 
-/** No plan/*_rover.json ships: drive speed, seated O₂ rate and park point have no primary source yet. */
-const ROVER_PLANS_MODELED = false
+/** plan/*_rover.json ships (build-plans.mjs + rover_model.json: Apollo LRV speed and riding O₂ rate). */
+const ROVER_PLANS_MODELED = true
 
 export function RoverStep() {
   const { state, patchConfig } = useMission()
@@ -213,7 +213,7 @@ export function RoverStep() {
             [
               true,
               'Rover available',
-              'Not modeled yet: no sourced rover drive model for this terrain, so every plan is on foot.',
+              'Drive most of the way, park about 100 m before the stop, walk the rest. Modeled on Apollo rover data (Scenario).',
               Rocket,
             ],
             [

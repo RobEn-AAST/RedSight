@@ -41,6 +41,7 @@ function memberAsRoute(plan: PlanFile, m: PlanMember): EngineRoute {
     back: m.back,
     ...(m.back_fast ? { back_fast: m.back_fast } : {}),
     pnr_index: m.pnr_index,
+    ...(m.park_index != null ? { park_index: m.park_index } : {}),
   }
 }
 
