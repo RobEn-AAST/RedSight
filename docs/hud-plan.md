@@ -121,3 +121,42 @@ judges' table and as a screen recording for the video. Dragging takes over the c
   diamond and a HOME label.
 - **Limits:** the DEM is 2.5 m, so small rocks don't occlude; photo heading ±3° and horizon by eye mean
   the line can sit a few metres off on the photo.
+
+## Full 360 stand-in photo, AR navigation track, clearer HUD (2026-11-14, Marwan)
+
+User request (2026-11-14): "since it's a demo, replace the 360 with an actual full high-quality 360 photo of wherever
+on Mars; make the street track better; make the UI better and easier to understand."
+
+- **Photo (Observed, stand-in):** NASA **PIA26363** "Curiosity Takes a 360-Degree View of Gediz Vallis Channel"
+  ([Photojournal](https://science.nasa.gov/photojournal/curiosity-takes-a-360-degree-view-of-gediz-vallis-channel/),
+  caption read 2026-11-14 via images-api.nasa.gov): Curiosity Mastcam, 336 images, sol 4220 (2024-06-19), Gediz Vallis
+  channel on Mount Sharp, Gale crater; credit NASA/JPL-Caltech/MSSS. Licence: NASA media "generally are not subject to
+  copyright in the United States" ([NASA Images and Media Usage Guidelines](https://www.nasa.gov/nasa-brand-center/images-and-media/),
+  read 2026-11-14). Original 29240 × 8311 JPEG, 34,343,102 bytes, from
+  `https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia26/pia26363/PIA26363.jpg`, kept in
+  `data/raw/pano/` (git-ignored).
+- **Why a baked sphere:** no NASA still covers the sky: Mastcam mosaics stop a few degrees above the horizon (NASA's
+  own 8K 360 video of this mosaic, `JPL-20240717-MSLf-0001`, marks it "sky not imaged" / "rover not imaged" and has
+  captions burned in, so it was not used). Third-party full-sphere stitches (e.g. 360cities) were not used: licence
+  unclear. `app/scripts/build-pano-sphere.py` places the mosaic at its true angles on an 8192 × 4096 equirectangular
+  sphere (horizon row 1950 by eye on the far crater rim → +24° to −78°) and colour-fills the sky (photographed sky
+  colour per column, slowly darkening to the zenith) and the rover deck / nadir (smooth fill of nearby ground colours
+  + fine grain). Output `app/public/pano/PIA26363-sphere.jpg`, 4.8 MB. The fill is not imagery; the footer says so.
+- **Honesty on screen:** default photo = **Full 360 stand-in** (user's choice for the demo), with an amber note
+  "PHOTO STAND-IN · Curiosity at Gediz Vallis channel, Mount Sharp, sol 4220: not the S1 spot. Route on flat ground."
+  The AR route is drawn on **flat ground** there (no DEM, no line of sight) and turned so the walk ahead faces the
+  photo centre (down the open channel): Scenario, never matched to the photo's landforms. **Real stop photo** switches
+  back to PIA26559/PIA26696 with the DEM terrain, Mastcam-derived heading and `[ ]` nudging.
+- **AR track:** car-HUD / Live View style: blue body (orange-red ground contrast), thin white edge, dark outline,
+  anti-aliased edges (screen derivatives), crisp white chevrons flowing in the walking direction, starts 2.5 m in front
+  of the feet. A **next-turn sign** (arrow + metres) stands at the first bend > 30° (30 m before vs after; display
+  only); distance labels 100 m / 500 m / 1 km; home = light pillar + pulsing ground ring + HOME label. Emergency keeps
+  the red fastest way home; Walked shows the way out without chevrons.
+- **HUD layout (same on 1440 × 900 and 390 × 844):** top-left what you're looking at + photo source + view toggles;
+  top-right Demo tour / Details / close; top-centre **navigation card** (heading tape, an arrow that always points
+  home, "Home 1.34 km · 18° left", next cue "Straight on for 1.3 km, then bear left"); bottom **four large numbers**
+  with plain labels (Oxygen left, Walk home, Spare O₂ at home: Scenario; Earth delay: Derived); bottom-right
+  EMERGENCY; one-line footer with SCENARIO / DERIVED / OBSERVED chips and the photo credit. DETAILS keeps the suit,
+  mission, way home, environment, comms, log + progress and map panels. Demo-tour captions rewritten to match.
+- **Limit:** on flat ground at eye height the route beyond ~200 m lies within 1° of the horizon, so the far route is
+  thin; the distance labels, turn sign and home pillar carry the far guidance.

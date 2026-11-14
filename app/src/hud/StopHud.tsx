@@ -2,10 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 import { createPanoViewer, type PanoViewer } from '@/hud/panoViewer'
-import { createRouteOverlay, parseTerrain, type RouteOverlay, type Terrain } from '@/hud/routeOverlay'
+import { createRouteOverlay, nextTurn, parseTerrain, type RouteOverlay, type Terrain } from '@/hud/routeOverlay'
 import { CommsPanel, type CommsHandle } from '@/hud/CommsPanel'
 import { oneWayDelayS } from '@/hud/earthDelay'
-import type { StopPanorama } from '@/hud/panoramas'
+import { STANDIN_PANORAMA, type StopPanorama } from '@/hud/panoramas'
 import type { EngineCard } from '@/lib/engineDataContext'
 import {
   distanceM,
@@ -18,8 +18,10 @@ import {
 import '@/hud/hud.css'
 
 /**
- * 360° view at a stop with a film-style helmet HUD (Tier 2 prototype, demo-focus-plan §10). Owner: Marwan.
- * Honesty rules: the photo is real (Observed). O₂, route and timing are the replay model's values at the
+ * 360° view at a stop with a helmet AR HUD (Tier 2 prototype, demo-focus-plan §10). Owner: Marwan.
+ * Honesty rules: the photo is real (Observed): either the NASA photo taken at this stop, or (demo default, user
+ * request 2026-11-14) a full-sphere NASA Curiosity photo from elsewhere on Mount Sharp, labelled on screen as a
+ * stand-in, with the route drawn on flat ground (Scenario), never matched to its landforms. O₂, route and timing are the replay model's values at the
  * moment of arrival (Scenario): the same timeline as Mission Replay and the turn-back slider. Radiation and
  * weather are Curiosity's RAD/REMS card values (Observed, rover-local). No invented vitals (no data exists).
  */
@@ -142,16 +144,22 @@ export function StopHud({
   onClose: () => void
 }) {
   const commsRef = useRef<CommsHandle>(null)
-  const homeEdgeRef = useRef<HTMLDivElement>(null)
+  const navArrowRef = useRef<HTMLSpanElement>(null)
+  const navTurnRef = useRef<HTMLSpanElement>(null)
   // Emergency: return now on the fastest way home, view turns to it, a message goes to habitat + Earth.
   const [emergency, setEmergency] = useState(false)
-  // Clean view by default (photo first, like Street View); Details opens the full instrument panels.
+  // Clean view by default (photo first); Details opens the full instrument panels.
   const [details, setDetails] = useState(false)
   const [gaps, setGaps] = useState(false)
   const [hint, setHint] = useState(true)
-  // Guided demo tour (hackathon showcase): scripted camera moves + captions, ~45 s. The user can stop it any time.
+  // Guided demo tour (hackathon showcase): scripted camera moves + captions, ~48 s. The user can stop it any time.
   const [tour, setTour] = useState(false)
-  // Terrain grid around the stop (Derived, Trek 2.5 m DEM) so the AR route sits on the real ground.
+  // Which photo: the full-sphere stand-in (demo default, user's choice) or the real photo taken at this stop.
+  const [photo, setPhoto] = useState<'standin' | 'stop'>('standin')
+  const standin = photo === 'standin'
+  const active: StopPanorama = standin ? STANDIN_PANORAMA : pano
+  // Terrain grid around the stop (Derived, Trek 2.5 m DEM) so the AR route sits on the real ground. Only with the
+  // stop's own photo: on the stand-in photo the route is drawn on flat ground (its landforms are elsewhere).
   const [terrain, setTerrain] = useState<Terrain | null>(null)
   useEffect(() => {
     let live = true
@@ -171,42 +179,46 @@ export function StopHud({
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const viewerRef = useRef<PanoViewer | null>(null)
   const overlayRef = useRef<RouteOverlay | null>(null)
-  // Which leg is drawn in yellow: the next walk from here (way home, arrows lead away from the viewer, default)
-  // or the route already walked to this stop (shown without arrows, so nothing moves toward the viewer).
+  // Which leg is drawn: the next walk from here (way home, chevrons lead away from the viewer, default) or the
+  // route already walked to this stop (no chevrons, so nothing moves toward the viewer).
   const [leg, setLeg] = useState<'to' | 'home'>('home')
-  // Bearing the view faces at start. Unverified estimate; [ and ] rotate the drawn route to align it.
-  const [northDeg, setNorthDeg] = useState(pano.northOffsetDeg)
+  // Stand-in photo: turn the route so the walk ahead faces the photo's centre (down the open channel).
+  const aheadPt = wayHome.find((c) => distanceM(stopLonLat, c) > 40) ?? habitatLonLat
+  const standinNorth = Math.round(bearingDeg(stopLonLat, aheadPt))
+  // Bearing the view faces at start. On the stop photo it is the Mastcam-derived estimate; [ and ] nudge it.
+  const [stopNorth, setStopNorth] = useState(pano.northOffsetDeg)
+  const northDeg = standin ? standinNorth : stopNorth
   const northRef = useRef(northDeg)
+  northRef.current = northDeg
   const habBearingRef = useRef(bearingDeg(stopLonLat, habitatLonLat))
   const yawRef = useRef(0)
   const setTape = () => {
     const heading = (((northRef.current - yawRef.current) % 360) + 360) % 360
     if (tapeRef.current) tapeRef.current.style.transform = `translateX(${-heading * 4}px)`
-    // Home finder: when the habitat is outside the view, an arrow at the screen edge points the way to turn.
-    const el = homeEdgeRef.current
+    // Home arrow in the navigation card: points to the habitat relative to where the view faces.
+    const rel = ((habBearingRef.current - heading + 540) % 360) - 180
+    if (navArrowRef.current) navArrowRef.current.style.transform = `rotate(${rel}deg)`
     const host = hostRef.current
-    if (el && host) {
+    if (navTurnRef.current && host) {
       const aspect = (host.clientWidth || 1) / (host.clientHeight || 1)
       const hfov = (2 * Math.atan(Math.tan((fovRef.current * Math.PI) / 360) * aspect) * 180) / Math.PI
-      const rel = ((habBearingRef.current - heading + 540) % 360) - 180
-      const out = Math.abs(rel) > hfov / 2 - 4
-      el.hidden = !out
-      el.dataset.side = rel < 0 ? 'left' : 'right'
-      const turn = el.querySelector('[data-turn]')
-      if (turn) turn.textContent = `TURN ${rel < 0 ? 'LEFT' : 'RIGHT'} ${Math.abs(Math.round(rel))}°`
+      navTurnRef.current.textContent =
+        Math.abs(rel) < Math.min(12, hfov / 4) ? 'ahead' : `${Math.abs(Math.round(rel))}° ${rel < 0 ? 'left' : 'right'}`
     }
   }
 
   useEffect(() => {
     if (!hostRef.current) return
-    const viewer = createPanoViewer(hostRef.current, `${import.meta.env.BASE_URL}${pano.url}`, {
-      horizonDeg: pano.horizonDeg,
+    setStatus('loading')
+    const viewer = createPanoViewer(hostRef.current, `${import.meta.env.BASE_URL}${active.url}`, {
+      horizonDeg: active.horizonDeg,
+      projection: active.projection,
       onReady: () => {
         setStatus('ready')
         window.setTimeout(() => setHint(false), 6000)
       },
       onError: () => setStatus('error'),
-      // Heading tape follows the view directly (no React re-render per frame).
+      // Heading tape and home arrow follow the view directly (no React re-render per frame).
       onView: (yawDeg, fovDeg) => {
         yawRef.current = yawDeg
         fovRef.current = fovDeg
@@ -214,43 +226,47 @@ export function StopHud({
       },
     })
     viewerRef.current = viewer
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-      if (e.key === '[') setNorthDeg((d) => d - 2)
-      if (e.key === ']') setNorthDeg((d) => d + 2)
-      if (e.key === 'h' || e.key === 'H') setDetails((d) => !d)
-    }
-    window.addEventListener('keydown', onKey)
     return () => {
-      window.removeEventListener('keydown', onKey)
       overlayRef.current?.dispose()
       overlayRef.current = null
       viewerRef.current = null
       viewer.destroy()
     }
-  }, [pano.url, pano.horizonDeg, onClose])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active.url, active.horizonDeg, active.projection])
 
-  // The fixed route on the ground: drawn once per leg (no tracking); only its arrows animate.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+      if (!standin && e.key === '[') setStopNorth((d) => d - 2)
+      if (!standin && e.key === ']') setStopNorth((d) => d + 2)
+      if (e.key === 'h' || e.key === 'H') setDetails((d) => !d)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose, standin])
+
+  // The fixed route on the ground: drawn once per leg (no tracking); only its chevrons animate.
   useEffect(() => {
     const viewer = viewerRef.current
     if (!viewer) return
-    const yellow = { color: '#ffcc00', opacity: 0.92, widthM: 1.6, arrows: true }
-    const faint = { color: '#7fe3ff', opacity: 0.45, widthM: 1.0, arrows: false }
-    // Arrows only on the walk ahead, so they always lead away from where the viewer stands.
+    const guide = { color: '#2fb8ff', opacity: 0.95, widthM: 1.2, arrows: true }
+    const faint = { color: '#d8f3ff', opacity: 0.4, widthM: 0.8, arrows: false }
+    // Chevrons only on the walk ahead, so they always lead away from where the viewer stands.
     const paths = emergency
-      ? [{ ...faint, coords: wayOut }, { ...yellow, color: '#ff4d4d', coords: fastestHome }]
+      ? [{ ...faint, coords: wayOut }, { ...guide, color: '#ff3b3b', coords: fastestHome }]
       : leg === 'to'
-        ? [{ ...faint, coords: wayHome }, { ...yellow, arrows: false, coords: wayOut }]
-        : [{ ...faint, coords: wayOut }, { ...yellow, coords: wayHome }]
+        ? [{ ...faint, coords: wayHome }, { ...guide, color: '#9ad8ff', arrows: false, coords: wayOut }]
+        : [{ ...faint, coords: wayOut }, { ...guide, coords: wayHome }]
     const overlay = createRouteOverlay(viewer.scene, viewer.onFrame, {
       stop: stopLonLat,
       habitat: habitatLonLat,
       paths,
       northOffsetDeg: northRef.current,
-      terrain,
+      terrain: standin ? null : terrain,
     })
     overlayRef.current = overlay
-    // Face the walk ahead: turn to the bearing of the yellow line ~40 m out from the stop.
+    // Face the walk ahead: turn to the bearing of the guided line ~40 m out from the stop.
     const ahead = paths[1].coords.find((c) => distanceM(stopLonLat, c) > 40)
     if (ahead) viewer.setYaw(northRef.current - bearingDeg(stopLonLat, ahead))
     return () => {
@@ -258,16 +274,16 @@ export function StopHud({
       if (overlayRef.current === overlay) overlayRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [leg, emergency, terrain, fastestHome, wayOut, wayHome, stopLonLat[0], stopLonLat[1], habitatLonLat[0], habitatLonLat[1]])
+  }, [leg, emergency, terrain, standin, status, fastestHome, wayOut, wayHome, stopLonLat[0], stopLonLat[1], habitatLonLat[0], habitatLonLat[1]])
 
   useEffect(() => {
     viewerRef.current?.showGaps(gaps)
   }, [gaps, status])
 
   useEffect(() => {
-    northRef.current = northDeg
     overlayRef.current?.setNorthOffset(northDeg)
     setTape()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [northDeg])
 
   const tl = timeline
@@ -283,6 +299,8 @@ export function StopHud({
   const habKm = distanceM(stopLonLat, habitatLonLat) / 1000
   const habBearing = bearingDeg(stopLonLat, habitatLonLat)
   const log = tl.events.filter((e) => e.t <= tAt + 1e-6 && e.type !== 'status').slice(-5).reverse()
+  const guidePath = emergency ? fastestHome : wayHome
+  const turn = useMemo(() => nextTurn(guidePath, stopLonLat), [guidePath, stopLonLat])
 
   const f = tl.worstFactor ?? 1
   const emNeedL = fastHomeCost ? fastHomeCost.o2_l * f : s.homeL
@@ -307,6 +325,9 @@ export function StopHud({
     const aheadYaw = yawTo(ahead)
     const homeYaw = yawTo(habitatLonLat)
     const km = habKm.toFixed(2)
+    const where = standin
+      ? `Background: a real NASA Curiosity photo from ${STANDIN_PANORAMA.place} (a stand-in, not ${pano.stopId}). On a real walk it is the live visor camera.`
+      : `Background: the real NASA photo taken at ${pano.stopId}. On a real walk it is the live visor camera.`
     const steps: [number, () => void][] = [
       [0, () => {
         setEmergency(false)
@@ -314,38 +335,38 @@ export function StopHud({
         setLeg('home')
         setHint(false)
         v()?.panTo(aheadYaw + 70, 4, 0.1)
-        setCaption({ title: 'HELMET AR · SIMULATION', text: `What an astronaut would see on the visor at ${pano.stopId}. Background: the real NASA Mastcam photo from this spot; on a real EVA it is the live visor camera.` })
+        setCaption({ title: 'HELMET AR · SIMULATION', text: `What an astronaut would see through the visor. ${where}` })
       }],
       [600, () => v()?.panTo(aheadYaw + 25, 4, 5)],
       [6000, () => {
-        v()?.panTo(aheadYaw, -14, 3.5)
-        setCaption({ title: 'AR ROUTE ON THE GROUND', text: 'Yellow = the modeled way home, fixed to the ground from the plan’s coordinates (no GPS). Arrows lead the way.' })
+        v()?.panTo(aheadYaw, -16, 3.5)
+        setCaption({ title: 'THE ROUTE ON THE GROUND', text: 'Blue line = the modeled way home, pinned to the plan’s coordinates (no GPS). The chevrons show which way to walk; the sign shows the next turn.' })
       }],
       [13000, () => {
         v()?.panTo(homeYaw, 3, 4)
-        setCaption({ title: 'HOME BEACON', text: `Habitat ${km} km away. The beacon and the edge arrow keep it findable even when it is out of view.` })
+        setCaption({ title: 'HOME', text: `Habitat ${km} km away: the light pillar and ring. The arrow at the top always points home, even when it is out of view.` })
       }],
       [20000, () => {
         setDetails(true)
-        setCaption({ title: 'SUIT + ROUTE DATA', text: 'O₂ per suit, time home, reserve, Curiosity radiation and weather. Modeled estimates (Scenario) from the route plan.' })
+        setCaption({ title: 'SUIT AND ROUTE DATA', text: 'Oxygen per suit, walk time home, reserve, Curiosity’s radiation and weather. Oxygen and times are modeled estimates (Scenario).' })
       }],
       [27500, () => {
         setDetails(false)
         commsRef.current?.send('Arrived at the stop')
-        setCaption({ title: 'MESSAGE TO EARTH', text: `The habitat gets it by local radio now; Earth gets it after ${earthMin} min (light-time today), a reply after twice that.` })
+        setCaption({ title: 'MESSAGE TO EARTH', text: `The habitat hears it now. Earth hears it in ${earthMin} min (light-time today); a reply takes at least twice that.` })
       }],
       [34000, () => {
         startEmergencyRef.current()
-        setCaption({ title: 'EMERGENCY', text: 'One button: the fastest way home in red, an O₂ check against the reserve, and an alert sent to the habitat and Earth.' })
+        setCaption({ title: 'EMERGENCY', text: 'One button: the fastest way home in red, an oxygen check against the reserve, and an alert to the habitat and Earth.' })
       }],
       [42000, () => {
         setEmergency(false)
-        v()?.panTo(aheadYaw, -6, 3)
-        setCaption({ title: 'PLAN ON THE MAP · WALK WITH THE HUD', text: 'RedSight: the same route and O₂ data drive the astronaut’s helmet.' })
+        v()?.panTo(aheadYaw, -8, 3)
+        setCaption({ title: 'PLAN ON THE MAP · WALK WITH THE HUD', text: 'RedSight: the same route and oxygen model drive the map and the helmet.' })
       }],
       [48000, () => setTour(false)],
     ]
-    const ids = steps.map(([t, f]) => window.setTimeout(f, t))
+    const ids = steps.map(([t, fn]) => window.setTimeout(fn, t))
     return () => {
       ids.forEach((id) => window.clearTimeout(id))
       setCaption(null)
@@ -375,19 +396,28 @@ export function StopHud({
     ...(arrive ? [{ t: arrive.t, label: 'STOP', c: '#ff5fd2' }] : [{ t: tAt, label: 'TURN', c: '#ef476f' }]),
     { t: tl.totalS, label: 'HOME', c: '#9fd3ff' },
   ]
+  const o2Low = spareL < 0.1 * T
+  const km = (m: number) => (m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m / 10) * 10} m`)
+  const turnWord = turn ? `${turn.angleDeg > 60 ? 'turn' : 'bear'} ${turn.dir}` : ''
+  const nextLine = !turn
+    ? `Straight on for ${km(habKm * 1000)}`
+    : turn.distM > 400
+      ? `Straight on for ${km(turn.distM)}, then ${turnWord}`
+      : `${turnWord[0].toUpperCase()}${turnWord.slice(1)} in ${turn.distM} m`
 
   // Portal to <body>: panels with backdrop-filter/containment would otherwise trap the full-screen view.
   return createPortal(
     <div
       className="hud-root"
       data-emergency={emergency || undefined}
+      data-details={details || undefined}
       role="dialog"
       aria-modal="true"
-      aria-label={`360° view at ${stopName} with HUD`}
+      aria-label={`360° view at ${stopName} with helmet HUD`}
     >
       <div ref={hostRef} className="hud-pano" />
       {status !== 'ready' && (
-        <div className="hud-status">{status === 'error' ? 'Panorama failed to load.' : 'LOADING NASA PANORAMA…'}</div>
+        <div className="hud-status">{status === 'error' ? 'Photo failed to load.' : 'LOADING NASA PHOTO…'}</div>
       )}
       <div className="hud-visor" aria-hidden />
       <div className="hud-reticle" aria-hidden />
@@ -399,64 +429,146 @@ export function StopHud({
       )}
       {hint && !tour && status === 'ready' && (
         <div className="hud-hint" aria-hidden>
-          Drag to look around · scroll or pinch to zoom · double-click to zoom in · H = details
+          Drag to look around · scroll to zoom · H = details
         </div>
       )}
 
-      {/* Home finder: shows only when the habitat is out of view; the 3D HOME beacon is drawn in the scene. */}
-      <div ref={homeEdgeRef} className="hud-home-edge" hidden>
-        <span className="hud-home-arrow" aria-hidden />
-        <b>⌂ HOME {habKm.toFixed(2)} km</b>
-        <span data-turn />
-      </div>
-
-      {/* Heading tape: compass heading = start bearing (unverified estimate, so marked ≈) − view yaw. */}
-      <div className="hud-tape hud-in" style={{ animationDelay: '0.05s' }} aria-hidden>
-        <div ref={tapeRef} className="hud-tape-inner">
-          {ticks.map((t) => (
-            <span key={t.deg} className="hud-tick" style={{ left: `calc(50% + ${t.deg * 4}px)` }}>
-              {t.label}
-            </span>
-          ))}
-          {[-360, 0, 360].map((k) => (
-            <span key={k} className="hud-tape-home" style={{ left: `calc(50% + ${(habBearing + k) * 4}px)` }}>
-              ⌂
-            </span>
-          ))}
+      {/* Top left: what this is, where the photo is from, view options. */}
+      <div className="hud-id hud-in">
+        <div className="hud-kicker">
+          <span className="hud-chip hud-sim">AR HELMET · SIMULATION</span>
         </div>
-        <span className="hud-tape-caret" />
-        <span className="hud-tape-rel">{pano.northCalibrated ? 'HDG' : '≈ HDG'}</span>
+        <div className="hud-title">
+          {pano.stopId} · {stopName}
+          {sols && !standin ? <span className="hud-sub"> · sol {sols}</span> : null}
+        </div>
+        {standin ? (
+          <div className="hud-photo-note" data-standin>
+            <b>PHOTO STAND-IN</b> Curiosity at {STANDIN_PANORAMA.place}, sol {STANDIN_PANORAMA.sol}: not the {pano.stopId} spot.
+            Route on flat ground.
+          </div>
+        ) : (
+          <div className="hud-photo-note">
+            <b>PHOTO TAKEN HERE</b> NASA {pano.pia}, Mastcam
+          </div>
+        )}
+        <div className="hud-opts">
+          <span className="hud-seg" role="group" aria-label="Photo">
+            <button aria-pressed={standin} onClick={() => setPhoto('standin')}>Full 360 stand-in</button>
+            <button aria-pressed={!standin} onClick={() => setPhoto('stop')}>Real stop photo</button>
+          </span>
+          <span className="hud-seg" role="group" aria-label="Route drawn on the ground">
+            <button aria-pressed={leg === 'home'} onClick={() => setLeg('home')}>Way home</button>
+            <button aria-pressed={leg === 'to'} onClick={() => setLeg('to')}>Walked</button>
+          </span>
+        </div>
       </div>
 
-      <div className="hud-top hud-in" style={{ animationDelay: '0.1s' }}>
-        <span className="hud-chip hud-sim" title="Helmet AR simulation: on a real EVA this is the live visor camera; here it is an Observed NASA Mastcam photo">AR SIM · NASA PHOTO</span>
-        <span className="hud-title">
-          {pano.stopId} · {stopName.toUpperCase()}
-          {sols ? ` · SOL ${sols}` : ''}
-        </span>
-        <span className="hud-seg" role="group" aria-label="Route drawn on the ground">
-          <button aria-pressed={leg === 'home'} onClick={() => setLeg('home')}>WAY HOME ▸</button>
-          <button aria-pressed={leg === 'to'} onClick={() => setLeg('to')}>WALKED</button>
-        </span>
+      {/* Top right: actions. */}
+      <div className="hud-actions hud-in">
         <button className="hud-btn hud-tour" aria-pressed={tour} disabled={status !== 'ready'} onClick={() => setTour((t) => !t)}>
-          {tour ? '■ STOP' : '▶ DEMO TOUR'}
+          {tour ? '■ Stop tour' : '▶ Demo tour'}
         </button>
         <button className="hud-btn" aria-pressed={details} onClick={() => setDetails((d) => !d)} title="Show or hide the instrument panels (H)">
-          {details ? 'LESS' : 'DETAILS'}
+          {details ? 'Hide details' : 'Details'}
         </button>
         <button className="hud-close" onClick={onClose} aria-label="Close 360 view">✕</button>
       </div>
 
-      <div hidden={!details} className="hud-tl hud-glass hud-in" style={{ animationDelay: '0.2s' }}>
-        <div className="hud-label">MISSION CLOCK</div>
-        <div className="hud-mono hud-xl">T+{formatClock(tAt)}</div>
-        <div className="hud-row"><span>Walked</span><b>{(s.distM / 1000).toFixed(2)} km</b></div>
-        <div className="hud-row"><span>Crew</span><b>{tl.members.length} · {routeMode === 'fastest' ? 'fastest' : 'lowest hazard'}</b></div>
-        <div className="hud-row"><span>Earth delay</span><b>{earthMin} min</b></div>
+      {/* Top centre: navigation card (heading tape, home arrow, next turn). */}
+      <div className="hud-nav hud-in" data-emergency={emergency || undefined}>
+        <div className="hud-tape" aria-hidden>
+          <div ref={tapeRef} className="hud-tape-inner">
+            {ticks.map((t) => (
+              <span key={t.deg} className="hud-tick" style={{ left: `calc(50% + ${t.deg * 4}px)` }}>
+                {t.label}
+              </span>
+            ))}
+            {[-360, 0, 360].map((k) => (
+              <span key={k} className="hud-tape-home" style={{ left: `calc(50% + ${(habBearing + k) * 4}px)` }}>
+                ⌂
+              </span>
+            ))}
+          </div>
+          <span className="hud-tape-caret" />
+        </div>
+        <div className="hud-nav-main">
+          <span className="hud-nav-arrow" aria-hidden><span ref={navArrowRef}>➤</span></span>
+          <div className="hud-nav-text">
+            <div className="hud-nav-home">
+              <b>Home {habKm.toFixed(2)} km</b>
+              <span ref={navTurnRef} className="hud-nav-dir" />
+            </div>
+            <div className="hud-nav-next">{emergency ? `Red line · ${nextLine.toLowerCase()}` : nextLine}</div>
+          </div>
+        </div>
       </div>
 
-      <div hidden={!details} className="hud-left hud-glass hud-in" style={{ animationDelay: '0.3s' }}>
-        <div className="hud-label">SUIT O₂ · WORST SUIT</div>
+      {/* Bottom: the key numbers, large, plain labels. */}
+      <div className="hud-strip hud-in">
+        <span className="hud-cell">
+          <i>Oxygen left</i>
+          <b className={o2Low ? 'hud-amber' : ''}>{pct(s.o2Left)}</b>
+        </span>
+        <span className="hud-cell">
+          <i>Walk home</i>
+          <b>{formatDuration(emergency ? emTimeS : homeS)}</b>
+        </span>
+        <span className="hud-cell">
+          <i>Spare O₂ at home</i>
+          <b className={o2Low ? 'hud-amber' : ''}>{pct(Math.max(0, emergency ? emMarginL : spareL))}</b>
+        </span>
+        <span className="hud-cell hud-cell-der">
+          <i>Earth delay</i>
+          <b>{earthMin} min</b>
+        </span>
+      </div>
+      <div className="hud-foot">
+        <span><span className="hud-chip hud-scn">SCENARIO</span> <em>oxygen and times </em>modeled</span>
+        <span><span className="hud-chip hud-der">DERIVED</span> light-time</span>
+        <span>
+          <span className="hud-chip hud-obs">OBSERVED</span> <em>NASA </em>photo {active.pia}
+          <span className="hud-foot-more">
+            , {active.credit}
+            {standin ? ' · sky and rover deck colour-filled (not photographed)' : ' · blurred areas not photographed '}
+            {!standin && (
+              <button className="hud-link" onClick={() => setGaps((g) => !g)}>{gaps ? 'fill gaps' : 'show gaps'}</button>
+            )}
+          </span>
+        </span>
+      </div>
+
+      {!emergency && (
+        <button className="hud-em-btn hud-in" onClick={startEmergency} aria-label="Emergency: return to habitat now">
+          <span aria-hidden>⚠</span> EMERGENCY
+        </button>
+      )}
+
+      {emergency && (
+        <div className="hud-emergency" role="alert">
+          <div className="hud-em-title">⚠ RETURN TO HABITAT NOW</div>
+          <div className="hud-em-grid">
+            <span>Fastest way home</span>
+            <b>{formatDuration(emTimeS)}</b>
+            <span>Oxygen needed</span>
+            <b>{pct(emNeedL)}</b>
+            <span>Oxygen left</span>
+            <b>{pct(s.o2Left)}</b>
+            <span>Spare at home</span>
+            <b className={emMarginL < 0 ? 'hud-red' : ''}>{emMarginL < 0 ? 'INTO RESERVE' : pct(emMarginL)}</b>
+          </div>
+          <div className="hud-small">
+            Follow the red line. Alert sent to the habitat and Earth. Modeled estimate (Scenario).
+          </div>
+          <button className="hud-em-cancel" onClick={() => setEmergency(false)}>
+            Cancel emergency
+          </button>
+        </div>
+      )}
+
+      {/* DETAILS: instrument panels. */}
+      <div hidden={!details} className="hud-left hud-glass hud-in">
+        <div className="hud-label">SUIT OXYGEN · WORST SUIT</div>
         <O2Ring leftL={s.o2Left} tankL={T} reserveL={tl.reserveL} homeL={s.homeL} />
         {s.members.map((l, i) => (
           <div key={i} className="hud-member">
@@ -465,20 +577,25 @@ export function StopHud({
             <b>{pct(Math.max(0, l))}</b>
           </div>
         ))}
-        <div className="hud-row"><span>Time left</span><b>≈{formatDuration(s.minutesLeft * 60)}</b></div>
-        <div className="hud-row"><span>Reserve</span><b>{pct(tl.reserveL)}</b></div>
+        <div className="hud-row"><span>Time left at walk-back rate</span><b>≈{formatDuration(s.minutesLeft * 60)}</b></div>
+        <div className="hud-row"><span>Reserve (never planned)</span><b>{pct(tl.reserveL)}</b></div>
+        <div className="hud-sep" />
+        <div className="hud-label">MISSION</div>
+        <div className="hud-row"><span>Clock</span><b>T+{formatClock(tAt)}</b></div>
+        <div className="hud-row"><span>Walked</span><b>{(s.distM / 1000).toFixed(2)} km</b></div>
+        <div className="hud-row"><span>Crew</span><b>{tl.members.length} · {routeMode === 'fastest' ? 'fastest' : 'lowest hazard'}</b></div>
       </div>
 
-      <div hidden={!details} className="hud-right hud-glass hud-in" style={{ animationDelay: '0.4s' }}>
+      <div hidden={!details} className="hud-right hud-glass hud-in">
         {arrive ? (
           <>
             <div className="hud-label">WAY HOME</div>
             <div className={`hud-ret ${tl.fastHome ? 'hud-amber' : ''}`}>{ret}</div>
             {tl.fastHome && <div className="hud-alert">O₂ LOW · SWITCHED AT T+{formatClock(tl.switchT ?? 0)}</div>}
-            <div className="hud-row"><span>Time home</span><b>{formatDuration(homeS)}</b></div>
-            <div className="hud-row"><span>O₂ needed</span><b>{pct(s.homeL)} · {s.homeL.toFixed(0)} L</b></div>
-            <div className="hud-row"><span>Spare after it</span><b className={spareL < 0.1 * T ? 'hud-amber' : ''}>{pct(Math.max(0, spareL))}</b></div>
-            <div className="hud-row"><span>Habitat</span><b>{habKm.toFixed(2)} km · {habBearing.toFixed(0)}° true</b></div>
+            <div className="hud-row"><span>Walk home</span><b>{formatDuration(homeS)}</b></div>
+            <div className="hud-row"><span>Oxygen needed</span><b>{pct(s.homeL)} · {s.homeL.toFixed(0)} L</b></div>
+            <div className="hud-row"><span>Spare at home</span><b className={o2Low ? 'hud-amber' : ''}>{pct(Math.max(0, spareL))}</b></div>
+            <div className="hud-row"><span>Habitat</span><b>{habKm.toFixed(2)} km · {habBearing.toFixed(0)}°</b></div>
           </>
         ) : (
           <>
@@ -488,73 +605,26 @@ export function StopHud({
           </>
         )}
         <div className="hud-sep" />
-        <div className="hud-label">ENVIRONMENT · CURIOSITY</div>
+        <div className="hud-label">ENVIRONMENT · CURIOSITY <span className="hud-chip hud-obs">OBSERVED</span></div>
         {dose != null && (
-          <div className="hud-row"><span>EVA dose (unshielded)</span><b>{dose < 10 ? dose.toFixed(3) : dose.toFixed(0)} {doseUnit}</b></div>
+          <div className="hud-row"><span>Walk dose (unshielded)</span><b>{dose < 10 ? dose.toFixed(3) : dose.toFixed(0)} {doseUnit}</b></div>
         )}
-        {rate && <div className="hud-row hud-dim"><span>RAD surface rate</span><span>{String(rate.value)} {rate.unit}</span></div>}
-        {pressure && <div className="hud-row hud-dim"><span>Pressure (yr range)</span><span>{String(pressure.value)} {pressure.unit}</span></div>}
-        {airT && <div className="hud-row hud-dim"><span>Air temp (day range)</span><span>{String(airT.value)} {airT.unit}</span></div>}
+        {rate && <div className="hud-row hud-dim"><span>Surface dose rate</span><span>{String(rate.value)} {rate.unit}</span></div>}
+        {pressure && <div className="hud-row hud-dim"><span>Air pressure (year)</span><span>{String(pressure.value)} {pressure.unit}</span></div>}
+        {airT && <div className="hud-row hud-dim"><span>Air temp (day)</span><span>{String(airT.value)} {airT.unit}</span></div>}
       </div>
 
-      <div hidden={!details} className="hud-bl hud-glass hud-in" style={{ animationDelay: '0.5s' }}>
+      <div hidden={!details && !emergency} className="hud-cm hud-glass hud-in">
+        <CommsPanel ref={commsRef} />
+      </div>
+
+      <div hidden={!details} className="hud-bl hud-glass hud-in">
         <div className="hud-label">LOG</div>
         <ul className="hud-log">
           {log.map((e, i) => (
             <li key={i} data-type={e.type}><b>T+{formatClock(e.t)}</b> {e.label}</li>
           ))}
         </ul>
-      </div>
-
-      <div hidden={!details && !emergency} className="hud-cm hud-glass hud-in" style={{ animationDelay: '0.5s' }}>
-        <CommsPanel ref={commsRef} />
-      </div>
-
-      {!details && (
-        <div className="hud-strip hud-in" style={{ animationDelay: '0.2s' }}>
-          <span><i>O₂</i><b>{pct(s.o2Left)}</b></span>
-          <span><i>T+</i><b>{formatClock(tAt)}</b></span>
-          <span><i>Home</i><b>{formatDuration(homeS)}</b></span>
-          <span><i>⌂</i><b>{habKm.toFixed(2)} km · {habBearing.toFixed(0)}°</b></span>
-          <span><i>Earth delay</i><b>{earthMin} min</b></span>
-        </div>
-      )}
-
-      {emergency && (
-        <div className="hud-emergency" role="alert">
-          <div className="hud-em-title">⚠ EMERGENCY · RETURN TO HABITAT NOW</div>
-          <div className="hud-em-grid">
-            <span>Fastest way home</span>
-            <b>{formatDuration(emTimeS)}</b>
-            <span>O₂ needed</span>
-            <b>{pct(emNeedL)}</b>
-            <span>O₂ left</span>
-            <b>{pct(s.o2Left)}</b>
-            <span>Above reserve after</span>
-            <b className={emMarginL < 0 ? 'hud-red' : ''}>{emMarginL < 0 ? 'INTO RESERVE' : pct(emMarginL)}</b>
-          </div>
-          <div className="hud-small">
-            Follow the red line · habitat {habBearing.toFixed(0)}° · message sent to the habitat and Earth (see COMMS).
-            Modeled estimate (Scenario).
-          </div>
-          <button className="hud-em-cancel" onClick={() => setEmergency(false)}>
-            Cancel emergency
-          </button>
-        </div>
-      )}
-
-      {!emergency && (
-        <button className="hud-em-btn" onClick={startEmergency} aria-label="Emergency: return to habitat now">
-          ⚠ EMERGENCY
-        </button>
-      )}
-
-      <div hidden={!details} className="hud-br hud-glass hud-in" style={{ animationDelay: '0.6s' }}>
-        <div className="hud-label">ROUTE · NORTH UP</div>
-        <MiniMap frames={tl.frames} habitat={habitatLonLat} stop={stopLonLat} switchPt={tl.switchPoint} turnPt={tl.turnPoint} />
-      </div>
-
-      <div className="hud-bottom hud-in" style={{ animationDelay: '0.7s' }}>
         <div className="hud-progress">
           <span className="hud-progress-done" style={{ width: `${(tAt / tl.totalS) * 100}%` }} />
           {marks.map((m) => (
@@ -564,19 +634,15 @@ export function StopHud({
             </span>
           ))}
         </div>
-        <div className="hud-foot" hidden={details}>
-          <span className="hud-chip hud-scn">SCENARIO</span> Helmet AR simulation: a real EVA would use the live visor camera ·
-          Modeled estimates, not measurements · Photo {pano.pia},{' '}
-          {pano.credit} · blurred areas = not photographed{' '}
-          <button className="hud-link" onClick={() => setGaps((g) => !g)}>{gaps ? 'fill gaps' : 'show gaps'}</button>
-        </div>
-        <div className="hud-foot" hidden={!details}>
-          <span className="hud-chip hud-scn">SCENARIO</span> O₂, route and times are modeled estimates, not
-          measurements · RAD/REMS: Curiosity rover-local values · Photo: {pano.pia}, {pano.credit}, {pano.taken} ·
-          Real imagery only at stops; moving between stops is a jump. · Yellow route: drawn from the route's coordinates onto the photo (flat ground, no hills; photo
-          heading {pano.northCalibrated ? 'aligned' : `≈${northDeg}° at centre, ${pano.headingNote}; [ ] adjust`}), not tracking. ·
-          Blurred areas were not photographed (filled from nearby colours){' '}
-          <button className="hud-link" onClick={() => setGaps((g) => !g)}>{gaps ? 'fill gaps' : 'show gaps'}</button>
+      </div>
+
+      <div hidden={!details} className="hud-br hud-glass hud-in">
+        <div className="hud-label">ROUTE · NORTH UP</div>
+        <MiniMap frames={tl.frames} habitat={habitatLonLat} stop={stopLonLat} switchPt={tl.switchPoint} turnPt={tl.turnPoint} />
+        <div className="hud-small">
+          {standin
+            ? 'AR line on the stand-in photo: flat ground, turned to face the open channel. Not this landscape.'
+            : `AR line from the route’s coordinates on Trek DEM ground; photo heading ≈${northDeg}° at centre (${pano.headingNote}; [ ] adjust).`}
         </div>
       </div>
     </div>,

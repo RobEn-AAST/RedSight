@@ -9,7 +9,7 @@ type LonLat = [number, number]
 const MARS_R = 3_389_500 // m, mean radius (same as build-hud-terrain.py)
 const EYE_H = 1.97 // m, Mastcam height above ground (the photo's viewpoint)
 const SHELL = 9 // draw just inside the photo sphere (radius 10), always on top of it
-const NEAR_M = 6 // skip the first metres (they'd be under the camera)
+const NEAR_M = 2.5 // start just in front of the feet (closer would be under the camera)
 const STEP_M = 2 // path resampling step
 
 export interface RoutePath {
@@ -125,6 +125,46 @@ function preparePath(coords: LonLat[], stop: LonLat, terrain: Terrain | null, sh
   return out
 }
 
+export interface TurnCue {
+  /** Metres along the path from the stop to the turn. */
+  distM: number
+  dir: 'left' | 'right'
+  /** Size of the turn, degrees. */
+  angleDeg: number
+  e: number
+  n: number
+}
+
+const compass = (de: number, dn: number) => ((Math.atan2(de, dn) * 180) / Math.PI + 360) % 360
+const turnBy = (from: number, to: number) => ((to - from + 540) % 360) - 180
+
+/** First clear bend (> 30° between the 30 m before and the 30 m after a point), after the first 15 m. Display only. */
+function findTurn(pts: PathPt[]): TurnCue | null {
+  const at = (s: number) => pts.find((p) => p.s >= s) ?? null
+  const head = (s0: number, s1: number) => {
+    const a = at(s0)
+    const b = at(s1)
+    return a && b && b !== a ? compass(b.e - a.e, b.n - a.n) : null
+  }
+  const s0 = pts[0]?.s ?? 0
+  for (let s = s0 + 15; s < s0 + 1500; s += 5) {
+    const before = head(Math.max(s0, s - 30), s)
+    const after = head(s, s + 30)
+    if (before == null || after == null) break
+    const t = turnBy(before, after)
+    if (Math.abs(t) > 30) {
+      const p = at(s)!
+      return { distM: Math.max(10, Math.round((s - s0) / 10) * 10), dir: t > 0 ? 'right' : 'left', angleDeg: Math.abs(t), e: p.e, n: p.n }
+    }
+  }
+  return null
+}
+
+/** Next-turn cue for a path seen from the stop (flat ground; same smoothing as the drawn line). */
+export function nextTurn(coords: LonLat[], stop: LonLat): TurnCue | null {
+  return findTurn(preparePath(coords, stop, null, [0, 0]))
+}
+
 const VERT = /* glsl */ `
 attribute float aAlong; attribute float aSide; attribute float aVis; attribute float aDist;
 varying float vAlong; varying float vSide; varying float vVis; varying float vDist;
@@ -132,46 +172,66 @@ void main() {
   vAlong = aAlong; vSide = aSide; vVis = aVis; vDist = aDist;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }`
+// AR navigation track (car-HUD / Live View style): solid body, thin bright edge, dark outline for contrast on the
+// red ground, crisp chevrons flowing in the direction of travel. Edges are anti-aliased with screen derivatives.
 const FRAG = /* glsl */ `
 uniform float uTime; uniform vec3 uColor; uniform float uArrows; uniform float uOpacity;
 varying float vAlong; varying float vSide; varying float vVis; varying float vDist;
+float band(float x, float lo, float hi, float w) { return smoothstep(lo - w, lo + w, x) * (1.0 - smoothstep(hi - w, hi + w, x)); }
 void main() {
   float a = abs(vSide);
-  float edge = 1.0 - smoothstep(0.6, 1.0, a);
-  float core = 1.0 - smoothstep(0.0, 0.3, a);
-  float alpha = uOpacity * (0.45 * edge + 0.4 * core);
-  // Flowing chevrons pointing along the direction of travel; spacing grows with distance.
-  float sp = max(5.0, vDist * 0.05);
-  float ph = fract((vAlong - uTime * 4.0) / sp);
-  float d = ph + a * 0.32;
-  float chev = smoothstep(0.30, 0.36, d) * (1.0 - smoothstep(0.44, 0.50, d)) * edge * uArrows;
-  vec3 col = mix(uColor, vec3(1.0, 0.98, 0.88), clamp(chev * 0.95 + core * 0.2, 0.0, 1.0));
-  alpha = max(alpha, chev * uOpacity * 1.2);
-  // Dark rim for contrast against red-orange ground.
-  float rim = smoothstep(0.72, 0.84, a) * (1.0 - smoothstep(0.93, 1.0, a));
-  col = mix(col, vec3(0.12, 0.07, 0.0), rim * 0.7);
-  alpha = max(alpha, rim * 0.55 * uOpacity);
-  // Behind terrain: dim dashes, no chevrons.
+  float aw = max(fwidth(vSide), 0.02);
+  float inside = 1.0 - smoothstep(1.0 - aw, 1.0, a);
+  // Layers from the centre out: body, bright edge line, dark outline.
+  float body = 1.0 - smoothstep(0.76 - aw, 0.76 + aw, a);
+  float edgeL = band(a, 0.76, 0.86, aw);
+  float outline = band(a, 0.86, 1.0, aw);
+  vec3 col = uColor * (0.85 + 0.15 * (1.0 - a));
+  float alpha = body * 0.78;
+  col = mix(col, mix(uColor, vec3(1.0), 0.65), edgeL);
+  alpha = max(alpha, edgeL * 0.95);
+  col = mix(col, vec3(0.02, 0.04, 0.07), outline);
+  alpha = max(alpha, outline * 0.45);
+  // Chevrons: a V pointing along the direction of travel; spacing grows with distance so far ones stay readable.
+  float sp = max(4.0, vDist * 0.06);
+  float u = (vAlong - uTime * 3.0) / sp;
+  float ph = fract(u);
+  float d = ph + a * 0.38;
+  float cw = max(fwidth(u) * 1.2, 0.01);
+  float chev = band(d, 0.42, 0.62, cw) * body * uArrows;
+  col = mix(col, vec3(1.0), chev);
+  alpha = max(alpha, chev);
+  alpha *= inside * uOpacity;
+  // Behind terrain: dim dashes, no chevrons (like "behind the hill" in AR navigation).
   if (vVis < 0.5) {
-    float dash = step(0.45, fract(vAlong / max(6.0, vDist * 0.03)));
-    alpha = uOpacity * 0.32 * edge * dash;
-    col = uColor;
+    float dash = step(0.5, fract(vAlong / max(5.0, vDist * 0.035)));
+    alpha = uOpacity * 0.38 * (body + edgeL) * dash * inside;
+    col = mix(uColor, vec3(1.0), 0.3);
   }
-  alpha *= smoothstep(6.0, 14.0, vDist) * (1.0 - smoothstep(1400.0, 2200.0, vDist));
+  // Fade in over the first metres (no hard start under the feet) and out far away.
+  alpha *= smoothstep(2.5, 7.0, vDist) * (1.0 - smoothstep(1500.0, 2300.0, vDist));
   gl_FragColor = vec4(col, alpha);
 }`
 
 /** Label sprite: crisp text on a dark plate (constant size on screen, since it lives on the drawing shell). */
-function labelSprite(lines: { text: string; size: number; color: string }[], border: string, scale = 1, width = 512) {
+function labelSprite(
+  lines: { text: string; size: number; color: string }[],
+  border: string,
+  scale = 1,
+  width = 512,
+  fill = 'rgba(10,8,4,0.78)',
+) {
   const c = document.createElement('canvas')
   c.width = width
   c.height = 40 + lines.reduce((s, l) => s + l.size * 1.25, 0)
   const g = c.getContext('2d')!
-  g.fillStyle = 'rgba(10,8,4,0.78)'
+  g.fillStyle = fill
+  g.globalAlpha = fill.startsWith('#') ? 0.92 : 1
   g.beginPath()
   g.roundRect(3, 3, c.width - 6, c.height - 6, 14)
   g.fill()
-  g.strokeStyle = border
+  g.globalAlpha = 1
+  g.strokeStyle = fill.startsWith('#') ? 'rgba(255,255,255,0.9)' : border
   g.lineWidth = 4
   g.stroke()
   g.textAlign = 'center'
@@ -252,7 +312,7 @@ export function createRouteOverlay(
         const b = pts[Math.min(pts.length - 1, i + 1)]
         const L = Math.hypot(b.e - a.e, b.n - a.n) || 1
         // Width grows with distance so the far route stays readable (a ground strip would shrink to nothing).
-        const hw = Math.max(path.widthM / 2, p.d * 0.016)
+        const hw = Math.max(path.widthM / 2, p.d * 0.014)
         const nx = (-(b.n - a.n) / L) * hw
         const ny = ((b.e - a.e) / L) * hw
         for (const sgn of [1, -1]) {
@@ -281,14 +341,16 @@ export function createRouteOverlay(
     meshes.push({ mesh, build })
   }
 
-  // Distance markers along the guided path (the one with arrows): 100 m, 250 m, 500 m, 1 km.
+  // Distance markers along the guided path (the one with arrows): 100 m, 500 m, 1 km (not next to the turn sign).
   const markers: { sp: THREE.Sprite; p: PathPt }[] = []
   const guide = lines.find((l) => l.path.arrows)
   if (guide) {
-    for (const m of [100, 250, 500, 1000]) {
+    for (const m of [100, 500, 1000]) {
       const p = guide.pts.find((q) => q.s >= m)
       if (!p || !p.vis) continue
-      const sp = labelSprite([{ text: m >= 1000 ? `${m / 1000} km` : `${m} m`, size: 64, color: '#fff3b0' }], guide.path.color, 0.55, 220)
+      const t = findTurn(guide.pts)
+      if (t && Math.abs(t.distM - m) < 60) continue
+      const sp = labelSprite([{ text: m >= 1000 ? `${m / 1000} km` : `${m} m`, size: 60, color: '#ffffff' }], guide.path.color, 0.5, 220)
       group.add(sp)
       markers.push({ sp, p })
     }
@@ -297,6 +359,29 @@ export function createRouteOverlay(
     for (const { sp, p } of markers) sp.position.copy(toView(p.e, p.n, p.h + 0.05)).add(new THREE.Vector3(0, 0.3, 0))
   }
   placeMarkers()
+
+  // Next-turn sign over the guided path: a big arrow + distance, standing on the ground at the turn.
+  const turn = guide ? findTurn(guide.pts) : null
+  let turnSign: THREE.Sprite | null = null
+  let turnH = 0
+  if (turn) {
+    turnSign = labelSprite(
+      [
+        { text: turn.dir === 'left' ? '⬅' : '➡', size: 84, color: '#ffffff' },
+        { text: `${turn.distM} m`, size: 46, color: '#ffffff' },
+      ],
+      guide!.path.color,
+      0.62,
+      240,
+      guide!.path.color,
+    )
+    turnH = heightAt(terrain, shift, turn.e, turn.n)
+    group.add(turnSign)
+  }
+  const placeTurn = () => {
+    if (turnSign && turn) turnSign.position.copy(toView(turn.e, turn.n, turnH + 0.05)).add(new THREE.Vector3(0, 0.75, 0))
+  }
+  placeTurn()
 
   // Home beacon: a light pillar standing on the habitat's ground, a pulsing diamond and a label on top.
   const [he, hn] = enu(opts.stop, opts.habitat)
@@ -347,6 +432,48 @@ export function createRouteOverlay(
   }
   placePin()
 
+  // Ground ring around the habitat (destination), pulsing, so "home" reads as a place on the ground.
+  const ringMat = new THREE.ShaderMaterial({
+    vertexShader: /* glsl */ `attribute float aR; varying float vR; void main(){ vR = aR; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+    fragmentShader: /* glsl */ `uniform float uTime; varying float vR; void main(){
+      float pulse = fract(uTime * 0.5);
+      float ring = 1.0 - smoothstep(0.0, 0.12, abs(vR - pulse));
+      float rim = smoothstep(0.82, 0.9, vR) * (1.0 - smoothstep(0.95, 1.0, vR));
+      float a = max(ring * (1.0 - pulse) * 0.8, rim * 0.75) + 0.12 * (1.0 - vR);
+      gl_FragColor = vec4(1.0, 0.75, 0.25, a); }`,
+    uniforms: { uTime: { value: 0 } },
+    transparent: true,
+    depthTest: false,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  })
+  mats.push(ringMat)
+  const ring = new THREE.Mesh(new THREE.BufferGeometry(), ringMat)
+  ring.renderOrder = 12
+  ring.frustumCulled = false
+  group.add(ring)
+  const ringR = Math.max(10, habDist * 0.025)
+  function placeRing() {
+    const pos: number[] = []
+    const rr: number[] = []
+    const idx: number[] = []
+    const N = 48
+    for (let i = 0; i <= N; i++) {
+      const t = (i / N) * Math.PI * 2
+      for (const k of [0, 1]) {
+        const R = k ? ringR : 0.001
+        const v = toView(he + Math.cos(t) * R, hn + Math.sin(t) * R, hh + 0.1)
+        pos.push(v.x, v.y, v.z)
+        rr.push(k)
+      }
+      if (i) idx.push(2 * i - 2, 2 * i - 1, 2 * i, 2 * i, 2 * i - 1, 2 * i + 1)
+    }
+    ring.geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3))
+    ring.geometry.setAttribute('aR', new THREE.Float32BufferAttribute(rr, 1))
+    ring.geometry.setIndex(idx)
+  }
+  placeRing()
+
   onFrame((tS) => {
     if (disposed) return
     for (const m of mats) m.uniforms.uTime.value = tS
@@ -362,7 +489,9 @@ export function createRouteOverlay(
       offset = (deg * Math.PI) / 180
       for (const m of meshes) m.build()
       placeMarkers()
+      placeTurn()
       placePin()
+      placeRing()
     },
     dispose() {
       disposed = true
