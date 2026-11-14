@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 # RedSight — upload the git-ignored assets CI cannot build. Run from the repo root on a
 # machine that has them (re-run only when they change):
-#   app/public/tiles/        → /var/www/mars.roben.club/tiles/   (map XYZ tiles)
+#   app/public/tiles/        → /var/www/mars.roben.club/demo/tiles/   (map XYZ tiles)
 #   data/raw/engine-pilot/   → ~/apps/redsight-data/engine-pilot/ (hash-checked terrain bundle)
 # Usage: bash deploy/upload-assets.sh [ssh-host]   (default host alias: roben)
 set -euo pipefail
 HOST="${1:-roben}"
 cd "$(dirname "$0")/.."
 [ -d app/public/tiles ] || { echo "app/public/tiles missing — build tiles first (data/README.md)" >&2; exit 1; }
-rsync -az --delete --info=stats1 app/public/tiles/ "$HOST:/var/www/mars.roben.club/tiles/"
+ssh "$HOST" "mkdir -p /var/www/mars.roben.club/demo/tiles"
+rsync -az --delete --info=stats1 app/public/tiles/ "$HOST:/var/www/mars.roben.club/demo/tiles/"
 if [ -f data/raw/engine-pilot/input-manifest.json ]; then
   ssh "$HOST" 'mkdir -p ~/apps/redsight-data'
   rsync -az --delete --info=stats1 data/raw/engine-pilot/ "$HOST:apps/redsight-data/engine-pilot/"

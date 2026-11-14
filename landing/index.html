@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RedSight — See the Red Planet before you step on it</title>
+  <meta name="description" content="RedSight fuses seven NASA Mars datasets into one living 3D map and computes the safest, most energy-efficient Marswalk routes. Built by the RobEn Software & AI team for NASA Space Apps 2026." />
+  <meta property="og:title" content="RedSight — Marswalk Mission Planner" />
+  <meta property="og:description" content="Seven NASA datasets. One living map. Every step on Mars, planned. NASA Space Apps 2026 entry by RobEn Software & AI." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://mars.roben.club" />
+  <meta property="og:image" content="/assets/og-image.jpg" />
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="preconnect" href="/" />
+  <style>:root{--boot:#070A12}html{background:#070A12}</style>
+  <script type="module" src="/src/main.js"></script>
+</head>
+<body>
+  <!-- ══════════ BOOT SEQUENCE ══════════ -->
+  <div id="boot" aria-hidden="true">
+    <div class="boot-inner">
+      <svg class="boot-reticle" viewBox="0 0 64 64" width="44" height="44" aria-hidden="true">
+        <circle cx="32" cy="32" r="22" fill="none" stroke="var(--rust)" stroke-width="1.5" stroke-dasharray="104 34" stroke-linecap="square"/>
+        <circle cx="32" cy="32" r="4" fill="var(--rust)"/>
+        <path d="M32 2v10M32 52v10M2 32h10M52 32h10" stroke="var(--rust)" stroke-width="1.5"/>
+      </svg>
+      <pre id="boot-log" class="boot-log"></pre>
+    </div>
+  </div>
+
+  <!-- ══════════ 3D LAYER ══════════ -->
+  <canvas id="space" aria-hidden="true"></canvas>
+  <div id="vignette" aria-hidden="true"></div>
+
+  <!-- ══════════ MISSION RAIL (desktop) ══════════ -->
+  <aside id="rail" aria-label="Mission progress">
+    <div class="rail-track"><div class="rail-fill" id="rail-fill"></div></div>
+    <ol class="rail-nodes">
+      <li><a href="#problem" data-goto data-w="problem"><i></i><span class="mono">W-01</span></a></li>
+      <li><a href="#concept" data-goto data-w="concept"><i></i><span class="mono">W-02</span></a></li>
+      <li><a href="#science" data-goto data-w="science"><i></i><span class="mono">W-03</span></a></li>
+      <li><a href="#briefs" data-goto data-w="briefs"><i></i><span class="mono">W-04</span></a></li>
+      <li><a href="#proposal" data-goto data-w="proposal"><i></i><span class="mono">W-05</span></a></li>
+      <li><a href="#crew" data-goto data-w="crew"><i></i><span class="mono">W-06</span></a></li>
+    </ol>
+  </aside>
+
+  <!-- ══════════ NAV ══════════ -->
+  <header id="nav">
+    <a class="brand" href="#top" aria-label="RedSight home">
+      <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
+        <circle cx="16" cy="16" r="11" fill="none" stroke="var(--rust)" stroke-width="1.5" stroke-dasharray="52 17"/>
+        <circle cx="16" cy="16" r="2.5" fill="var(--rust)"/>
+        <path d="M16 1v6M16 25v6M1 16h6M25 16h6" stroke="var(--rust)" stroke-width="1.5"/>
+      </svg>
+      <span>RED<b>SIGHT</b></span>
+    </a>
+    <nav aria-label="Sections">
+      <a href="#problem" data-goto>Problem</a>
+      <a href="#concept" data-goto>Concept</a>
+      <a href="#science" data-goto>Science</a>
+      <a href="#briefs" data-goto>Briefs</a>
+      <a href="#proposal" data-goto>Proposal</a>
+      <a href="#crew" data-goto>Crew</a>
+    </nav>
+    <a class="nav-cta" href="/demo/">Live demo</a>
+  </header>
+
+  <main id="top">
+
+    <!-- ══════════ 01 · HERO ══════════ -->
+    <section class="hero" data-cam="hero">
+      <div class="wrap">
+      <p class="hero-mission mono">NASA SPACE APPS 2026 · INTERPLANETARY SURVIVAL GUIDE: MARTIAN MAP</p>
+      <h1 class="hero-title">
+        <span class="line">RED<span class="rust">SIGHT</span></span>
+      </h1>
+      <p class="hero-tag">See the Red Planet <em>before</em> you step on it.</p>
+      <p class="hero-sub">A Marswalk mission planner that fuses seven NASA datasets into one living map —
+      and computes the safest, most energy-efficient route between science and survival.</p>
+      <div class="hero-ctas">
+        <a class="btn btn-primary btn-demo" href="/demo/"><span class="mono">DEMO THE WEBSITE</span><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg></a>
+        <a class="btn btn-ghost" href="#proposal" data-goto><span class="mono">WATCH THE PITCH</span><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg></a>
+        <a class="btn btn-ghost" href="#briefs" data-goto><span class="mono">MISSION BRIEFS</span></a>
+      </div>
+      <div class="hero-telemetry mono" aria-hidden="true">
+        <span>SOL 4121</span><span class="sep"></span>
+        <span>JEZERO · 18.44°N 77.58°E</span><span class="sep"></span>
+        <span>LAYERS 07</span><span class="sep"></span>
+        <span class="rust-text">SYSTEMS NOMINAL</span>
+      </div>
+      </div>
+    </section>
+
+    <!-- ══════════ 02 · PROBLEM ══════════ -->
+    <section id="problem" class="section problem" data-cam="problem">
+      <span class="ghost" aria-hidden="true">01</span>
+      <div class="wrap">
+      <div class="section-grid">
+        <div class="statement reveal">
+          <p class="marker mono">W-01 // THE PROBLEM</p>
+          <h2>One wrong<br>step.</h2>
+          <p class="lede">The first astronauts on Mars will walk terrain no human has ever seen —
+          where a slope past 30°, a boulder field, or a dust front can end a mission.
+          NASA has mapped all of it for fifty years. But the knowledge lives in
+          <strong>seven separate archives built for scientists</strong>, not for the
+          person inside the suit.</p>
+        </div>
+        <div class="readout reveal" aria-label="NASA Mars data inventory">
+          <p class="readout-title mono">DATA INVENTORY — WHAT EXISTS TODAY</p>
+          <ul class="readout-list">
+            <li><span class="mono idx">MOLA</span><div><b>Elevation &amp; slope</b><small>MGS orbiter laser altimetry, 463 m global</small></div></li>
+            <li><span class="mono idx">CTX</span><div><b>Surface imagery</b><small>MRO context camera, 5 m global mosaic</small></div></li>
+            <li><span class="mono idx">HIRISE</span><div><b>Landing-site detail</b><small>MRO, 25 cm — Jezero orthomosaic</small></div></li>
+            <li><span class="mono idx">THEMIS</span><div><b>Rock abundance</b><small>Mars Odyssey night infrared, 100 m</small></div></li>
+            <li><span class="mono idx">SWIM</span><div><b>Subsurface ice</b><small>Radar + neutron ice-consistency composite</small></div></li>
+            <li><span class="mono idx">MARCI</span><div><b>Dust &amp; weather</b><small>MRO daily global maps</small></div></li>
+            <li><span class="mono idx">RAD</span><div><b>Radiation</b><small>Curiosity's surface dose, 0.64 mSv/sol</small></div></li>
+          </ul>
+          <p class="readout-note mono">SEVEN MISSIONS. ZERO CREW-FACING MAPS. <span class="rust-text">THAT'S THE GAP.</span></p>
+        </div>
+      </div>
+          </div>
+</section>
+
+    <!-- ══════════ 03 · CONCEPT ══════════ -->
+    <section id="concept" class="section concept" data-cam="concept">
+      <span class="ghost ghost-right" aria-hidden="true">02</span>
+      <div class="wrap">
+      <div class="section-head reveal">
+        <p class="marker mono">W-02 // THE CONCEPT</p>
+        <h2>One map.<br>Three states of a<br>Marswalk.</h2>
+      </div>
+      <div class="modes reveal">
+        <div class="mode-tabs" role="tablist" aria-label="RedSight modes">
+          <button class="mode-tab is-active" role="tab" aria-selected="true" data-mode="plan"><span class="mono">01</span> PLAN</button>
+          <button class="mode-tab" role="tab" aria-selected="false" data-mode="visor"><span class="mono">02</span> VISOR</button>
+          <button class="mode-tab" role="tab" aria-selected="false" data-mode="storm"><span class="mono">03</span> STORM</button>
+        </div>
+        <div class="mode-panels">
+          <div class="mode-panel is-active" data-mode="plan" role="tabpanel">
+            <div class="mode-copy">
+              <h3>Mission planning, hours before the airlock</h3>
+              <p>Toggle the layers. Drop a landing point, mark the science stations,
+              and RedSight computes the full traverse — avoiding crater walls, boulder
+              fields and radiation exposure — with an EVA report for every step:
+              distance, energy, dose, consumables.</p>
+              <ul class="mode-facts mono">
+                <li>COST MODEL — JPL MARS 2020 TRAVERSABILITY (ONO 2016)</li>
+                <li>CONSTRAINTS — SLOPE 30° · ROCK CFA 15%</li>
+                <li>OUTPUT — EVA REPORT + ROUTE PROFILE</li>
+              </ul>
+            </div>
+            <div class="mode-visual" aria-hidden="true">
+              <svg viewBox="0 0 420 300">
+                <rect x="14" y="14" width="392" height="272" fill="none" stroke="var(--hairline-strong)" stroke-width="1"/>
+                <path d="M14 40h392M40 14v272" stroke="var(--hairline)" stroke-width="1"/>
+                <text x="30" y="32" fill="var(--ink-faint)" font-family="IBM Plex Mono" font-size="9" letter-spacing="2">PLAN / LAYERS 4·7 ACTIVE</text>
+                <ellipse cx="210" cy="170" rx="150" ry="86" fill="none" stroke="var(--rust-deep)" stroke-width="1" stroke-dasharray="3 5"/>
+                <circle cx="96" cy="200" r="5" fill="var(--rust)"/><text x="82" y="224" fill="var(--ink-muted)" font-family="IBM Plex Mono" font-size="9">LANDING</text>
+                <circle cx="210" cy="128" r="5" fill="none" stroke="var(--rust)" stroke-width="1.5"/><text x="196" y="116" fill="var(--ink-muted)" font-family="IBM Plex Mono" font-size="9">SCI-01</text>
+                <circle cx="318" cy="196" r="5" fill="none" stroke="var(--rust)" stroke-width="1.5"/><text x="296" y="222" fill="var(--ink-muted)" font-family="IBM Plex Mono" font-size="9">DELTA FRONT</text>
+                <path d="M96 200 C 140 150, 170 130, 210 128 S 290 180, 318 196" fill="none" stroke="var(--rust)" stroke-width="2" stroke-dasharray="6 5"/>
+                <path d="M14 258h392" stroke="var(--hairline)" stroke-width="1"/>
+                <text x="30" y="276" fill="var(--ink-faint)" font-family="IBM Plex Mono" font-size="9" letter-spacing="1">DIST 4.2 KM · ENERGY 0.9 KWH · DOSE 0.11 MSV</text>
+              </svg>
+            </div>
+          </div>
+          <div class="mode-panel" data-mode="visor" role="tabpanel" hidden>
+            <div class="mode-copy">
+              <h3>The walk itself, inside the helmet</h3>
+              <p>The same route, rendered as a heads-up display on the visor: waypoint
+              cues, live telemetry, and point-of-view imagery from NASA rovers at each
+              stop — so the crew knows exactly what the terrain looks like before
+              they arrive. The challenge brief itself invites this format. We ship it.</p>
+              <ul class="mode-facts mono">
+                <li>WAYPOINT CUES + BEARING TICKS</li>
+                <li>POV IMAGERY — ROVER NAVCAM / MASTCAM</li>
+                <li>HAZARD CALLOUTS AT 20 M RESOLUTION</li>
+              </ul>
+            </div>
+            <div class="mode-visual" aria-hidden="true">
+              <svg viewBox="0 0 420 300">
+                <rect x="14" y="14" width="392" height="272" fill="none" stroke="var(--hairline-strong)" stroke-width="1"/>
+                <circle cx="210" cy="150" r="96" fill="none" stroke="var(--rust-deep)" stroke-width="1"/>
+                <circle cx="210" cy="150" r="96" fill="none" stroke="var(--rust)" stroke-width="1.5" stroke-dasharray="60 240" stroke-dashoffset="-30"/>
+                <path d="M210 38v22M210 240v22M98 150h22M300 150h22" stroke="var(--rust)" stroke-width="1.5"/>
+                <circle cx="210" cy="150" r="3" fill="var(--rust)"/>
+                <path d="M252 108l52-52M252 108l-8-2M252 108l2 8" stroke="var(--rust)" stroke-width="1.5" fill="none"/>
+                <text x="278" y="52" fill="var(--ink)" font-family="IBM Plex Mono" font-size="10">SCI-01 · 1.4 KM</text>
+                <text x="34" y="270" fill="var(--ink-faint)" font-family="IBM Plex Mono" font-size="9" letter-spacing="2">O₂ 91% · SOL 13:41 · DOSE 0.06 MSV</text>
+              </svg>
+            </div>
+          </div>
+          <div class="mode-panel" data-mode="storm" role="tabpanel" hidden>
+            <div class="mode-copy">
+              <h3>When Mars changes its mind</h3>
+              <p>A dust front rolls over the planned traverse. RedSight doesn't freeze —
+              it replans in seconds using D* Lite incremental search, diverging the crew
+              around the new hazard while the EVA report updates live. Alive, not static.</p>
+              <ul class="mode-facts mono">
+                <li>D* LITE INCREMENTAL REPLAN</li>
+                <li>HAZARD FIELD — MARCI DUST OPACITY</li>
+                <li>REPORT UPDATES IN REAL TIME</li>
+              </ul>
+            </div>
+            <div class="mode-visual" aria-hidden="true">
+              <svg viewBox="0 0 420 300">
+                <rect x="14" y="14" width="392" height="272" fill="none" stroke="var(--hairline-strong)" stroke-width="1"/>
+                <path d="M60 120 C140 96, 220 150, 360 118 L360 210 C240 244, 130 190, 60 208 Z" fill="var(--rust-deep)" opacity="0.18"/>
+                <path d="M60 120 C140 96, 220 150, 360 118" fill="none" stroke="var(--warning)" stroke-width="1.5" stroke-dasharray="4 4"/>
+                <text x="222" y="96" fill="var(--warning)" font-family="IBM Plex Mono" font-size="9" letter-spacing="2">DUST FRONT τ=3.1</text>
+                <path d="M60 210 C130 214, 200 224, 360 216" fill="none" stroke="var(--ink-faint)" stroke-width="1.5" stroke-dasharray="2 6"/>
+                <path d="M60 210 C140 250, 240 246, 360 216" fill="none" stroke="var(--rust)" stroke-width="2"/>
+                <text x="30" y="270" fill="var(--ink-faint)" font-family="IBM Plex Mono" font-size="9" letter-spacing="2">REPLAN 0.4 S · +1.8 KM · DOSE +0.02 MSV</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+          </div>
+</section>
+
+    <!-- ══════════ 04 · SCIENCE ══════════ -->
+    <section id="science" class="section science" data-cam="science">
+      <span class="ghost" aria-hidden="true">03</span>
+      <div class="wrap">
+      <div class="section-head reveal">
+        <p class="marker mono">W-03 // THE SCIENCE</p>
+        <h2>Every pixel<br>has a citation.</h2>
+        <p class="lede">RedSight's route engine is a faithful simplification of the traversability
+        analysis JPL used to select Perseverance's landing site. No invented numbers.
+        Every constant on screen carries its source.</p>
+      </div>
+      <div class="science-grid">
+        <div class="formula-panel panel reveal">
+          <p class="panel-title mono">COST MODEL — PER TRAVERSE STEP</p>
+          <pre class="formula mono">blocked if slope ≥ 30° or rock CFA &gt; 15%
+
+cost(step) = d × [ wE·Ê(θ) + wT·(1/v(θ)) + wR·H(cell) ]
+
+  Ê(θ) = m·g·(sinθ + Crr·cosθ) / E_ref
+  v    = speed(θ, terrain class)
+  H    = a·rock + b·dust τ + c·radiation</pre>
+          <p class="panel-note mono">USER DIALS: wE ENERGY · wT TIME · wR RISK — PRESETS: FASTEST / SAFEST / GREENEST</p>
+        </div>
+        <div class="constants-panel panel reveal">
+          <p class="panel-title mono">CONSTANTS — WITH SOURCES</p>
+          <table class="constants">
+            <tbody>
+              <tr><td class="mono">g</td><td>3.71 m/s²</td><td class="src">Mars surface gravity</td></tr>
+              <tr><td class="mono">SLOPE CAPS</td><td>30° / 20° / 10°</td><td class="src">hard / bedrock / sand — Ono 2016</td></tr>
+              <tr><td class="mono">ROCK CFA</td><td>7–15% slow-down</td><td class="src">Ono 2016, M2020 AutoNav</td></tr>
+              <tr><td class="mono">ROVER SPEED</td><td>152 m/h max</td><td class="src">Perseverance spec, JPL</td></tr>
+              <tr><td class="mono">ENERGY</td><td>35–56 Wh/km class</td><td class="src">Patel, Univ. of Surrey</td></tr>
+              <tr><td class="mono">POWER</td><td>110 W MMRTG</td><td class="src">≈2.5 kWh/sol, JPL</td></tr>
+              <tr><td class="mono">DOSE</td><td>0.64 mSv/sol</td><td class="src">Curiosity RAD, Hassler 2014</td></tr>
+              <tr><td class="mono">CALIBRATION</td><td>×0.946 · ×1.3</td><td class="src">8-connectivity · real-route factor</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <p class="science-cite reveal">Methodology: Ono et&nbsp;al. 2016 (IEEE Aerospace) &amp; 2018 (AIAA) — Mars 2020 Traversability Tools ·
+      Heverly et&nbsp;al. 2013 (J. Field Robotics) · D*&nbsp;Lite, Koenig &amp; Likhachev 2002 · Hassler et&nbsp;al. 2014 (Science).</p>
+          </div>
+</section>
+
+    <!-- ══════════ 05 · MISSION BRIEFS ══════════ -->
+    <section id="briefs" class="section briefs" data-cam="briefs">
+      <span class="ghost ghost-right" aria-hidden="true">04</span>
+      <div class="wrap">
+      <div class="section-head reveal">
+        <p class="marker mono">W-04 // MISSION BRIEFS</p>
+        <h2>Three rehearsals<br>for the real thing.</h2>
+      </div>
+      <ol class="dossiers">
+        <li class="dossier reveal">
+          <div class="dossier-no mono">B-01</div>
+          <div class="dossier-body">
+            <h3>Jezero Delta</h3>
+            <p class="mono coords">18.44°N 77.58°E · JEZERO CRATER</p>
+            <p>Land on the crater floor, sample the ancient river delta where water once
+            carried biosignatures — and benchmark the route against Perseverance's real
+            track, which drove ~30% farther than the optimal line.</p>
+            <p class="dossier-layers mono">LAYERS: HIRISE 25 CM · CTX 5 M · MOLA SLOPE · SWIM</p>
+          </div>
+          <div class="dossier-badge mono">FLAGSHIP</div>
+        </li>
+        <li class="dossier reveal">
+          <div class="dossier-no mono">B-02</div>
+          <div class="dossier-body">
+            <h3>Boxwork Ridge</h3>
+            <p class="mono coords">−4.59°S 137.38°E · MOUNT SHARP, GALE</p>
+            <p>Document the boxwork formations Curiosity studied in 2025 — the exact
+            science target named in NASA's own challenge brief — across terrain CTX
+            resolves at five meters.</p>
+            <p class="dossier-layers mono">LAYERS: CTX 5 M · MOLA SLOPE · CRISM HYDRATED MINERALS</p>
+          </div>
+          <div class="dossier-badge mono alt">NASA'S EXAMPLE</div>
+        </li>
+        <li class="dossier reveal">
+          <div class="dossier-no mono">B-03</div>
+          <div class="dossier-body">
+            <h3>Ice Road</h3>
+            <p class="mono coords">ARCADIA PLANITIA · NORTHERN LOWLANDS</p>
+            <p>Prospect drill sites over buried water ice — fuel and drinking water for
+            the crew — where SWIM's radar and neutron consistency runs highest, threading
+            between dust corridors MARCI watches daily.</p>
+            <p class="dossier-layers mono">LAYERS: SWIM ICE · THEMIS ROCKS · MARCI DUST · RAD</p>
+          </div>
+          <div class="dossier-badge mono alt">RESOURCE RUN</div>
+        </li>
+      </ol>
+          </div>
+</section>
+
+    <!-- ══════════ 06 · PROPOSAL ══════════ -->
+    <section id="proposal" class="section proposal" data-cam="proposal">
+      <span class="ghost" aria-hidden="true">05</span>
+      <div class="wrap">
+      <div class="section-head reveal">
+        <p class="marker mono">W-05 // THE PROPOSAL</p>
+        <h2>Read the mission<br>before you judge it.</h2>
+      </div>
+      <div class="proposal-grid">
+        <div class="panel video-panel reveal">
+          <p class="panel-title mono">REGISTRATION PITCH — 90 S</p>
+          <div class="video-facade" id="video-facade" role="button" tabindex="0" aria-label="Play the RedSight pitch video">
+            <svg viewBox="0 0 24 24" width="56" height="56" aria-hidden="true"><path d="M8 5v14l11-7z" fill="var(--rust)"/></svg>
+            <p class="mono video-note" id="video-note">PITCH VIDEO PUBLISHES WITH REGISTRATION · NOV 10</p>
+          </div>
+        </div>
+        <div class="panel docs-panel reveal">
+          <p class="panel-title mono">DOCUMENTS</p>
+          <ul class="docs">
+            <li>
+              <div><b>Mission Proposal</b><small>PDF · full concept, data plan, approach</small></div>
+              <a class="btn btn-ghost btn-sm" id="pdf-btn" href="#" aria-disabled="true"><span class="mono">LOCKS NOV 12</span></a>
+            </li>
+            <li>
+              <div><b>Pitch Deck</b><small>PPTX · 12 slides, judges' cut</small></div>
+              <a class="btn btn-ghost btn-sm" id="pptx-btn" href="#" aria-disabled="true"><span class="mono">LOCKS NOV 12</span></a>
+            </li>
+            <li>
+              <div><b>Open Source</b><small>GitHub · MIT, cited datasets, SI disclosure</small></div>
+              <a class="btn btn-primary btn-sm" href="https://github.com/RobEn-AAST" target="_blank" rel="noopener"><span class="mono">REPOSITORY</span></a>
+            </li>
+          </ul>
+          <p class="panel-note mono">EVERYTHING SHIPS WITH THE HACKATHON BUILD · NOV 14–15</p>
+        </div>
+      </div>
+          </div>
+</section>
+
+    <!-- ══════════ 07 · CREW + ROBEN ══════════ -->
+    <section id="crew" class="section crew" data-cam="crew">
+      <span class="ghost ghost-right" aria-hidden="true">06</span>
+      <div class="wrap">
+      <div class="section-head reveal">
+        <p class="marker mono">W-06 // THE CREW</p>
+        <h2>Six people.<br>One visor.</h2>
+      </div>
+      <ul class="crew-list reveal">
+        <li><span class="mono idx">CREW-01</span><span class="avatar" aria-hidden="true">AO</span><b>Ali Omar</b></li>
+        <li><span class="mono idx">CREW-02</span><span class="avatar" aria-hidden="true">MM</span><b>Marwan Mesbah</b></li>
+        <li><span class="mono idx">CREW-03</span><span class="avatar" aria-hidden="true">YA</span><b>Yassin Abdallah</b></li>
+        <li><span class="mono idx">CREW-04</span><span class="avatar" aria-hidden="true">YN</span><b>Youssef Nader</b></li>
+        <li><span class="mono idx">CREW-05</span><span class="avatar" aria-hidden="true">MA</span><b>Mohamed Ayman</b></li>
+        <li><span class="mono idx">CREW-06</span><span class="avatar" aria-hidden="true">JA</span><b>Jana Adham</b></li>
+      </ul>
+      <div class="roben-about reveal">
+        <div class="roben-copy">
+          <p class="marker mono">WHO WE ARE</p>
+          <h3>RobEn — the robotics family at AASTMT</h3>
+          <p>Founded in 2013 at the Arab Academy for Science, Technology &amp; Maritime
+          Transport, RobEn is seven teams strong — underwater ROVs, autonomous UAVs,
+          a race car, media, PR, cybersecurity, and us: the <strong>Software &amp; AI
+          team</strong>, the people who build RobEn's intelligent systems and its web.
+          28 achievements and counting, from MATE ROV nationals to Shell Eco-marathon.</p>
+          <div class="roben-links">
+            <a href="https://roben.club" target="_blank" rel="noopener">roben.club</a>
+            <a href="https://github.com/RobEn-AAST" target="_blank" rel="noopener">GitHub</a>
+            <a href="https://www.instagram.com/roben_aast/" target="_blank" rel="noopener">Instagram</a>
+            <a href="https://www.linkedin.com/company/roben" target="_blank" rel="noopener">LinkedIn</a>
+          </div>
+        </div>
+        <ul class="roben-teams mono" aria-label="RobEn teams">
+          <li class="us">SOFTWARE &amp; AI <span class="rust-text">← US</span></li>
+          <li>ROV — UNDERWATER</li>
+          <li>UAV — AERIAL</li>
+          <li>RACING TEAM</li>
+          <li>CYBERSECURITY</li>
+          <li>MEDIA</li>
+          <li>PR &amp; MARKETING</li>
+        </ul>
+      </div>
+          </div>
+</section>
+
+  </main>
+
+  <!-- ══════════ FOOTER ══════════ -->
+  <footer id="footer" class="stage" data-cam="footer">
+    <div class="wrap">
+    <div class="footer-brand">
+      <svg viewBox="0 0 32 32" width="34" height="34" aria-hidden="true">
+        <circle cx="16" cy="16" r="11" fill="none" stroke="var(--rust)" stroke-width="1.5" stroke-dasharray="52 17"/>
+        <circle cx="16" cy="16" r="2.5" fill="var(--rust)"/>
+        <path d="M16 1v6M16 25v6M1 16h6M25 16h6" stroke="var(--rust)" stroke-width="1.5"/>
+      </svg>
+      <p class="footer-word mono">RED SIGHT</p>
+    </div>
+    <p class="footer-made">Built by the <strong>Software &amp; AI Team</strong> · RobEn — AASTMT</p>
+    <p class="footer-disclaimer">RedSight is an independent project created for the NASA International Space Apps Challenge 2026.
+    Not affiliated with or endorsed by NASA. Mars data &amp; imagery: NASA / JPL-Caltech / USGS Astrogeology / ASU / PSI.
+    Globe texture: Solar System Scope (CC BY 4.0). Fonts: Syne, Switzer, IBM Plex Mono (OFL).</p>
+    <p class="footer-legal mono">ROBEN™ · CAIRO, EGYPT · MMXXVI</p>
+      </div>
+  </footer>
+</body>
+</html>

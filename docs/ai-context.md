@@ -28,7 +28,7 @@ Per-person status and next steps: [`team-plan.md`](team-plan.md) §4c. Data chec
 
 | Priority | Doc | Role |
 |---|---|---|
-| — | [`../deploy/README.md`](../deploy/README.md) | Live deploy of https://mars.roben.club: CI/CD on push to `main`, VPS layout, services, voice keys (2026-11-14) |
+| — | [`../deploy/README.md`](../deploy/README.md) | Live deploy of https://mars.roben.club (landing `/` + app `/demo/`): CI/CD on push to `main`, VPS layout, services, voice keys (2026-11-14) |
 | — | [`astronaut-performance.md`](astronaut-performance.md) | Local chat astronaut optimization, verification, and read-only roben hosting findings (2026-11-14; not deployed) |
 | — | [`superpowers/plans/2026-11-14-astronaut.md`](superpowers/plans/2026-11-14-astronaut.md) | Approved astronaut implementation plan and completion boundaries |
 | 1 | [`challenge-in-plain-language.md`](challenge-in-plain-language.md) | The challenge, the glossary, the corrections, why-judges-care — start here |

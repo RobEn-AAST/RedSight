@@ -1,4 +1,5 @@
 # RedSight — build, check and deploy https://mars.roben.club on every push to main.
+# Two sites on one domain: landing/ at /, the app at /demo/.
 # Secrets (repo → Settings → Secrets → Actions):
 #   VPS_HOST, VPS_USER, VPS_SSH_KEY (private deploy key), VPS_KNOWN_HOSTS (ssh-keyscan line)
 # Server side, layout and one-time bootstrap: deploy/README.md.
@@ -50,6 +51,10 @@ jobs:
         env:
           CHECK_DATA_SKIP_TILES: '1' # tiles are git-ignored; the VPS deploy runs the full check
 
+      - name: Build landing page
+        working-directory: landing
+        run: npm ci && npm run build
+
       - name: Backend tests
         run: node --test server/*.test.mjs
 
@@ -64,9 +69,10 @@ jobs:
           printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          ssh -i ~/.ssh/deploy_key "$TARGET" 'bash ~/apps/redsight/deploy/remote-deploy.sh'
+          ssh -i ~/.ssh/deploy_key "$TARGET" 'git -C ~/apps/redsight fetch -q origin main && git -C ~/apps/redsight reset -q --hard origin/main && bash ~/apps/redsight/deploy/remote-deploy.sh'
 
       - name: Public smoke test
         run: |
-          curl -fsS https://mars.roben.club/ | grep -q '<div id="root">'
+          curl -fsS https://mars.roben.club/ | grep -q 'href="/demo/"'
+          curl -fsS https://mars.roben.club/demo/ | grep -q '<div id="root">'
           curl -fsS https://mars.roben.club/api/copilot/health

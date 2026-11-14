@@ -3,7 +3,9 @@
 # CI (.github/workflows/deploy.yml) just SSHes in and runs this; you can too:
 #   ssh roben 'bash ~/apps/redsight/deploy/remote-deploy.sh'
 #   ~/apps/redsight            git clone of the public repo (reset to origin/main)
-#   /var/www/mars.roben.club   built app/dist (tiles/ kept: git-ignored, deploy/upload-assets.sh)
+#   /var/www/mars.roben.club        built landing/dist (the main page)
+#   /var/www/mars.roben.club/demo   built app/dist under base /demo/ (tiles/ kept: git-ignored,
+#                                   deploy/upload-assets.sh)
 #   ~/apps/redsight-data       terrain bundle (git-ignored; deploy/upload-assets.sh)
 #   ~/apps/redsight.env        provider keys (never in git)
 #   ~/apps/redsight-venv       Python venv for the engine
@@ -17,25 +19,35 @@ export PATH="$HOME/.local/opt/node/bin:$PATH"
 BRANCH="${DEPLOY_BRANCH:-main}"
 cd "$APP"
 
-echo "── 0/5 code: origin/$BRANCH → build → web root"
+WEB=/var/www/mars.roben.club
+
+echo "── 0/5 code: origin/$BRANCH → build both sites → web root"
 git fetch --quiet origin "$BRANCH"
 git reset --quiet --hard "origin/$BRANCH"
 echo "revision $(git rev-parse --short HEAD): $(git log -1 --format=%s)"
 # Re-exec once so the rest of this run uses the freshly pulled copy of this script.
 if [ -z "${REDSIGHT_REEXEC:-}" ]; then REDSIGHT_REEXEC=1 exec bash "$APP/deploy/remote-deploy.sh"; fi
-(
-  cd app
-  LOCK_HASH=$(sha256sum package-lock.json | cut -d' ' -f1)
-  if [ "$(cat node_modules/.lock-hash 2>/dev/null)" != "$LOCK_HASH" ]; then
-    npm ci --no-audit --no-fund --loglevel=error
-    echo "$LOCK_HASH" > node_modules/.lock-hash
+
+npm_ci_if_changed() {  # $1 = project dir; reinstall only when its lockfile changed
+  local hash; hash=$(sha256sum "$1/package-lock.json" | cut -d' ' -f1)
+  if [ "$(cat "$1/node_modules/.lock-hash" 2>/dev/null)" != "$hash" ]; then
+    (cd "$1" && npm ci --no-audit --no-fund --loglevel=error)
+    echo "$hash" > "$1/node_modules/.lock-hash"
   fi
-  # Tiles are git-ignored and live in the web root; link them so build + data check see them.
-  [ -e public/tiles ] || ln -s /var/www/mars.roben.club/tiles public/tiles
-  npm run build --silent
-  npm run check:data --silent | tail -1
-)
-rsync -a --delete-after --delay-updates --exclude '/tiles/' app/dist/ /var/www/mars.roben.club/
+}
+
+# Site 1 — the RedSight app (planner + copilot) at /demo/
+npm_ci_if_changed app
+mkdir -p "$WEB/demo/tiles"
+# Tiles are git-ignored and live in the web root; link them so build + data check see them.
+[ -e app/public/tiles ] || ln -s "$WEB/demo/tiles" app/public/tiles
+(cd app && npm run build --silent -- --base=/demo/ && npm run check:data --silent | tail -1)
+rsync -a --delete-after --delay-updates --exclude '/tiles/' app/dist/ "$WEB/demo/"
+
+# Site 2 — the landing page at / (keeps /demo/ untouched)
+npm_ci_if_changed landing
+(cd landing && npm run build --silent)
+rsync -a --delete-after --delay-updates --exclude '/demo/' landing/dist/ "$WEB/"
 
 echo "── 1/5 runtimes"
 [ -x "$NODE" ] || { echo "Node missing at $NODE (see deploy/README.md bootstrap)" >&2; exit 1; }

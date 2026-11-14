@@ -9,14 +9,12 @@ import {
   Users,
   Target,
   ClipboardCheck,
-  Play,
 } from 'lucide-react'
 
 import { Button } from '@/ui/Button'
 import { cn } from '@/lib/cn'
 import { useMission } from '@/lib/useMission'
 import { validateMission, type FieldIssue } from '@/lib/validation'
-import { defaultMissionConfig } from '@/types/mission'
 import { CrewStep, LoadStep, RoverStep, GoalStep, ReviewStep } from '@/mission/MissionSteps'
 
 const STEPS = [
@@ -33,15 +31,8 @@ function issuesFor(fields: FieldIssue['field'][], issues: FieldIssue[]) {
 
 /** Stepper for one step + next/prev navigation with per-step validation. */
 export function MissionSetup() {
-  const { state, patchConfig, confirmMission } = useMission()
+  const { state, confirmMission } = useMission()
   const { config } = state
-
-  /** One-click demo: a complete, valid mission (2 crew, default loads, the
-   *  boxwork ops box — decision D11), then straight to the routes map. */
-  const startDemo = () => {
-    patchConfig({ ...defaultMissionConfig, scienceGoalId: 'boxwork' })
-    confirmMission()
-  }
   const [step, setStep] = useState(0)
   const headingRef = useRef<HTMLHeadingElement>(null)
 
@@ -64,24 +55,6 @@ export function MissionSetup() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* Demo shortcut: skip setup with a ready-made mission */}
-      <div className="border-b border-seam bg-hull/60 px-4 py-4">
-        <div className="mx-auto flex w-full max-w-2xl flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm leading-relaxed text-ink-dim">
-            <span className="font-display font-semibold tracking-wide text-ink">First time here?</span>{' '}
-            Load a sample two-person mission to the boxwork site and go straight to the routes.
-          </p>
-          <Button
-            variant="primary"
-            onClick={startDemo}
-            data-testid="demo-website"
-            className="min-h-14 flex-none px-7 text-base"
-          >
-            <Play size={18} aria-hidden /> Demo the website
-          </Button>
-        </div>
-      </div>
-
       {/* Step rail */}
       <ol className="flex flex-wrap items-center gap-x-1 gap-y-2 border-b border-seam px-4 py-3">
         {STEPS.map((s, i) => {
