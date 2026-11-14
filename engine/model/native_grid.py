@@ -20,6 +20,7 @@ class NativeRoutingGraph:
     source_row0: int
     source_col0: int
     resolution_m: float
+    return_load_kg: float
     time_csr: csr_matrix
     hazard_csr: csr_matrix
 
@@ -87,6 +88,7 @@ def build_native_routing_graph(
     kappa,
     watts_to_o2_ml_per_min,
     max_speed_mps,
+    return_load_kg=None,
     source_row0=0,
     source_col0=0,
 ):
@@ -97,11 +99,14 @@ def build_native_routing_graph(
         raise ValueError("native elevation and slope must be matching non-empty 2D arrays")
     if not math.isfinite(resolution_m) or resolution_m <= 0:
         raise ValueError("native resolution must be positive and finite")
-    if not math.isfinite(slope_limit_deg) or slope_limit_deg <= 0:
-        raise ValueError("slope limit must be positive and finite")
+    if not math.isfinite(slope_limit_deg) or slope_limit_deg < 0:
+        raise ValueError("slope limit must be non-negative and finite")
     if not np.all(np.isfinite(elevation)):
         raise ValueError("native routing elevation must be finite; source nodata stays blocked before graph creation")
     rows, cols = elevation.shape
+    return_load = float(load_kg if return_load_kg is None else return_load_kg)
+    if not math.isfinite(return_load) or return_load < 0:
+        raise ValueError("return load must be finite and non-negative")
     tolerance = max(1e-10, abs(slope_limit_deg) * 1e-12)
     walkable = np.isfinite(slope) & (slope <= slope_limit_deg + tolerance)
     pair_sources, pair_destinations, pair_times, pair_hazards = [], [], [], []
@@ -133,11 +138,12 @@ def build_native_routing_graph(
             max_speed_mps=max_speed_mps,
         )
         reverse_time, _ = _movement_arrays(
-            distance, -grade.flat[indices], body_mass_kg=body_mass_kg, load_kg=load_kg,
+            distance, -grade.flat[indices], body_mass_kg=body_mass_kg, load_kg=return_load,
             kappa=kappa, watts_to_o2_ml_per_min=watts_to_o2_ml_per_min,
             max_speed_mps=max_speed_mps,
         )
-        hazard = distance * (1.0 + (np.abs(grade.flat[indices]) / slope_limit_deg) ** 2)
+        slope_fraction = np.zeros_like(grade.flat[indices]) if slope_limit_deg == 0 else np.abs(grade.flat[indices]) / slope_limit_deg
+        hazard = distance * (1.0 + slope_fraction ** 2)
         pair_sources.append(source)
         pair_destinations.append(destination)
         pair_times.append((forward_time.astype(np.float32), reverse_time.astype(np.float32)))
@@ -163,7 +169,7 @@ def build_native_routing_graph(
 
     return NativeRoutingGraph(
         elevation, slope, walkable, transform, crs, int(source_row0), int(source_col0),
-        float(resolution_m), time_csr, hazard_csr,
+        float(resolution_m), return_load, time_csr, hazard_csr,
     )
 
 

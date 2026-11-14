@@ -72,3 +72,43 @@ test('HTTP provider rejection is not retried', async () => {
   await assert.rejects(streamChat(opts()), ProviderError)
   assert.equal(attempts, 1)
 })
+
+for (const provider of ['groq','gemini']) {
+  test(`${provider} executes an app function and feeds its acknowledged result into the next model turn`, async () => {
+    config.provider = provider
+    const requests = []
+    globalThis.fetch = async (_url, options) => {
+      const body = JSON.parse(options.body)
+      requests.push(body)
+      const first = requests.length === 1
+      if (provider === 'groq') {
+        const chunk = first
+          ? {choices:[{delta:{tool_calls:[{index:0,id:'call-1',type:'function',function:{name:'set_mission',arguments:'{"crewCount":1}'}}]},finish_reason:'tool_calls'}]}
+          : {choices:[{delta:{content:'Crew set to one.'},finish_reason:'stop'}]}
+        return new Response(`data: ${JSON.stringify(chunk)}\n\ndata: [DONE]\n\n`)
+      }
+      const chunk = first
+        ? {candidates:[{content:{parts:[{functionCall:{name:'set_mission',args:{crewCount:1}}}]}}]}
+        : {candidates:[{content:{parts:[{text:'Crew set to one.'}]}}]}
+      return new Response(`data: ${JSON.stringify(chunk)}\n\ndata: [DONE]\n\n`)
+    }
+    const calls = []
+    const events = []
+    const final = await streamChat({ ...opts((event) => events.push(event)), runTool:async (name,args) => {
+      calls.push([name,args])
+      return {applied:true,mission:{crewCount:1},status:'setup'}
+    } })
+    assert.equal(final,'Crew set to one.')
+    assert.deepEqual(calls,[['set_mission',{crewCount:1}]])
+    assert.ok(events.some((event) => event.t === 'tool' && event.result.applied === true))
+    if (provider === 'groq') {
+      const toolResult = requests[1].messages.find((m) => m.role === 'tool')
+      assert.deepEqual(JSON.parse(toolResult.content),{applied:true,mission:{crewCount:1},status:'setup'})
+      assert.ok(requests[0].tools.some((tool) => tool.function.name === 'set_mission'))
+    } else {
+      const toolResult = requests[1].contents.find((m) => m.parts?.[0]?.functionResponse)
+      assert.equal(toolResult.parts[0].functionResponse.response.result.applied,true)
+      assert.ok(requests[0].tools[0].functionDeclarations.some((tool) => tool.name === 'set_mission'))
+    }
+  })
+}

@@ -20,9 +20,14 @@ import { LedDot } from '@/ui/LedDot'
 import { cn } from '@/lib/cn'
 import { useMission } from '@/lib/useMission'
 import { useEngineData } from '@/lib/useEngineData'
-import { totalLoadKg } from '@/types/mission'
+import { totalLoadKg, perAstronautLoadKg } from '@/types/mission'
+import { validateDynamicRoute, validateMissionPatch } from '@/copilot/actions'
+import { scienceGoalOptions } from '@/lib/materials'
+import { usePlan } from '@/map/usePlan'
+import type { EngineRoute } from '@/lib/engineDataContext'
 import {
   copilotChatStream,
+  copilotActionResult,
   copilotHealth,
   copilotReset,
   type ChatStreamEvent,
@@ -68,6 +73,7 @@ export function CopilotDock({
   const inputRef = useRef<HTMLInputElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const handledActionIdsRef = useRef(new Set<string>())
 
   // Loop-control refs (stable across the dictation/tts callbacks).
   const callModeRef = useRef(callMode)
@@ -82,6 +88,10 @@ export function CopilotDock({
   }, [callMode, ttsEnabled, streaming])
 
   const { state: mission } = useMission()
+  const missionActions = useMission()
+  const plan = usePlan()
+  const actionStateRef = useRef({ mission, plan })
+  actionStateRef.current = { mission, plan }
   const engine = useEngineData()
 
   useEffect(() => {
@@ -116,12 +126,8 @@ export function CopilotDock({
       if (engine.cards.rad) available.push('cards/rad.json (RAD radiation)')
       if (engine.cards.rems) available.push('cards/rems.json (REMS weather)')
       if (engine.targets) available.push('targets.geojson (science targets)')
-      if (engine.mock) available.push('NOTE: data files are marked _mock (mock data build)')
     }
-    const missionState =
-      mission.status === 'setup'
-        ? null
-        : {
+    const missionState = {
             status: mission.status,
             crewCount: mission.config.crewCount,
             bodyMassKg: mission.config.bodyMassKg,
@@ -131,9 +137,18 @@ export function CopilotDock({
             sampleKgPerStop: mission.config.sampleKgPerStop,
             roverAvailable: mission.config.roverAvailable,
             scienceGoalId: mission.config.scienceGoalId || null,
+            selectedDestinationId: plan.selectedTargetId,
+            routeMode: plan.mode,
+            routePreference: mission.config.routePreference,
+            routeSlopeCapDeg: mission.config.routeSlopeCapDeg,
+            routeSlopeCapExplicit: mission.config.routeSlopeCapExplicit,
+            routeLoadKg: perAstronautLoadKg(mission.config),
+            availableDestinations: plan.goalTargets.map(({ id, name, badge }) => ({id,name,badge})),
+            availableScienceGoals: scienceGoalOptions.map(({ id, label }) => ({id,label})),
+            availableLayers: (engine.layers ?? []).filter((layer) => layer.available).map(({ id, name, badge }) => ({id,name,badge})),
           }
     return { missionState, availableData: available }
-  }, [engine, mission])
+  }, [engine, mission, plan])
 
   /** Core send used by both the composer and the voice-call loop. */
   const sendText = useCallback(
@@ -190,7 +205,64 @@ export function CopilotDock({
         }
       })
 
+      const executeAction = async (ev: Extract<ChatStreamEvent, { t: 'action' }>) => {
+        if (ctrl.signal.aborted) return
+        let result: Record<string, unknown>
+        try {
+          const a = ev.args
+          const latest = actionStateRef.current
+          if (ev.name === 'set_mission_screen') {
+            if (a.screen === 'setup') missionActions.reopenMission()
+            else if (a.screen === 'routes' && latest.mission.config.scienceGoalId) missionActions.confirmMission()
+            else throw new Error('Choose a science goal before opening routes.')
+            result = { applied:true, screen:a.screen }
+          } else if (ev.name === 'set_oxygen_budget') {
+            const budget = latest.plan.activeRoute?.budget_l
+            if (typeof a.litres !== 'number' || !Number.isFinite(a.litres) || budget === undefined || a.litres < 0 || a.litres > budget) throw new Error('Oxygen budget must be within the active route usable budget, in litres.')
+            latest.plan.setO2BudgetL(a.litres)
+            result = { applied:true, usableBudgetL:a.litres, maximumBudgetL:budget }
+          } else if (ev.name === 'set_mission') {
+            const error = validateMissionPatch(a)
+            if (error) throw new Error(error)
+            missionActions.patchConfig(a as never)
+            result = { applied:true, mission:{...latest.mission.config,...a}, status:latest.mission.status }
+          } else if (ev.name === 'select_destination') {
+            const target = latest.plan.goalTargets.find((t) => t.id === a.id)
+            if (!target) throw new Error('Destination ID is not an available target for this mission.')
+            latest.plan.selectTarget(target.id)
+            result = { applied:true, selectedDestination:{id:target.id,name:target.name,badge:target.badge} }
+          } else if (ev.name === 'set_layer') {
+            const layer = (engine.layers ?? []).find((l) => l.id === a.id && l.available)
+            if (!layer || typeof a.visible !== 'boolean') throw new Error('Layer ID is unavailable or visibility is not boolean.')
+            plan.setLayerVisibility(layer.id, a.visible)
+            result = { applied:true, layer:{id:layer.id,name:layer.name,visible:a.visible,badge:layer.badge} }
+          } else if (ev.name === 'set_route_preference' || ev.name === 'reset_route_constraints') {
+            const preference = ev.name === 'reset_route_constraints' ? 'fastest' : a.mode
+            if (!['fastest','safest','balanced'].includes(String(preference))) throw new Error('Unsupported route preference.')
+            const route = ev.route as unknown as EngineRoute | undefined
+            const config = latest.mission.config
+            const targetIds = latest.plan.goalTargets.map((target) => target.id)
+            const slopeCapDeg = ev.name === 'reset_route_constraints' ? 15 : (typeof a.slopeCapDeg === 'number' ? a.slopeCapDeg : config.routeSlopeCapDeg)
+            if (!validateDynamicRoute(route, preference as 'fastest'|'safest'|'balanced', targetIds, slopeCapDeg)) throw new Error('The routing service returned incomplete, mismatched or unsupported route data; the current route was retained.')
+            const destination = latest.plan.goalTargets.find((target) => target.id === route.stop)
+            if (!route || !destination) throw new Error('Route destination is not available to this mission; the current route was retained.')
+            if (a.destinationId === undefined && route.stop !== latest.plan.selectedTargetId) throw new Error('The selected destination changed while the route was being calculated; the stale route was discarded.')
+            if (config.roverAvailable) throw new Error('Rover availability changed while the route was being calculated; the foot-only route was discarded.')
+            if (route.crew !== config.crewCount || route.routing?.body_mass_kg !== config.bodyMassKg || route.routing?.load_kg_per_astronaut !== perAstronautLoadKg(config) || route.routing?.sample_kg_per_stop !== config.sampleKgPerStop) throw new Error('Mission values changed while the route was being calculated; the stale route was discarded.')
+            if (slopeCapDeg < 0 || slopeCapDeg > 15) throw new Error('Slope cap must be 0–15 degrees; the model hard limit remains 15 degrees.')
+            missionActions.patchConfig({ routePreference:preference as 'fastest'|'safest'|'balanced', routeSlopeCapDeg:slopeCapDeg, routeSlopeCapExplicit:ev.name === 'reset_route_constraints' ? false : (typeof a.slopeCapDeg === 'number' || config.routeSlopeCapExplicit) })
+            if (route.stop !== latest.plan.selectedTargetId) latest.plan.selectTarget(route.stop)
+            latest.plan.applyDynamicRoute(route)
+            result = { applied:true, preference, selectedCandidate:route.mode, routeId:route.id, metrics:{total_s:route.total_s,distance_m:route.distance_m,budget_l:route.budget_l,pnr_index:route.pnr_index}, routing:route.routing, goalAccess:route.goal_access, routeSlopeCapExplicit:ev.name === 'reset_route_constraints' ? false : (typeof a.slopeCapDeg === 'number' || mission.config.routeSlopeCapExplicit) }
+          } else throw new Error('Unsupported command.')
+        } catch (error) { result = { applied:false, error:error instanceof Error ? error.message : 'Command failed.' } }
+        try { await copilotActionResult(ev.callId, result) } catch { /* Stale/aborted stream: do not retry an action. */ }
+      }
       const onEvent = (ev: ChatStreamEvent) => {
+        if (ev.t === 'action' && !handledActionIdsRef.current.has(ev.callId)) {
+          handledActionIdsRef.current.add(ev.callId)
+          void executeAction(ev)
+        }
         setMessages((m) =>
           m.map((msg) => {
             if (msg.id !== replyId) return msg
@@ -249,7 +321,7 @@ export function CopilotDock({
         }
       }
     },
-    [llmLive, backendDown, buildContext],
+    [llmLive, backendDown, buildContext, missionActions, mission, plan, engine],
   )
 
   const send = () => {
@@ -266,6 +338,7 @@ export function CopilotDock({
 
   const clearAll = async () => {
     endCall()
+    handledActionIdsRef.current.clear()
     await copilotReset()
     setMessages([])
   }

@@ -61,16 +61,17 @@ test('return margin leaves spare O2 above the reserve on arrival', () => {
   assert.ok(Math.abs(r.spareAtHomeL - 3) < 1e-9)
 })
 
-test('status: reaches the stop / no-go / missing back field is flagged', () => {
+test('status: reaches the stop / no-go; incomplete return arrays disable turn-back', () => {
   assert.equal(turnBackPoint(tiny, 20, 1).status, 'reaches-stop')
   assert.equal(turnBackPoint(tiny, -1, 1).status, 'no-go')
   const noBack = { ...tiny, back: undefined }
-  assert.equal(turnBackPoint(noBack, 15, 1).backAssumed, true)
-  assert.equal(turnBackPoint(tiny, 15, 1).backAssumed, false)
+  assert.equal(turnBackPoint(noBack, 15, 1), null)
+  assert.equal(budgetToReachStop(noBack,1),null)
+  assert.equal('backAssumed' in turnBackPoint(tiny, 15, 1), false)
   assert.equal(turnBackPoint({ ...tiny, cum: { t_s: [0], o2_l: [0] } }, 15, 1), null)
 })
 
-test('acceptance (B4): the marker moves toward the habitat as the budget drops — every mock route', () => {
+test('acceptance (B4): the marker moves toward the habitat as the budget drops — every real route', () => {
   const { plan } = o2PlanFromConstants(constants)
   for (const route of routes) {
     let prev = Infinity
@@ -94,7 +95,7 @@ test('budgetToReachStop is the exact threshold between reaching and turning back
   }
 })
 
-test('slider agrees with Mission Replay (replay-core.js) on every mock route and budget', () => {
+test('slider agrees with Mission Replay (replay-core.js) on every real route and budget', () => {
   const { plan } = o2PlanFromConstants(constants)
   for (const route of routes) {
     for (const b of [10, 25, 40, 60, 90, 130, 200, plan.maxBudgetL]) {

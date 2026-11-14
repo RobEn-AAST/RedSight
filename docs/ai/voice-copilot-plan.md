@@ -1,4 +1,4 @@
-# RedSight Voice Copilot — Implementation Plan (STATUS: WIRED 2026-11-13 — see the update note)
+# RedSight Voice Copilot — Implementation Plan (STATUS: WIRED + FUNCTION EXECUTION 2026-11-14)
 
 **Written:** 2026-11-13 (hackathon day 1) by the web-foundation worker, from the user's request and
 live official docs (sources §9, all accessed 2026-11-13).
@@ -13,8 +13,10 @@ streaming replies, cloud STT + an in-browser Whisper fallback, TTS **added** (wa
 recorded in `server/README.md` ("Honest deviations"); the runtime system prompt now lives in
 `server/prompt.mjs` (this doc remains the design rationale). Still true: **no key has been used
 yet** (the user supplies it after this session), the §7 route-mutation tool contracts stay
-UNCONNECTED, and shipping a live AI feature at judging remains gated on the team decision (U4)
-with the demo never depending on it.
+UNCONNECTED at that time. **Superseding update (2026-11-14):** the user authorized direct structured
+functions and a FastAPI bridge to native terrain routing on branch `AI-functions`; current exact
+capabilities and availability limits are in [`function-execution.md`](function-execution.md).
+Provider credentials remain server-side. The static demo does not depend on AI availability.
 
 ---
 

@@ -14,6 +14,17 @@
 import { config } from './config.mjs'
 import { searchToolSchema } from './search.mjs'
 
+const actionTools = [
+  { name:'set_oxygen_budget', description:'Set the modeled usable oxygen budget in litres, within the active route budget; updates the turn-back slider.', parameters:{type:'object',properties:{litres:{type:'number',minimum:0}},required:['litres']} },
+  { name:'set_mission_screen', description:'Open mission setup or confirm the configured mission and open routes.', parameters:{type:'object',properties:{screen:{type:'string',enum:['setup','routes']}},required:['screen']} },
+  { name: 'set_mission', description: 'Change mission setup fields. Only supplied values change.', parameters: { type: 'object', properties: { crewCount:{type:'integer'}, bodyMassKg:{type:'number'}, loadKg:{type:'number'}, loadBasis:{type:'string',enum:['perAstronaut','total']}, sampleKgPerStop:{type:'number'}, roverAvailable:{type:'boolean'}, scienceGoalId:{type:'string'} } } },
+  { name: 'select_destination', description: 'Select an available mission target by exact ID.', parameters: { type:'object', properties:{ id:{type:'string'} }, required:['id'] } },
+  { name: 'set_route_preference', description: 'Calculate and select a new native-terrain route using fastest, lowest-modeled-hazard (safest), or balanced optimization. Optional destinationId selects an available observed stop. Optional slopeCapDeg is a hard cap no greater than 15.', parameters:{ type:'object', properties:{ mode:{type:'string',enum:['fastest','safest','balanced']}, destinationId:{type:'string',enum:['S1','S2','S3','D1','D2']}, slopeCapDeg:{type:'number',minimum:0,maximum:15} }, required:['mode'] } },
+  { name:'reset_route_constraints', description:'Clear the explicit mobility slope preference, restore the documented 15 degree Scenario ceiling and fastest mode, and calculate that route again.', parameters:{type:'object',properties:{}} },
+  { name: 'set_layer', description: 'Toggle an available map layer by exact ID.', parameters:{ type:'object', properties:{ id:{type:'string'}, visible:{type:'boolean'} }, required:['id','visible'] } },
+]
+const toolSchemas = [searchToolSchema, ...actionTools]
+
 const MAX_TOOL_ROUNDS = 2
 
 export class ProviderError extends Error {
@@ -93,7 +104,7 @@ async function fetchProvider(url, options, label) {
 const GROQ_CHAT_URL = 'https://api.groq.com/openai/v1/chat/completions'
 
 /** Groq/OpenAI tool schema (same declaration, function-wrapper shape). */
-const groqTool = { type: 'function', function: searchToolSchema }
+const groqTools = toolSchemas.map((s) => ({ type: 'function', function: s }))
 
 async function groqStreamChat({ system, messages, runTool, signal, onEvent, voice = false }) {
   const convo = [{ role: 'system', content: system }, ...messages]
@@ -108,7 +119,7 @@ async function groqStreamChat({ system, messages, runTool, signal, onEvent, voic
       body: JSON.stringify({
         model,
         messages: convo,
-        tools: [groqTool],
+        tools: groqTools,
         tool_choice: 'auto',
         temperature: config.temperature,
         max_tokens: maxTokens,
@@ -150,8 +161,7 @@ async function groqStreamChat({ system, messages, runTool, signal, onEvent, voic
     text = roundText || text
     if (finish !== 'tool_calls' || toolCalls.length === 0) return text
 
-    // Execute at most the first requested call (plan §7: one tool per turn).
-    const call = toolCalls[0]
+    // Every requested call receives a protocol result; the action runner limits mutations.
     convo.push({
       role: 'assistant',
       content: roundText || null,
@@ -161,6 +171,7 @@ async function groqStreamChat({ system, messages, runTool, signal, onEvent, voic
         function: { name: c.name, arguments: c.args || '{}' },
       })),
     })
+    for (const call of toolCalls.filter(Boolean)) {
     let result
     try {
       const args = JSON.parse(call.args || '{}')
@@ -170,6 +181,7 @@ async function groqStreamChat({ system, messages, runTool, signal, onEvent, voic
     }
     onEvent({ t: 'tool', name: call.name, args: call.args, result })
     convo.push({ role: 'tool', tool_call_id: call.id, content: JSON.stringify(result).slice(0, 6000) })
+    }
   }
   return text
 }
@@ -182,18 +194,13 @@ const geminiUrl = () =>
 /** Gemini functionDeclarations use the proto Type enums (uppercase). */
 function geminiToolSchema() {
   return {
-    functionDeclarations: [
-      {
-        name: searchToolSchema.name,
-        description: searchToolSchema.description,
-        parameters: {
-          type: 'OBJECT',
-          properties: { query: { type: 'STRING', description: 'search terms' } },
-          required: ['query'],
-        },
-      },
-    ],
+    functionDeclarations: toolSchemas.map((s) => ({ name:s.name, description:s.description, parameters: geminiParameters(s.parameters) })),
   }
+}
+
+function geminiParameters(schema) {
+  const types = { object:'OBJECT', string:'STRING', number:'NUMBER', integer:'INTEGER', boolean:'BOOLEAN' }
+  return { ...schema, type:types[schema.type] || schema.type, properties:Object.fromEntries(Object.entries(schema.properties || {}).map(([k,v]) => [k,{...v,type:types[v.type] || v.type}])) }
 }
 
 async function geminiStreamChat({ system, messages, runTool, signal, onEvent }) {
@@ -269,10 +276,13 @@ export function streamChat(opts) {
 
 /** Map a tool request to the one wired executor; unknown tools are refused. */
 export async function runTool(name, args) {
-  if (name !== searchToolSchema.name) throw new Error(`Unknown tool: ${name}`)
-  const { searchMissionKnowledge } = await import('./search.mjs')
-  const query = typeof args?.query === 'string' ? args.query.slice(0, 300) : ''
-  if (!query) throw new Error('Missing query')
-  const results = searchMissionKnowledge(query)
-  return { query, matchCount: results.length, results }
+  if (name === searchToolSchema.name) {
+    const { searchMissionKnowledge } = await import('./search.mjs')
+    const query = typeof args?.query === 'string' ? args.query.slice(0, 300) : ''
+    if (!query) throw new Error('Missing query')
+    const results = searchMissionKnowledge(query)
+    return { query, matchCount: results.length, results }
+  }
+  if (actionTools.some((t) => t.name === name)) return { clientAction: true, name, args }
+  throw new Error(`Unknown tool: ${name}`)
 }

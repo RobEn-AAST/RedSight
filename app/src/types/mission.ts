@@ -27,6 +27,11 @@ export interface MissionConfig {
   scienceGoalNote: string
   /** ISO timestamp when the operator confirmed the mission; null while in setup. */
   confirmedAt: string | null
+  /** Copilot-selected route objective and explicit Scenario slope preference. */
+  routePreference: 'fastest' | 'safest' | 'balanced'
+  routeSlopeCapDeg: number
+  /** true only when the operator explicitly selected the Scenario cap. */
+  routeSlopeCapExplicit: boolean
 }
 
 export type LoadBasis = 'perAstronaut' | 'total'
@@ -49,6 +54,9 @@ export const defaultMissionConfig: MissionConfig = {
   scienceGoalId: '',
   scienceGoalNote: '',
   confirmedAt: null,
+  routePreference: 'fastest',
+  routeSlopeCapDeg: 15,
+  routeSlopeCapExplicit: false,
 }
 
 /** Model limits (team choices, plan §8) — keep in one place for validation + UI. */

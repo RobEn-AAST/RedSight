@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Map as MapLibreMap } from 'maplibre-gl'
 import type { FeatureCollection } from 'geojson'
 
@@ -7,6 +7,7 @@ import type {
   EngineRoute,
   EngineRouteIndexEntry,
   EngineRouteMode,
+  EngineRoutePreference,
   PlanFile,
   PlanIndexEntry,
   PlanMember,
@@ -22,7 +23,6 @@ const MODES: EngineRouteMode[] = ['fastest', 'safest']
 /** One plan member in the §15 route shape the turn-back slider and replay read. */
 function memberAsRoute(plan: PlanFile, m: PlanMember): EngineRoute {
   return {
-    _mock: plan._mock,
     id: `${plan.id}:${m.member}`,
     stop: m.targets[m.targets.length - 1] ?? plan.target,
     mode: plan.mode,
@@ -107,7 +107,6 @@ function routeToPlan(route: EngineRoute): PlanFile {
     park_index: null,
   }
   return {
-    _mock: route._mock,
     id: route.id,
     target: route.stop,
     mode: route.mode,
@@ -169,7 +168,9 @@ export function PlanProvider({ children }: { children: ReactNode }) {
   const engine = useEngineData()
   const { state } = useMission()
   const [chosenTargetId, selectTarget] = useState<string | null>(null)
-  const [mode, setMode] = useState<EngineRouteMode>('fastest')
+  const [mode, setMode] = useState<EngineRoutePreference>('fastest')
+  const [dynamicRoute, setDynamicRoute] = useState<EngineRoute | null>(null)
+  const [layerVisibility, setLayerVisibilityState] = useState<Record<string, boolean>>({})
   const [crewMode, setCrewMode] = useState<CrewMode>('together')
   const [map, setMap] = useState<MapLibreMap | null>(null)
   const [o2BudgetL, setO2BudgetL] = useState<number | null>(null)
@@ -182,6 +183,19 @@ export function PlanProvider({ children }: { children: ReactNode }) {
   const wantLoad = nearestLoadBucket(perAstronautLoadKg(state.config))
   const wantRover = state.config.roverAvailable
   const goal = state.config.scienceGoalId
+
+  const chooseMode = useCallback((next: EngineRoutePreference) => {
+    setDynamicRoute(null)
+    setMode(next)
+  }, [])
+  const applyDynamicRoute = useCallback((route: EngineRoute) => {
+    setDynamicRoute(route)
+    setMode(route.mode)
+  }, [])
+  const clearDynamicRoute = useCallback(() => setDynamicRoute(null), [])
+  const setLayerVisibility = useCallback((id: string, visible: boolean) => {
+    setLayerVisibilityState((current) => ({ ...current, [id]: visible }))
+  }, [])
 
   const { goalTargets, goalUnmatched } = useMemo(() => {
     const all: PlanTarget[] = engine.targets ?? []
@@ -272,10 +286,17 @@ export function PlanProvider({ children }: { children: ReactNode }) {
   const store = useMemo<PlanStore>(() => {
     const current = loaded && loaded.key === key ? loaded.plans : null
     const plans = current ?? {}
-    const contractRoutes = legacy
+    const baseContractRoutes = legacy
       ? (loaded && loaded.key === key ? loaded.routes : {})
       : (loadedContract && loadedContract.key === routeKey ? loadedContract.routes : {})
-    const status = !selectedTargetId
+    const validDynamic = dynamicRoute && dynamicRoute.stop === selectedTargetId &&
+      dynamicRoute.crew === state.config.crewCount && !state.config.roverAvailable &&
+      dynamicRoute.routing?.body_mass_kg === state.config.bodyMassKg &&
+      dynamicRoute.routing?.load_kg_per_astronaut === perAstronautLoadKg(state.config) &&
+      dynamicRoute.routing?.sample_kg_per_stop === state.config.sampleKgPerStop &&
+      dynamicRoute.routing?.slope_cap_deg === state.config.routeSlopeCapDeg ? dynamicRoute : null
+    const contractRoutes = (validDynamic ? { ...baseContractRoutes, [validDynamic.mode]: validDynamic } : baseContractRoutes) as Partial<Record<EngineRoutePreference, EngineRoute>>
+    const status = validDynamic ? 'ready' : (state.config.routeSlopeCapExplicit || mode === 'balanced') ? 'missing' : !selectedTargetId
       ? 'idle'
       : !pick
         ? 'missing'
@@ -285,7 +306,8 @@ export function PlanProvider({ children }: { children: ReactNode }) {
             ? 'ready'
             : 'missing'
     // If only one mode's file exists, show that one instead of nothing.
-    const activePlan = plans[mode] ?? plans.fastest ?? plans.safest ?? null
+    const staticMode: EngineRouteMode = mode === 'safest' ? 'safest' : 'fastest'
+    const activePlan = validDynamic ? routeToPlan(validDynamic) : (state.config.routeSlopeCapExplicit || mode === 'balanced') ? null : (plans[staticMode] ?? plans.fastest ?? plans.safest ?? null)
     const canSplit = !!activePlan?.split && activePlan.split.members.length > 1
     const activeMembers =
       crewMode === 'split' && canSplit ? activePlan!.split!.members : (activePlan?.together ?? [])
@@ -295,7 +317,11 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       selectedTargetId,
       selectTarget,
       mode,
-      setMode,
+      setMode: chooseMode,
+      applyDynamicRoute,
+      clearDynamicRoute,
+      layerVisibility,
+      setLayerVisibility,
       crewMode: canSplit ? crewMode : 'together',
       setCrewMode,
       plans,
@@ -306,7 +332,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       noReturnLine: limits && limits.key === limitsFile ? limits.line : null,
       preset: pick?.preset ?? null,
       legacy,
-      activeRoute: activePlan && activeMembers[0] ? memberAsRoute(activePlan, activeMembers[0]) : null,
+      activeRoute: validDynamic ?? (activePlan && activeMembers[0] ? memberAsRoute(activePlan, activeMembers[0]) : null),
       routesStatus: status,
       o2BudgetL,
       setO2BudgetL,
@@ -315,7 +341,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       map,
       setMap,
     }
-  }, [goalTargets, goalUnmatched, selectedTargetId, mode, crewMode, loaded, key, loadedContract, routeKey, pick, limits, limitsFile, legacy, map, o2BudgetL, showCuriosityPath])
+  }, [goalTargets, goalUnmatched, selectedTargetId, mode, crewMode, loaded, key, loadedContract, routeKey, pick, limits, limitsFile, legacy, map, o2BudgetL, showCuriosityPath, dynamicRoute, state.config, chooseMode, applyDynamicRoute, clearDynamicRoute, layerVisibility, setLayerVisibility])
 
   return <PlanContext.Provider value={store}>{children}</PlanContext.Provider>
 }

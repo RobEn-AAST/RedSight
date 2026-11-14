@@ -13,7 +13,6 @@ import type { CuriosityPathData } from '@/map/curiosityPath'
 export type ContractBadge = 'Observed' | 'Derived' | 'Scenario' | 'Unavailable'
 
 export interface EngineMeta {
-  _mock?: boolean
   ops_box: { west: number; east: number; south: number; north: number }
   crs: string
   grid: {
@@ -73,6 +72,7 @@ export interface EngineConstant {
 export type EngineConstants = Record<string, EngineConstant>
 
 export type EngineRouteMode = 'fastest' | 'safest'
+export type EngineRoutePreference = EngineRouteMode | 'balanced'
 
 export interface EngineRouteIndexEntry {
   id: string
@@ -86,13 +86,18 @@ export interface EngineRouteIndexEntry {
 }
 
 export interface EngineRoute {
-  _mock?: boolean
   id: string
   stop: string
-  mode: EngineRouteMode
+  mode: EngineRoutePreference
+  preference?: EngineRoutePreference
+  total_s?: number
+  distance_m?: number
+  observed_stop_lonlat?: [number, number]
+  goal_access?: { observed_stop_lonlat?: [number, number]; route_goal_lonlat?: [number, number]; badge: 'Derived'; status: 'approach_only'; offset_m: number; access_bound_m: number; last_leg_modeled: false }
   crew: number
   load_kg: number
   badge: ContractBadge
+  routing?: { slope_cap_deg: number; hard_max_deg: number; native_resolution_m: number; objective: string; objective_cost: number; balanced_definition?: string; data_class: 'Scenario'; return_model?: string; body_mass_kg?: number; load_kg_per_astronaut?: number; sample_kg_per_stop?: number; sample_mass_applied_to_return?: boolean }
   /** Usable O2 per crew member after reserve, litres. */
   budget_l: number
   constants_hash: string
@@ -119,7 +124,6 @@ export interface EngineRoute {
 
 export interface EngineHazards {
   type: 'FeatureCollection'
-  _mock?: boolean
   features: {
     type: 'Feature'
     properties: { reason: string; label?: string }
@@ -145,7 +149,6 @@ export interface EngineCardLimit {
 }
 
 export interface EngineCard {
-  _mock?: boolean
   title: string
   badge: ContractBadge
   values: EngineCardValue[]
@@ -239,10 +242,9 @@ export interface PlanSplit {
 }
 
 export interface PlanFile {
-  _mock?: boolean
   id: string
   target: string
-  mode: EngineRouteMode
+  mode: EngineRoutePreference
   crew: number
   load_kg: number
   rover: boolean
@@ -276,8 +278,6 @@ export interface EngineDataState {
   targets: PlanTarget[] | null
   planIndex: PlanIndexEntry[] | null
   curiosityPath: CuriosityPathData | null
-  /** true when any loaded file carries the `_mock` flag. */
-  mock: boolean
   /** true once the initial load finished (found or not). */
   probed: boolean
 }
@@ -294,7 +294,6 @@ export const emptyEngineData: EngineDataState = {
   targets: null,
   planIndex: null,
   curiosityPath: null,
-  mock: false,
   probed: false,
 }
 

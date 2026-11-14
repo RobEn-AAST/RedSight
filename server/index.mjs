@@ -27,6 +27,7 @@ import { readFile, stat } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
+import { randomUUID } from 'node:crypto'
 
 import { config, bannedPhrases } from './config.mjs'
 import { buildSystemPrompt } from './prompt.mjs'
@@ -39,9 +40,14 @@ const distDir = path.join(serverDir, '../app/dist')
 const hasDist = existsSync(path.join(distDir, 'index.html'))
 
 const SESSION_RE = /^[A-Za-z0-9_-]{8,64}$/
+const pendingActions = new Map()
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
+  '.geojson': 'application/geo+json; charset=utf-8',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
   '.css': 'text/css; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
   '.svg': 'image/svg+xml',
@@ -257,17 +263,69 @@ async function handleChat(req, res, ip) {
   const timeout = AbortSignal.timeout(config.llmUpstreamTimeoutMs)
   const onUpstreamAbort = () => abort.abort()
   timeout.addEventListener('abort', onUpstreamAbort, { once: true })
-  req.on('close', () => abort.abort())
+  res.on('close', () => abort.abort())
   const heartbeat = setInterval(() => res.write(': ping\n\n'), 15_000)
   heartbeat.unref?.()
 
   let finalText = ''
+  let actionFingerprint = null
+  const actionRunner = async (name, args) => {
+    const result = await runTool(name, args)
+    if (!result?.clientAction) return result
+    const fingerprint = `${name}:${JSON.stringify(args)}`
+    if (actionFingerprint !== null) return { applied:false, error:'Only one app-changing command is permitted per assistant turn.' }
+    actionFingerprint = fingerprint
+    let route = null
+    if (name === 'set_route_preference' || name === 'reset_route_constraints') {
+      const mission = context.missionState ?? {}
+      const destinationId = args.destinationId ?? mission.selectedDestinationId
+      const routeMode = name === 'reset_route_constraints' ? 'fastest' : args.mode
+      const cap = name === 'reset_route_constraints' ? 15 : (args.slopeCapDeg ?? mission.routeSlopeCapDeg ?? 15)
+      if (!['S1','S2','S3','D1','D2'].includes(destinationId)) return { applied:false, error:'Select an available destination before requesting a route.' }
+      if (typeof cap !== 'number' || !Number.isFinite(cap) || cap < 0 || cap > 15) return { applied:false, error:'Slope cap must be 0–15 degrees; the hard model limit is 15 degrees.' }
+      if (mission.roverAvailable === true) return { applied:false, error:'The native routing engine currently supports foot travel only; no rover route was calculated or substituted.' }
+      const base = (process.env.ROUTING_API_URL || 'http://127.0.0.1:8790').replace(/\/$/, '')
+      let response
+      try {
+        response = await fetch(`${base}/route`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+          destination_id:destinationId, mode:routeMode, slope_cap_deg:cap,
+          crew_count:mission.crewCount, body_mass_kg:mission.bodyMassKg, load_kg:mission.routeLoadKg,
+          sample_kg_per_stop:mission.sampleKgPerStop,
+        }), signal:abort.signal })
+      } catch (e) {
+        if (abort.signal.aborted) throw e
+        return { applied:false, error:'Native routing service is unavailable; no route changed. Start engine/api.py with the verified terrain manifest configured.' }
+      }
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok || payload.status !== 'ok' || !payload.route) {
+        const detail = payload.detail
+        return { applied:false, error:typeof detail === 'string' ? detail : detail?.message ?? payload.message ?? 'Route calculation failed; no existing route was substituted.', code:detail?.code ?? payload.code }
+      }
+      route = payload.route
+    }
+    const callId = randomUUID()
+    const key = `${sessionId}:${callId}`
+    const actionPromise = new Promise((resolve, reject) => {
+      const timer = setTimeout(() => { pendingActions.delete(key); reject(new Error('App action timed out; no change was confirmed.')) }, 30_000)
+      const onAbort = () => { clearTimeout(timer); pendingActions.delete(key); reject(Object.assign(new Error('Action cancelled.'), { name:'AbortError' })) }
+      abort.signal.addEventListener('abort', onAbort, { once:true })
+      pendingActions.set(key, { resolve: (value) => { abort.signal.removeEventListener('abort', onAbort); clearTimeout(timer); resolve(value) } })
+      sseWrite(res, { t: 'action', callId, name, args, ...(route ? { route } : {}) })
+    })
+    const applied = await actionPromise
+    if ((name === 'set_route_preference' || name === 'reset_route_constraints') && applied?.applied) {
+      return { ...applied, route:{ id:route.id, mode:route.mode, preference:route.preference, destination:route.stop,
+        time_s:route.total_s, distance_m:route.distance_m, budget_l:route.budget_l, pnr_index:route.pnr_index,
+        badge:route.badge, goal_access:route.goal_access, routing:route.routing } }
+    }
+    return applied
+  }
   try {
     finalText =
       (await streamChat({
         system,
         messages: history,
-        runTool,
+        runTool: actionRunner,
         voice: body.voice === true,
         signal: AbortSignal.any?.([abort.signal, timeout]) ?? abort.signal,
         onEvent: (ev) => {
@@ -297,6 +355,38 @@ async function handleChat(req, res, ip) {
     timeout.removeEventListener('abort', onUpstreamAbort)
     res.end()
   }
+}
+
+async function handleRoute(req, res, ip) {
+  if (!rateCheck(ip, 1)) return send(res, 429, { message: 'Too many routing requests; retry shortly.' })
+  let body
+  try { body = JSON.parse((await readBody(req, 4096)).toString('utf8')) }
+  catch { return send(res, 400, { message: 'Invalid routing request JSON.' }) }
+  const controller = new AbortController()
+  res.on('close', () => controller.abort())
+  try {
+    const upstream = await fetch(`${(process.env.ROUTING_API_URL || 'http://127.0.0.1:8790').replace(/\/$/, '')}/route`, {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body),
+      signal:AbortSignal.any([controller.signal, AbortSignal.timeout(95_000)]),
+    })
+    return send(res, upstream.status, await upstream.json())
+  } catch {
+    if (!res.destroyed) return send(res, 503, { message: 'Routing service unavailable; no route was substituted.' })
+  }
+}
+
+async function handleActionResult(req, res) {
+  let body
+  try { body = JSON.parse((await readBody(req, 16_000)).toString('utf8') || '{}') } catch { return send(res, 400, { error: 'bad-json' }) }
+  const sessionId = String(req.headers['x-copilot-session'] ?? '')
+  const callId = String(body.callId ?? '')
+  if (!SESSION_RE.test(sessionId) || !/^[0-9a-f-]{36}$/i.test(callId)) return send(res, 400, { error: 'bad-action-id' })
+  const key = `${sessionId}:${callId}`
+  const pending = pendingActions.get(key)
+  if (!pending) return send(res, 409, { error: 'stale-action', message: 'Action is stale or already completed.' })
+  pendingActions.delete(key)
+  pending.resolve(body.result && typeof body.result === 'object' ? body.result : { error: 'Invalid app result' })
+  return send(res, 200, { ok: true })
 }
 
 async function handleReset(req, res) {
@@ -410,12 +500,16 @@ const server = createServer(async (req, res) => {
   if (!originAllowed(req)) return send(res, 403, { error: 'origin-not-allowed' })
 
   try {
-    if (url.pathname === '/api/copilot/health' && req.method === 'GET') {
+    if (url.pathname === '/api/routing/route' && req.method === 'POST') {
+      await handleRoute(req, res, ip)
+    } else if (url.pathname === '/api/copilot/health' && req.method === 'GET') {
       send(res, 200, health(), cors)
     } else if (url.pathname === '/api/copilot/stt' && req.method === 'POST') {
       await handleStt(req, res, ip)
     } else if (url.pathname === '/api/copilot/chat' && req.method === 'POST') {
       await handleChat(req, res, ip)
+    } else if (url.pathname === '/api/copilot/action-result' && req.method === 'POST') {
+      await handleActionResult(req, res)
     } else if (url.pathname === '/api/copilot/tts' && req.method === 'POST') {
       await handleTts(req, res, ip)
     } else if (url.pathname === '/api/copilot/reset' && req.method === 'POST') {

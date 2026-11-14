@@ -5,6 +5,7 @@ import type { FeatureCollection } from 'geojson'
 import type {
   EngineRoute,
   EngineRouteMode,
+  EngineRoutePreference,
   PlanFile,
   PlanMember,
   PlanTarget,
@@ -38,14 +39,18 @@ export interface PlanStore {
   goalUnmatched: boolean
   selectedTargetId: string | null
   selectTarget: (id: string) => void
-  mode: EngineRouteMode
-  setMode: (mode: EngineRouteMode) => void
+  mode: EngineRoutePreference
+  setMode: (mode: EngineRoutePreference) => void
+  applyDynamicRoute: (route: EngineRoute) => void
+  clearDynamicRoute: () => void
+  layerVisibility: Record<string, boolean>
+  setLayerVisibility: (id: string, visible: boolean) => void
   crewMode: CrewMode
   setCrewMode: (mode: CrewMode) => void
   /** Plan files for the selected target, by mode. */
   plans: Partial<Record<EngineRouteMode, PlanFile>>
   /** §15 route contract files for the selected target (carry seg[].cost_terms). */
-  contractRoutes: Partial<Record<EngineRouteMode, EngineRoute>>
+  contractRoutes: Partial<Record<EngineRoutePreference, EngineRoute>>
   status: PlanStatus
   /** The plan for the selected target and mode, if loaded. */
   activePlan: PlanFile | null

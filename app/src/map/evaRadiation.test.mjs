@@ -30,7 +30,7 @@ test('parses committed cards/rad.json without banned wording or mock flag', () =
   assert.equal(params.ratePmMSvPerDay, 0.12)
   assert.equal(params.careerLimitMSv, 600)
   assert.equal(params.sepValueText, '418 µGy (Si)')
-  assert.equal(params.mock, false)
+  assert.equal('mock' in params, false)
 })
 
 test('4-hour EVA dose matches rad.json baseline (~0.11 mSv) and NASA-STD-3001 comparison', () => {

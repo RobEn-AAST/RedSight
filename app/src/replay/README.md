@@ -16,7 +16,7 @@ replay.setRoute(other); // route card A/B switch (Yassin)
 ```
 
 **Dev page:** `cd app && python3 -m http.server 8765` → http://localhost:8765/src/replay/dev.html
-(uses the mock contract route `public/data/routes/S1_fastest_2_15.json`; add `?route=<path>` for another;
+(uses the committed real contract route `public/data/routes/S1_fastest_2_15.json`; add `?route=<path>` for another;
 the top-left slider stands in for Jana's turn-back slider). **Voice:** 🔇/🔊 button, or `createReplay(map, { voice: true })`. **Tests:** `node --test app/src/replay/replay-core.test.js`.
 
 ## Route file fields the replay reads (proposal for the §15 contract — Ali/Yassin please confirm)
@@ -25,20 +25,17 @@ the top-left slider stands in for Jana's turn-back slider). **Voice:** 🔇/🔊
 |---|---|
 | `coords` | `[[lon, lat], …]` habitat → stop, N points |
 | `cum.t_s`, `cum.o2_l` | cumulative time (s) and O₂ per crew member (L) from the habitat to each point, N values, non-decreasing |
-| `back.t_s`, `back.o2_l` *(optional)* | time / O₂ to walk home **from** each point (the engine's return field sampled on the route). If missing, the replay assumes the way home costs the same as the way out and says so on the panel |
-| `back_fast` *(optional)* | fastest way home from each point: `t_s`, `o2_l`, `path` (see `app/public/data/README.md`). Enables the automatic switch below |
+| `back.t_s`, `back.o2_l` *(required)* | complete directed time / O₂ to walk home from each outbound point on the same route geometry. Missing or misaligned arrays disable replay and turn-back; outbound costs are never substituted |
+| alternate fastest return | Unavailable: production routes omit `back_fast` until complete legal geometry and matching costs are exported |
 | `budget_l` | default usable O₂ budget per member (after reserve) |
 | `stop`, `stop_name`, `mode`, `crew`, `load_kg`, `badge` | labels |
 
 O₂ model and notifications: [`docs/demo-focus-plan.md`](../../../docs/demo-focus-plan.md) §9c. Turn rule (threshold only):
 keep walking while `f × (cum.o2_l + m × back.o2_l) ≤ C − R`; the crew gets home with the reserve intact.
-Return leg = the same path reversed. Mock routes live in `app/public/data/routes/` (see that folder's README).
+Return geometry follows the same route in reverse with directed edge costs. Fixture routes used in tests are not production data.
 
-**Automatic switch to the fastest return (§9, done 2026-11-13).** With `back_fast` on a lowest-hazard route:
-the crew walks out on the route; where its own way back no longer fits (`f × (used + m × back) > B`) but the
-fastest way home still does, the replay logs/speaks "O₂ getting low: switching to the fastest way back",
-marks the spot (amber dot) and later walks home along `back_fast.path`. The turn-back point then uses the
-cheaper of the two ways home; Jana's slider (`turnback.ts`) uses the same rule, so both show the same point.
+Replay and the turn-back slider use the complete same-path directed return table. They do not claim or
+switch to an alternate fastest-home path while that geometry and its matching costs are unavailable.
 
 **In the React app:** `MissionReplay.tsx` plays `plan.activeRoute` on `plan.map`, follows the turn-back slider
 budget (`plan.o2BudgetL`) and docks the player in the side column.

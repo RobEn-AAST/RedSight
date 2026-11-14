@@ -18,7 +18,7 @@ export const EARTH_DELAY_SPEC = {
   summaryLine:
     "Earth can't help in time: a one-way signal takes up to ≈ 22 min (15–21 min during long surface stays), with relay gaps and blackouts, so the crew decides on site.",
   rationaleLine:
-    'That is why RedSight precomputes the turn-back limit and switches to the fastest return on its own when modeled O₂ gets low.',
+    'That is why RedSight computes a turn-back estimate from the available directed return costs. A separate fastest return is offered only when its complete geometry and costs are available.',
   provenanceNote:
     'Computed from Earth–Mars orbital separation and light speed (max ≈ 22 min one-way / ≈ 44 min round-trip; 15–21 min during long surface stays), alongside scheduled relay gaps and solar-conjunction blackouts.',
 } as const

@@ -29,11 +29,6 @@ export function SourceCard({ info, title }: { info: SourceInfo; title?: ReactNod
       <div className="flex flex-wrap items-center gap-2">
         {title && <span className="font-semibold text-ink">{title}</span>}
         <EvidenceBadge evidence={ev} />
-        {info.mock && (
-          <span className="label-console border border-scenario/50 bg-scenario-soft px-1.5 py-0.5 text-[10px] text-scenario">
-            Mock file
-          </span>
-        )}
       </div>
       <p className="text-ink-faint">{EVIDENCE_DEFINITION[ev]}</p>
       <p className="text-ink-dim">
@@ -124,7 +119,7 @@ export function SourcedValue({
 export function ConstantValue({ k, label }: { k: string; label: ReactNode }) {
   const engine = useEngineData()
   const c = engine.constants?.[k]
-  const info = constantInfo(c, engine.mock)
+  const info = constantInfo(c)
   if (!c || !info) {
     return (
       <SourcedValue

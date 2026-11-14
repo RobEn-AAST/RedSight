@@ -102,7 +102,7 @@ export function RouteBreakdown() {
   const sourceId = useId()
   const gradId = useId()
 
-  const otherMode: EngineRouteMode = mode === 'fastest' ? 'safest' : 'fastest'
+  const otherMode: EngineRouteMode = mode === 'safest' ? 'fastest' : 'safest'
   const safeMemberIdx = memberIdx < activeMembers.length ? memberIdx : 0
   const activeMember = activeMembers[safeMemberIdx] ?? null
 
@@ -235,7 +235,6 @@ export function RouteBreakdown() {
       : null
 
   const color = MODE_COLOR[mode]
-  const mock = engine.mock || !!activePlan?._mock || !!activeContract?._mock
   const isSignedElev = profile?.elevSource === 'route-elev'
   const terrainTerm = why?.activeSum.terms.terrain_factor ?? why?.activeSum.terms.terrain
   const hazTerm = why?.activeSum.terms.hazard_score
@@ -337,6 +336,15 @@ export function RouteBreakdown() {
             </p>
           )}
         </div>
+      )}
+
+      {activeRoute?.routing && (
+        <p className="border border-scenario/30 bg-scenario-soft/30 px-3 py-2 text-[11px] leading-relaxed text-ink-dim">
+          Scenario route computed on the native DTM at {activeRoute.routing.native_resolution_m.toFixed(2)} m resolution,
+          with a {activeRoute.routing.slope_cap_deg}° hard cap (model ceiling {activeRoute.routing.hard_max_deg}°).
+          {activeRoute.routing.sample_kg_per_stop != null && ` Return load includes ${activeRoute.routing.sample_kg_per_stop} kg of samples per stop.`}{' '}
+          Separate fastest-return geometry is unavailable for this route; the return estimate follows the same modeled path.
+        </p>
       )}
 
       {/* Elevation profile */}
@@ -627,7 +635,6 @@ export function RouteBreakdown() {
                 profile?.elevSource === 'route-elev'
                   ? 'Per-vertex elevations come directly from the route file. Cost breakdown is aggregated by segment length.'
                   : 'Elevation profile integrates segment distance_m × tan(slope_deg) from the habitat; cost breakdown aggregates per-segment cost_terms.',
-              mock,
             }}
           />
         </div>

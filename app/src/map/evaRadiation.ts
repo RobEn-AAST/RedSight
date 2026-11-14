@@ -27,7 +27,6 @@ export interface RadCardLimitLike {
 }
 
 export interface RadCardLike {
-  _mock?: boolean
   title: string
   badge?: string
   values: RadCardValueLike[]
@@ -51,7 +50,6 @@ export interface RadCardParams {
   source: string
   primaryUrl: string | null
   dateRange: string | null
-  mock: boolean
 }
 
 export interface EvaRadiationEstimate {
@@ -108,7 +106,6 @@ export function parseRadCardParams(card: RadCardLike | null | undefined): RadCar
     source: card.source,
     primaryUrl: nasaUrl,
     dateRange: typeof card.date_range === 'string' ? card.date_range : null,
-    mock: card._mock === true,
   }
 }
 

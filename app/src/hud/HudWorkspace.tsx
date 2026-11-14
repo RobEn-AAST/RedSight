@@ -18,7 +18,7 @@ const plannedReadouts = [
   {
     icon: Flag,
     label: 'Return recommendation',
-    detail: 'Current zone (green/amber/red) + auto-switch to the fastest return when modeled O₂ runs low (§9).',
+    detail: 'Current modeled return budget and route state; alternate fastest-return switching is unavailable without complete legal return geometry.',
   },
 ]
 

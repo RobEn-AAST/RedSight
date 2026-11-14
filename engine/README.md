@@ -35,7 +35,11 @@ cells (Ali's had 281,563, −0.08 %) and 2,196 hazard polygons (was 2,207). Plan
 Scenario values per crew member, raw expected, no reserve or margin (old = previous shipped export with the
 30 W floor and old stops; new = this re-export). The turn-back index is the last route point on every route:
 the highest modeled round trip (about 88 L) is far below the 288.75 L usable budget, so no turn-back point
-triggers on any shipped route. `back_fast` is exported on the lowest-hazard routes only.
+triggers on any shipped route. **Return-contract correction (2026-11-14):** the `yes` entries below
+describe the historical export only. Those optional return paths used simplified display polylines
+whose geometry was not guaranteed to preserve every legal native edge, so `back_fast` has since been
+removed from production exports/data and automatic alternate-return behavior is unavailable. The full
+same-path directed `back` arrays remain the return basis.
 
 | Route | Out min old → new | Back min old → new | Out O₂ L old → new | Back O₂ L old → new | back_fast | Turn-back triggers |
 |---|---|---|---|---|---|---|
@@ -50,9 +54,8 @@ triggers on any shipped route. `back_fast` is exported on the lowest-hazard rout
 | S3 fastest | 14.0 → 14.6 | 12.4 → 13.0 | 17.75 → 18.57 | 1.58 → 6.48 | no | no |
 | S3 lowest-hazard | 14.0 → 14.6 | 12.4 → 12.8 | 17.75 → 18.56 | 1.41 → 6.26 | yes | no |
 
-Size note: `back_fast.path` holds one simplified return path per route point, so the lowest-hazard route
-files grew (S1 0.6 → 9.0 MB; all routes 4.1 → 27 MB; about 3.2 MB gzipped together with the plans).
-`npm run check:data` warns on size only.
+The file-size comparison above predates removal of `back_fast`; current route/plan artifacts contain no
+alternate-return path polylines.
 
 **(a) Ali, from the original bundle (preferred; keeps the G2 evidence).** On the machine holding
 `data/raw/engine-pilot/`, on a branch with these fixes, run the build command at the top of this file
@@ -205,15 +208,9 @@ disconnected Observed coordinate.
   (2026-11-14), which sat far below standing metabolism; a flat 1.6 km/h walk is 158.2 W before κ. The
   floor is a Scenario lower bound, not a measured downhill cost; no published downhill correction
   (e.g. Santee et al.) is applied.
-- Lowest-hazard (`safest`) routes carry the optional `back_fast` block (contract:
-  `app/public/data/README.md`, demo-focus-plan §9 `Back_fast`): for every route point, the shortest
-  modeled time home to the habitat pixel on the same native graph and corridor (one Dijkstra on the
-  reversed time edges). `t_s[]` and `o2_l[]` are raw expected values per crew member summed edge by
-  edge with the same cost model as `back` (no reserve or margin). `path[i]` starts at point i and ends
-  at the habitat pixel; it is simplified for display (0.5 m Ramer–Douglas–Peucker) and the costs use
-  the unsimplified pixel path. `via` is omitted because the fastest way home is a shortest-time tree
-  path, not necessarily the exported fastest route. Fastest routes carry no `back_fast`. The engine
-  `pnr_index` still uses the same-path `back` arrays; the app applies the §9 switch rule itself.
+- No alternate fastest-return payload is exported. `back_fast` remains unavailable until the engine
+  can ship complete legal geometry and matching directed costs at all supported return points. The
+  app uses the full same-path directed `back` arrays for PNR and never substitutes outbound cost.
 - The baseline PNR is `f * (used + m * home) <= B`, with `[1, 1]` member factors for the current
   default crew, `B = capacity - max(reserve_fraction*capacity, reserve_minutes*walkback_o2_lpm)`,
   and the actual capacity read from `constants.json`. PNR is the last passing sample in the same-path

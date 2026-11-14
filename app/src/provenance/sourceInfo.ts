@@ -24,17 +24,15 @@ export interface SourceInfo {
   unit?: string
   /** Extra caveat in plain words. */
   note?: ReactNode
-  /** true when the value comes from a `_mock` contract file. */
-  mock?: boolean
 }
 
 export const toEvidence = (b: SourceInfo['badge']): EvidenceClass =>
   b === 'observed' || b === 'derived' || b === 'scenario' || b === 'unavailable' ? b : badgeToEvidence(b)
 
 /** Source info for one constants.json entry, or null if the key is absent. */
-export function constantInfo(c: EngineConstant | undefined, mock?: boolean): SourceInfo | null {
+export function constantInfo(c: EngineConstant | undefined): SourceInfo | null {
   if (!c) return null
-  return { badge: c.badge, source: c.source, range: c.range, unit: c.unit, mock }
+  return { badge: c.badge, source: c.source, range: c.range, unit: c.unit }
 }
 
 export function formatConstant(c: EngineConstant): string {

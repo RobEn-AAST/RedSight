@@ -4,11 +4,12 @@ import assert from "node:assert/strict";
 import { buildTimeline, routeGoalInfo, sampleAt, trailAt, o2Plan } from "./replay-core.js";
 import { calloutFor } from "./voice.js";
 
-// 3 vertices, 10 + 10 min out, 5 + 5 L; return assumed symmetric.
+// Three vertices with complete directed same-path return arrays.
 const route = {
   stop: "S1", crew: 2,
   coords: [[137.40, -4.815], [137.395, -4.81], [137.39, -4.805]],
   cum: { t_s: [0, 600, 1200], o2_l: [0, 5, 10] },
+  back: { t_s: [0,600,1200], o2_l: [0,5,10] },
 };
 const base = { capacityL: 40, reserveL: 10, returnMargin: 1, memberFactors: [1, 1], statusStep: 0 };
 
@@ -56,8 +57,11 @@ test("pair is limited by the hungrier suit", () => {
 test("engine back arrays are used when present", () => {
   const r = { ...route, back: { t_s: [0, 400, 800], o2_l: [0, 3, 6] } };
   const tl = buildTimeline(r, base);
-  assert.equal(tl.backAssumed, false);
   assert.equal(tl.arrivalL, 40 - 16);
+});
+
+test("replay refuses incomplete directed return data instead of guessing symmetric costs", () => {
+  assert.throws(() => buildTimeline({ ...route, back:undefined },base),/route.back.t_s/);
 });
 
 test("drill mid-walk: suit leak forces an immediate return and may use the reserve (shown honestly)", () => {
@@ -136,6 +140,20 @@ test("auto-switch: no switch when the own way back fits", () => {
   assert.ok(!tl.events.some((e) => e.type === "switch-fast"));
 });
 
+test("without complete alternate-return data, replay stays on same-path return and does not claim an auto-switch", () => {
+  const samePathOnly = {
+    ...route,
+    mode: "balanced",
+    back: { t_s: [0, 600, 1200], o2_l: [0, 3, 6] },
+    // Dynamic constrained routes intentionally omit back_fast until complete legal alternate geometry is exported.
+  };
+  const tl = buildTimeline(samePathOnly, { ...base, capacityL: 26, reserveL: 10 });
+  assert.equal(tl.fastHome, false);
+  assert.equal(tl.switchT, null);
+  assert.ok(!tl.events.some((e) => e.type === "switch-fast"));
+  assert.equal(tl.arrivalL, 26 - 16);
+});
+
 test("auto-switch: switch point always comes before the turn-back point", () => {
   for (const B of [4, 6, 8, 10, 12]) {
     const tl = buildTimeline(withFast, { ...base, capacityL: B + 10, reserveL: 10 });
@@ -198,3 +216,10 @@ test("legacy route payloads retain stop-arrival behavior", () => {
   assert.equal(routeGoalInfo(route).approachOnly, false);
   assert.equal(routeGoalInfo(route).observedStopLonlat, null);
 });
+
+test('cost-only alternate return is omitted instead of drawing guessed geometry', () => {
+  const r = {...withFast, back_fast:{t_s:[0,300,600],o2_l:[0,1.5,3]}};
+  const tl=buildTimeline(r,{...base,capacityL:24,reserveL:10});
+  assert.equal(tl.fastHome,false);
+  assert.equal(tl.switchT,null);
+})

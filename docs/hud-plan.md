@@ -59,7 +59,7 @@ Dependency added: `three` 0.170 (MIT) + `@types/three`.
 | S2 heading and horizon are estimates | Route lines/home beacon at S2 may be rotated by tens of degrees | The S2 caption names no directions: centre ≈ 155° is read from the image (the one long crater-floor view, ~146° left of centre, taken as ≈ north-northeast toward Bradbury Landing), horizon 15° by eye. Estimate (±~30°); `[` `]` adjust; replace with Mastcam pointing data if found |
 | Photo not north-aligned | HUD gives the habitat bearing as text only, no arrow on the photo | Find the mosaic's azimuth (caption or Mastcam pointing for the sols), set `northCalibrated` + an offset, then draw the arrow |
 | Mosaic edges are black and curved | Black areas at the top/bottom when zoomed out | Starts zoomed in (58° view); could crop the texture |
-| Numbers are mock until Ali's routes land | HUD shows mock values (same as the rest of the app) | Nothing to do here: it reads the same timeline |
+| Route timeline | Reads real same-path directed return costs; alternate fastest-return geometry is currently unavailable | HUD must not label a return as fastest or claim an automatic switch unless complete path geometry and matching costs are present |
 | Bundle +~500 kB (three.js) | Slower first load | Load the viewer with a dynamic `import()` only when the button is pressed |
 
 ## 3. How we'll implement the rest (after Tier 1 is submitted)

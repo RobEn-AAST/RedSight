@@ -1,4 +1,3 @@
-import pytest
 import hashlib
 import json
 
@@ -129,15 +128,7 @@ def test_synthetic_native_slope_manifest_drives_all_five_stop_exports(tmp_path):
             assert route["goal_access"]["observed_stop_lonlat"] == route["observed_stop_lonlat"]
             assert len(route["coords"]) == len(route["cum"]["t_s"])
             assert len(route["coords"]) == len(route["back"]["o2_l"])
-            if mode == "fastest":
-                assert "back_fast" not in route
-            else:
-                fast = route["back_fast"]
-                n = len(route["coords"])
-                assert len(fast["t_s"]) == len(fast["o2_l"]) == len(fast["path"]) == n
-                assert fast["t_s"][0] == 0.0 and fast["o2_l"][0] == 0.0
-                assert all(t <= b + 1e-6 for t, b in zip(fast["t_s"], route["back"]["t_s"]))
-                assert all(path[-1] == fast["path"][0][-1] for path in fast["path"])
+            assert "back_fast" not in route
             assert result["manifest"]["output_sha256"][f"routes/{stop_id}_{mode}_2_15.json"] == hashlib.sha256(
                 (tmp_path / "out/routes" / f"{stop_id}_{mode}_2_15.json").read_bytes()
             ).hexdigest()
@@ -151,34 +142,3 @@ def test_only_the_allowlisted_unreachable_route_payload_is_removed(tmp_path):
     assert _remove_stale_route_payload(route_path) is True
     assert route_path.exists() is False
     assert _remove_stale_route_payload(route_path) is False
-
-
-def test_back_fast_takes_the_shorter_way_home_from_a_detour():
-    from rasterio.transform import from_origin as origin
-    from engine.model.native_grid import build_native_routing_graph
-    from engine.route.native import back_fast_arrays, fastest_home_field, native_route_arrays
-
-    constants = {"slope_limit_foot_deg": 15.0, "body_mass_kg": 82.0, "carried_load_kg": 15.0,
-                 "suit_factor_kappa": 1.3, "watts_to_o2_ml_per_min": 2.9, "walk_speed_kmh": 1.6}
-    elevation = np.zeros((5, 6), dtype=np.float32)
-    graph = build_native_routing_graph(
-        elevation, np.zeros_like(elevation), transform=origin(8_140_000, -280_000, 1, 1),
-        crs="+proj=eqc +R=3396190 +units=m +no_defs", resolution_m=1.0, slope_limit_deg=15.0,
-        body_mass_kg=82.0, load_kg=15.0, kappa=1.3, watts_to_o2_ml_per_min=2.9, max_speed_mps=1.6 / 3.6,
-    )
-    home = (0, 0)
-    # U-shaped detour: down column 0, along row 4, up column 5 to (0, 5).
-    cells = [(r, 0) for r in range(5)] + [(4, c) for c in range(1, 6)] + [(r, 5) for r in range(3, -1, -1)]
-    nodes = [graph.node(cell) for cell in cells]
-    arrays = native_route_arrays(graph, nodes, constants=constants)
-    fast = back_fast_arrays(graph, nodes, home=home, field=fastest_home_field(graph, home=home), constants=constants)
-    assert len(fast["t_s"]) == len(nodes)
-    assert fast["t_s"][0] == 0.0
-    assert all(t <= b + 1e-9 for t, b in zip(fast["t_s"], arrays["back"]["t_s"]))
-    # From (0, 5) the fastest way home is 5 straight 1 m edges, far shorter than the 13 m route back.
-    assert fast["t_s"][-1] == pytest.approx(5 / (1.6 / 3.6), rel=1e-6)
-    assert fast["t_s"][-1] < 0.5 * arrays["back"]["t_s"][-1]
-    assert fast["o2_l"][-1] < 0.5 * arrays["back"]["o2_l"][-1]
-    assert fast["path"][-1][0] == pytest.approx(arrays["coords"][-1], abs=1e-6)
-    assert fast["path"][-1][-1] == pytest.approx(arrays["coords"][0], abs=1e-6)
-    assert len(fast["path"][-1]) == 2  # a straight walk simplifies to its two ends

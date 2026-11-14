@@ -31,7 +31,6 @@ type Json = Record<string, unknown>
 
 const isObject = (v: unknown): v is Json => typeof v === 'object' && v !== null && !Array.isArray(v)
 const isNumber = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
-const isMock = (v: unknown) => isObject(v) && v._mock === true
 
 function parseMeta(raw: unknown): EngineMeta | null {
   if (!isObject(raw) || !isObject(raw.ops_box) || !isObject(raw.habitat)) return null
@@ -210,7 +209,6 @@ export function EngineDataProvider({ children }: { children: ReactNode }) {
         targets: parseTargets(targets),
         planIndex: parsePlanIndex(planIndex),
         curiosityPath: parseCuriosityPath(curiosityPath),
-        mock: results.some(isMock),
         probed: true,
       })
     })

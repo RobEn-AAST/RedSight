@@ -84,7 +84,7 @@ Owners and branches: [`team-plan.md`](team-plan.md).
 | B2 | 3 science stops at real Curiosity positions, with raw photos from those sols (§6) | Clicking a stop shows its card + photos + sources |
 | B3 | Fastest + safest routes per stop, precomputed (scipy Dijkstra field, review F2) | Routes never cross a >15° cell (asserted in the engine) |
 | B4 | **Turn-back slider**: budget → PNR marker moves along the route | Marker moves toward the habitat as the budget drops |
-| B4b | **Return-budget zones + automatic switch to the fastest way home** (§9): map shading for "any return OK / fastest return only / beyond turn-back", a "don't go beyond" boundary line, hazard no-go overlay, and a "walk along the route" slider that switches the recommended return to fastest when O₂ gets low | Zones shrink as budget drops; the recommendation switches at the computed point; never recommends a return that doesn't fit the budget |
+| B4b | **Proposed return-budget zones and alternate-return switch** (§9; currently unavailable): complete legal alternate geometry + matching costs are required before map shading or a switch recommendation is enabled | Future gate: complete return arrays and path legality tests; current product uses same-path PNR only |
 | B4c | **Radio coverage layer** (§9b): where the crew can reach the habitat by direct radio line of sight and where ridges cause a radio shadow; per-route "% out of contact" and "longest blackout (min)"; lowest-hazard route prefers covered ground | Layer matches the DEM viewshed; blackout numbers appear on each route card |
 | B5 | Provenance card on every layer and number (Observed / Derived / Scenario) | No visible layer or number without a card |
 | B6 | RAD + REMS context **cards** (not map layers) | Cards cite their PDS sources |
@@ -301,10 +301,17 @@ reserve? NASA's EVA Walkback Test concept (10 km suited walkback, NLSP record EW
 is the reference. Our ≈6 km box always passes the distance part, so we show the O₂ check, not just distance.
 **Rover carries samples:** with the rover, collected samples go on the rover, so crew load L stays constant.
 
-## 9. Return-budget logic: zones, "don't go beyond" line, automatic fastest-return switch (Tier 1, B4b)
+## 9. Return-budget logic: zones and alternate-return proposal (Tier 1, B4b)
 
 All outputs are **Scenario** estimates (they inherit the O₂ model's assumptions) and are worded as
 modeled guidance, never as a guarantee (AGENTS rule 3).
+
+**Current implementation boundary (2026-11-14):** production route and plan data now require complete
+directed same-path `back` time/O₂ arrays. The former simplified `back_fast` display lines did not
+preserve every legal native edge, so the field and automatic fastest-return switch have been removed.
+Current PNR uses the same-path return costs only; the green/amber alternate-return zones and automatic
+switch below remain proposals and must not be shown as current capabilities until complete alternate
+geometry and matching costs exist.
 
 **What the engine computes (same scipy Dijkstra machinery, a few extra fields):**
 

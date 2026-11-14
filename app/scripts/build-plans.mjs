@@ -6,7 +6,7 @@
 //   plan/{stop}_{mode}_c{crew}_l{load}_foot.json    for every routed entry in routes/index.json, crew 2 and crew 1
 //   plan/index.json                                 rebuilt from the plan files on disk
 //
-// Crew 2 (the route's own preset): the route file IS the plan; coords, seg, cum, back, back_fast and
+// Crew 2 (the route's own preset): the route file IS the plan; coords, seg, cum and directed back costs
 // pnr_index are copied unchanged.
 // Crew 1: the same numbers again. The engine's O2 model is per crew member (Pandolf + κ per person,
 // engine/export.py) with no crew-size term, and its turn-back uses max(member_factors) with every factor
@@ -20,7 +20,7 @@
 //
 // Run from anywhere:  node app/scripts/build-plans.mjs
 import { createHash } from "node:crypto";
-import { readFileSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
+import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -31,10 +31,10 @@ const write = (p, obj) => writeFileSync(join(DATA, p), JSON.stringify(obj, null,
 const CONTRACT = "docs/app-redesign.md §4";
 const round = (x, d = 6) => Math.round(x * 10 ** d) / 10 ** d;
 
-// ---- Remove the former mock plan files (rover, split, limit lines). Real files are rewritten below. ----
+// ---- Reject any non-production/mock plans; test fixtures belong outside public/data. ----
 for (const f of readdirSync(join(DATA, "plan"))) {
   if (!/\.(geo)?json$/.test(f) || f === "index.json") continue;
-  if (read(`plan/${f}`)._mock === true) unlinkSync(join(DATA, "plan", f));
+  if (read(`plan/${f}`)._mock === true) throw new Error(`Mock plan is not valid production data: ${f}`);
 }
 
 // ---- Routes on disk ----
@@ -44,7 +44,7 @@ for (const e of routeIndex) {
   if (e.status && e.status !== "routed") continue;
   const text = readText(e.file);
   const r = JSON.parse(text);
-  if (r._mock === true) continue; // only real engine routes become plans
+  if (r._mock === true) throw new Error(`Refusing to build a production plan from mock route data: ${e.file}`)
   routes.push({ entry: e, text, r });
 }
 
@@ -121,7 +121,6 @@ for (const { entry: e, text, r } of routes) {
       seg: r.seg.map((s) => ({ t_s: s.t_s, o2_l: s.o2_l, slope_deg: s.slope_deg, distance_m: s.cost_terms.distance_m, cost_terms: s.cost_terms })),
       cum: r.cum,
       back: r.back,
-      ...(r.back_fast ? { back_fast: r.back_fast } : {}),
       pnr_index: r.pnr_index,
       park_index: null,
     };
@@ -158,8 +157,8 @@ const plans = readdirSync(join(DATA, "plan"))
   .sort()
   .map((f) => {
     const p = read(`plan/${f}`);
-    return { id: p.id, target: p.target, mode: p.mode, crew: p.crew, load_kg: p.load_kg, rover: p.rover, file: `plan/${f}`, ...(p._mock === true ? { _mock: true } : {}) };
+    if (p._mock === true) throw new Error(`Refusing to index mock plan data: ${f}`)
+    return { id: p.id, target: p.target, mode: p.mode, crew: p.crew, load_kg: p.load_kg, rover: p.rover, file: `plan/${f}` };
   });
-const anyMock = plans.some((p) => p._mock);
-write("plan/index.json", { ...(anyMock ? { _mock: true } : {}), _contract: CONTRACT, plans });
-console.log(`wrote ${targets.length} targets, ${written.length} plans; index lists ${plans.length} plans, ${plans.filter((p) => p._mock).length} mock`);
+write("plan/index.json", { _contract: CONTRACT, plans });
+console.log(`wrote ${targets.length} targets, ${written.length} plans; index lists ${plans.length} data-backed plans`);
