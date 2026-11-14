@@ -2,7 +2,7 @@ import { missionLimits } from '../types/mission.ts'
 import { scienceGoalOptions } from '../lib/materials.ts'
 import type { EngineRoutePreference, EngineRoute } from '../lib/engineDataContext.ts'
 
-const MISSION_FIELDS = ['crewCount','bodyMassKg','loadKg','loadBasis','sampleKgPerStop','roverAvailable','scienceGoalId']
+const MISSION_FIELDS = ['crewCount','bodyMassKg','loadKg','loadBasis','sampleKgPerStop','roverAvailable','scienceGoalId','scienceGoalNote']
 
 /** Pure app-side validation; the model never decides whether values are admissible. */
 export function validateMissionPatch(args: Record<string, unknown>): string | null {
@@ -17,6 +17,7 @@ export function validateMissionPatch(args: Record<string, unknown>): string | nu
   if (args.loadBasis !== undefined && !['total','perAstronaut'].includes(String(args.loadBasis))) return 'loadBasis must be total or perAstronaut.'
   if (args.roverAvailable !== undefined && typeof args.roverAvailable !== 'boolean') return 'roverAvailable must be boolean.'
   if (args.scienceGoalId !== undefined && !scienceGoalOptions.some((goal) => goal.id === args.scienceGoalId)) return 'Unknown scienceGoalId; choose an available goal ID.'
+  if (args.scienceGoalNote !== undefined && (typeof args.scienceGoalNote !== 'string' || args.scienceGoalNote.length > 500)) return 'scienceGoalNote must be text up to 500 characters.'
   return null
 }
 

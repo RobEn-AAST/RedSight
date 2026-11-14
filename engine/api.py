@@ -12,7 +12,7 @@ from typing import Literal
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
-from engine.routing_api import route_request
+from engine.routing_api import route_request, return_request
 
 app = FastAPI(title="RedSight terrain routing", docs_url=None, redoc_url=None)
 executor: ProcessPoolExecutor | None = None
@@ -28,6 +28,24 @@ class RouteRequest(BaseModel):
     body_mass_kg: float = Field(ge=43, le=110)
     load_kg: float = Field(ge=0, le=40)
     sample_kg_per_stop: float = Field(ge=0, le=10)
+    sand_weight: float = Field(default=0.0, ge=0, le=3)
+    hazard_weight: float = Field(default=0.5, ge=0, le=1)
+
+
+class ReturnRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+    start_lonlat: tuple[float, float]
+    start_edge_lonlat: tuple[tuple[float,float],tuple[float,float]] | None = None
+    slope_cap_deg: float = Field(ge=0, le=15)
+    crew_count: int = Field(ge=1, le=2)
+    body_mass_kg: float = Field(ge=43, le=110)
+    load_kg: float = Field(ge=0, le=40)
+    sample_kg_per_stop: float = Field(ge=0, le=10)
+
+
+@app.post("/return")
+async def return_route(request: ReturnRequest):
+    return await calculate(return_request, request.model_dump())
 
 
 @app.get("/health")
@@ -40,6 +58,10 @@ async def health():
 
 @app.post("/route")
 async def route(request: RouteRequest):
+    return await calculate(route_request, request.model_dump())
+
+
+async def calculate(calculate_request, payload):
     global executor, busy
     if busy:
         raise HTTPException(status_code=429, detail="Routing worker is busy; retry this request once the active calculation finishes.")
@@ -47,7 +69,7 @@ async def route(request: RouteRequest):
     loop = asyncio.get_running_loop()
     if executor is None:
         executor = ProcessPoolExecutor(max_workers=1)
-    future = loop.run_in_executor(executor, route_request, request.model_dump())
+    future = loop.run_in_executor(executor, calculate_request, payload)
     def release(_):
         global busy
         busy = False

@@ -26,10 +26,14 @@ Per-person status and next steps: [`team-plan.md`](team-plan.md) §4c. Data chec
 
 ## 2. Document map (read order for a new agent)
 
+Implemented extension on `feat/copilot-mission-control`: [Copilot mission control and emergency simulation](superpowers/specs/2026-11-14-copilot-mission-control-design.md)
+— mission read/action coverage, oxygen readback, exact-position red return and illustrative rover pickup; local verification in [function execution](ai/function-execution.md).
+
 | Priority | Doc | Role |
 |---|---|---|
 | — | [`../deploy/README.md`](../deploy/README.md) | Live deploy of https://mars.roben.club (landing `/` + app `/demo/`): CI/CD on push to `main`, VPS layout, services, voice keys (2026-11-14) |
 | — | [`astronaut-performance.md`](astronaut-performance.md) | Local chat astronaut optimization, verification, and read-only roben hosting findings (2026-11-14; not deployed) |
+| — | [`superpowers/specs/2026-11-14-mission-factors-design.md`](superpowers/specs/2026-11-14-mission-factors-design.md) · [`plan`](superpowers/plans/2026-11-14-mission-factors.md) | Mission factors: ten Scenario inputs the operator or copilot sets (sand avoidance, hazard balance, radiation budget, daylight, cold, stop time, …) that change modeled routes or checks; definitions in `app/public/data/factors.json`. Geology preference dropped (all stops in one SIM 3292 unit); radio contact is phase 2 |
 | — | [`superpowers/plans/2026-11-14-astronaut.md`](superpowers/plans/2026-11-14-astronaut.md) | Approved astronaut implementation plan and completion boundaries |
 | 1 | [`challenge-in-plain-language.md`](challenge-in-plain-language.md) | The challenge, the glossary, the corrections, why-judges-care — start here |
 | 2 | [`../requirements/competition-requirements.md`](../requirements/competition-requirements.md) | Every participation/submission/judging rule, each linked to its official source, plus the onsite checklist |

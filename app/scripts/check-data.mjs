@@ -4,6 +4,7 @@
 //   cd app && npm run check:data            # rejects mock or incomplete production data
 //   cd app && npm run check:data -- --final # same checks plus submission-specific constraints
 // Exit code 1 if any ERROR. Plain Node, no dependencies.
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -26,6 +27,8 @@ const distM = (a, b) => {
   const h = Math.sin(r(b[1] - a[1]) / 2) ** 2 + Math.cos(r(a[1])) * Math.cos(r(b[1])) * Math.sin(r(b[0] - a[0]) / 2) ** 2;
   return 2 * MARS_R * Math.asin(Math.min(1, Math.sqrt(h)));
 };
+
+const sha256 = (rel) => createHash("sha256").update(readFileSync(join(DATA, rel))).digest("hex");
 
 const loaded = new Set();
 function load(rel, { optional = false } = {}) {
@@ -207,6 +210,11 @@ if (planIndex) {
     if (!plan) continue;
     for (const k of ["target", "mode", "crew", "load_kg", "rover"]) if (plan[k] !== e[k]) err(e.file, `${k} ${JSON.stringify(plan[k])} differs from plan/index.json (${JSON.stringify(e[k])})`);
     checkBadge(e.file, "plan", plan.badge);
+    // A plan must name the exact engine route bytes it was built from (build-plans.mjs), or it is stale.
+    const src = plan.derived_from;
+    if (typeof src?.route_file !== "string" || typeof src?.route_sha256 !== "string") err(e.file, "derived_from.route_file/route_sha256 required");
+    else if (!existsSync(join(DATA, src.route_file))) err(e.file, `derived_from.route_file ${src.route_file} missing`);
+    else if (sha256(src.route_file) !== src.route_sha256) err(e.file, `stale: ${src.route_file} changed since this plan was built (run node scripts/build-plans.mjs)`);
     if (!Array.isArray(plan.together) || plan.together.length === 0) { err(e.file, "together[] empty"); continue; }
     const members = [...plan.together.map((m) => ["together", m]), ...(plan.split?.members ?? []).map((m) => ["split", m])];
     for (const [group, m] of members) {
@@ -225,6 +233,37 @@ if (planIndex) {
       }
     }
   }
+}
+
+// No-return rings (engine/tools/export_limits.py): plan/limits_c{crew}_l{load}_{foot|rover}.geojson.
+// One no_return_line feature per O₂ budget level, levels rising and never above the full usable budget.
+const planDir = join(DATA, "plan");
+for (const name of existsSync(planDir) ? readdirSync(planDir) : []) {
+  if (!/^limits_c\d+_l\d+_(foot|rover)\.geojson$/.test(name)) continue;
+  const rel = `plan/${name}`;
+  const fc = load(rel);
+  if (!fc) continue;
+  if (fc.type !== "FeatureCollection" || !Array.isArray(fc.features) || fc.features.length === 0) { err(rel, "needs a non-empty FeatureCollection"); continue; }
+  checkBadge(rel, "collection", fc.badge);
+  if (!isNum(fc.full_budget_l) || fc.full_budget_l <= 0) err(rel, "full_budget_l must be a positive number");
+  const levels = [];
+  for (const [i, f] of fc.features.entries()) {
+    const p = f?.properties ?? {};
+    if (p.kind !== "no_return_line") err(rel, `feature ${i}: kind must be no_return_line`);
+    if (!["LineString", "MultiLineString"].includes(f?.geometry?.type)) err(rel, `feature ${i}: LineString or MultiLineString geometry required`);
+    if (!isNum(p.budget_l) || p.budget_l <= 0) { err(rel, `feature ${i}: budget_l must be a positive number`); continue; }
+    if (isNum(fc.full_budget_l) && p.budget_l > fc.full_budget_l + 1e-6) err(rel, `feature ${i}: budget_l ${p.budget_l} above the full budget ${fc.full_budget_l}`);
+    levels.push(p.budget_l);
+  }
+  if (!levels.every((x, i) => i === 0 || x > levels[i - 1])) err(rel, "budget_l levels must rise from feature to feature");
+}
+
+// Engine outputs must be byte-identical to what the engine wrote (engine-build-manifest.json output_sha256);
+// a hand-edited or substituted route/hazard/constants file fails here.
+const manifest = load("engine-build-manifest.json", { optional: true });
+for (const [rel, want] of Object.entries(manifest?.output_sha256 ?? {})) {
+  if (!existsSync(join(DATA, rel))) err("engine-build-manifest.json", `output ${rel} missing`);
+  else if (sha256(rel) !== want) err(rel, "differs from the engine build manifest (not the engine's output)");
 }
 
 // Every production JSON/GeoJSON under data/ (except tiles/): parse it and reject mock flags.

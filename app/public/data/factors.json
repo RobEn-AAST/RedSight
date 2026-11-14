@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "badge": "Scenario",
+  "note": "Mission factors are operator or copilot Scenario inputs. They change modeled routes or modeled verdicts; none is a measurement along the route. RAD and REMS are rover-local point readings, so only their reported values are reused here (no spatial radiation or weather map exists).",
+  "constants": {
+    "rad_msv_per_day": {
+      "value": 0.64,
+      "unit": "mSv/day",
+      "pm": 0.12,
+      "badge": "Observed",
+      "source": "Hassler et al. 2014, Science 343:1244797 (Curiosity RAD, sols 13-300); also in data/cards/rad.json",
+      "source_url": "https://doi.org/10.1126/science.1244797"
+    },
+    "sep_event_msv": {
+      "value": 0.418,
+      "unit": "mSv",
+      "badge": "Scenario",
+      "source": "September 2017 surface SEP event, RAD absorbed dose 418 uGy in silicon (data/cards/rad.json); treated here as 0.418 mSv assuming a quality factor of 1 (Scenario)."
+    },
+    "mars_sol_hours": { "value": 24.6597, "unit": "h", "badge": "Derived", "source": "Mars24 (Allison & McEwen 2000); lib/mars24.ts" },
+    "rems_air_min_k": { "value": 173, "unit": "K", "badge": "Observed", "source": "REMS daily minimum air temperature, sols 1-4995 (data/cards/rems.json; Gomez-Elvira et al. 2012, 2014)" },
+    "rems_air_max_k": { "value": 284, "unit": "K", "badge": "Observed", "source": "REMS daily maximum air temperature, sols 1-4995 (data/cards/rems.json)" },
+    "temperature_peak_ltst_hour": { "value": 14, "unit": "LTST h", "badge": "Scenario", "source": "Team choice: sinusoid between the REMS daily min and max peaking in the early afternoon; a modeled approximation, not a forecast." }
+  },
+  "factors": [
+    { "id": "slope", "label": "Slope cap", "kind": "spatial", "field": "routeSlopeCapDeg", "type": "number", "unit": "°", "min": 0, "max": 15, "step": 0.5, "default": 15, "badge": "Scenario", "effect": "Hard limit: no route edge is steeper than this.", "source": "Team model; 15° is the hard model ceiling (technical-approaches §3)." },
+    { "id": "sand", "label": "Sand avoidance", "kind": "spatial", "field": "sandWeight", "type": "number", "unit": "×", "min": 0, "max": 3, "step": 0.25, "default": 0, "badge": "Derived", "effect": "Raises the hazard cost of low-thermal-inertia (likely sandy) ground. Used by lowest-hazard and balanced routes; fastest ignores hazard.", "source": "THEMIS thermal inertia 100 m (Derived proxy); weight is a Scenario input." },
+    { "id": "hazardBlend", "label": "Time vs hazard balance", "kind": "spatial", "field": "hazardWeight", "type": "number", "unit": "0 time ↔ 1 hazard", "min": 0, "max": 1, "step": 0.1, "default": 0.5, "badge": "Scenario", "effect": "Weights normalized hazard against normalized time in balanced routes.", "source": "Team model (equal weight by default)." },
+    { "id": "crewLoad", "label": "Crew, body mass and load", "kind": "spatial", "field": "crewCount", "type": "group", "fields": ["crewCount", "bodyMassKg", "loadKg", "sampleKgPerStop"], "badge": "Scenario", "effect": "Changes walking time and oxygen cost on every edge, which moves the turn-back point.", "source": "Pandolf et al. 1977; mission setup." },
+    { "id": "radiation", "label": "Radiation dose budget", "kind": "limit", "field": "radiationBudgetMsv", "type": "number", "unit": "mSv per EVA", "min": 0.01, "max": 5, "step": 0.01, "default": 0.5, "badge": "Scenario", "effect": "Modeled dose = RAD surface rate × route and stop time. Routes over the budget are flagged.", "source": "RAD rate Observed (Hassler et al. 2014); the budget is a Scenario input. Suit and terrain shielding are not modeled." },
+    { "id": "sep", "label": "Solar particle event scenario", "kind": "limit", "field": "sepEvent", "type": "boolean", "default": false, "badge": "Scenario", "effect": "Adds the September 2017 event dose to the modeled EVA dose.", "source": "RAD, September 2017 event (see constants)." },
+    { "id": "daylight", "label": "Daylight window", "kind": "limit", "field": "startLocalHour", "type": "number", "unit": "LTST hour of EVA start", "min": 0, "max": 24, "step": 0.5, "default": 8, "requires": "daylightRequired", "badge": "Derived", "effect": "Flags routes that start before sunrise or end after sunset at Gale (Mars24).", "source": "Mars24 solar geometry; start time is a Scenario input." },
+    { "id": "cold", "label": "Cold limit", "kind": "limit", "field": "coldLimitK", "type": "nullableNumber", "unit": "K minimum air temperature", "min": 150, "max": 284, "step": 1, "default": null, "badge": "Scenario", "effect": "Flags routes whose modeled air temperature falls below the limit during the EVA window.", "source": "REMS reported daily min/max (Observed, rover-local); the hourly shape is a Scenario sinusoid." },
+    { "id": "stopTime", "label": "Time at the stop", "kind": "limit", "field": "stopMinutes", "type": "number", "unit": "min", "min": 0, "max": 240, "step": 5, "default": 30, "badge": "Scenario", "effect": "Adds on-site time to the dose, daylight and cold checks.", "source": "Operator Scenario input." },
+    { "id": "goal", "label": "Science goal", "kind": "goal", "field": "scienceGoalId", "type": "goal", "badge": "Derived", "effect": "Chooses which observed stops are offered as destinations.", "source": "targets.geojson goals; Fraeman et al. 2016." }
+  ],
+  "phase2": [
+    { "id": "radio", "label": "Radio-contact requirement", "reason": "Needs the radio-coverage (viewshed) layer, plan §9b, which is not built yet." }
+  ]
+}

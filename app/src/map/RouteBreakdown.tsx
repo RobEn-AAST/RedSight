@@ -568,7 +568,7 @@ export function RouteBreakdown() {
               Solid line: {MODE_LABEL[mode]} · dashed line: {MODE_LABEL[otherMode]}.
               {!profile.signedSlopes &&
                 profile.elevSource === 'slope-integrated' &&
-                ' Mock segment slopes are unsigned magnitude; real engine routes carry signed grades.'}
+                ' Segment slopes here are unsigned magnitudes, so the curve shows climb size, not direction.'}
             </p>
           )}
         </div>

@@ -97,7 +97,7 @@ export interface EngineRoute {
   crew: number
   load_kg: number
   badge: ContractBadge
-  routing?: { slope_cap_deg: number; hard_max_deg: number; native_resolution_m: number; objective: string; objective_cost: number; balanced_definition?: string; data_class: 'Scenario'; return_model?: string; body_mass_kg?: number; load_kg_per_astronaut?: number; sample_kg_per_stop?: number; sample_mass_applied_to_return?: boolean }
+  routing?: { slope_cap_deg: number; hard_max_deg: number; native_resolution_m: number; objective: string; objective_cost: number; balanced_definition?: string; data_class: 'Scenario'; return_model?: string; body_mass_kg?: number; load_kg_per_astronaut?: number; sample_kg_per_stop?: number; sample_mass_applied_to_return?: boolean; sand_weight?: number; hazard_weight?: number; sand_model?: { badge: string; source: string; applies_to: string } }
   /** Usable O2 per crew member after reserve, litres. */
   budget_l: number
   constants_hash: string

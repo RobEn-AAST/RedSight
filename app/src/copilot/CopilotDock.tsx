@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react'
 
+import { missionControl } from '@/simulation/missionControl'
 import { Astronaut } from './Astronaut'
 import { Button } from '@/ui/Button'
 import { LedDot } from '@/ui/LedDot'
@@ -23,6 +24,8 @@ import { useMission } from '@/lib/useMission'
 import { useEngineData } from '@/lib/useEngineData'
 import { totalLoadKg, perAstronautLoadKg } from '@/types/mission'
 import { validateDynamicRoute, validateMissionPatch } from '@/copilot/actions'
+import { validateFactorPatch } from '@/lib/factors'
+import { loadFactorDefs } from '@/lib/useFactorDefs'
 import { scienceGoalOptions } from '@/lib/materials'
 import { usePlan } from '@/map/usePlan'
 import type { EngineRoute } from '@/lib/engineDataContext'
@@ -150,6 +153,7 @@ export function CopilotDock({
       if (engine.targets) available.push('targets.geojson (science targets)')
     }
     const missionState = {
+            simulation: missionControl.summary(),
             status: mission.status,
             crewCount: mission.config.crewCount,
             bodyMassKg: mission.config.bodyMassKg,
@@ -164,6 +168,14 @@ export function CopilotDock({
             routePreference: mission.config.routePreference,
             routeSlopeCapDeg: mission.config.routeSlopeCapDeg,
             routeSlopeCapExplicit: mission.config.routeSlopeCapExplicit,
+            sandWeight: mission.config.sandWeight,
+            hazardWeight: mission.config.hazardWeight,
+            radiationBudgetMsv: mission.config.radiationBudgetMsv,
+            sepEvent: mission.config.sepEvent,
+            startLocalHour: mission.config.startLocalHour,
+            daylightRequired: mission.config.daylightRequired,
+            coldLimitK: mission.config.coldLimitK,
+            stopMinutes: mission.config.stopMinutes,
             routeLoadKg: perAstronautLoadKg(mission.config),
             availableDestinations: plan.goalTargets.map(({ id, name, badge }) => ({id,name,badge})),
             availableScienceGoals: scienceGoalOptions.map(({ id, label }) => ({id,label})),
@@ -231,7 +243,14 @@ export function CopilotDock({
         try {
           const a = ev.args
           const latest = actionStateRef.current
-          if (ev.name === 'set_mission_screen') {
+          if (ev.name === 'mission_control') {
+            result = await missionControl.execute(a,ev.callId)
+          } else if (ev.name === 'read_app_data') {
+            if(Object.keys(a).some(key=>!['section','id'].includes(key)) || typeof a.section!=='string')throw new Error('Choose a supported data section.')
+            const data=missionControl.read(a.section,typeof a.id==='string'?a.id:undefined)
+            const serialized=JSON.stringify(data)
+            result = serialized && serialized.length<=220_000 ? {applied:true,section:a.section,data} : {applied:false,error:'Dataset too large; query an exact ID or a smaller section.'}
+          } else if (ev.name === 'set_mission_screen') {
             if (a.screen === 'setup') missionActions.reopenMission()
             else if (a.screen === 'routes' && latest.mission.config.scienceGoalId) missionActions.confirmMission()
             else throw new Error('Choose a science goal before opening routes.')
@@ -262,6 +281,9 @@ export function CopilotDock({
             const route = ev.route as unknown as EngineRoute | undefined
             const config = latest.mission.config
             const targetIds = latest.plan.goalTargets.map((target) => target.id)
+            const sandWeight = ev.name === 'reset_route_constraints' ? 0 : (typeof a.sandWeight === 'number' ? a.sandWeight : config.sandWeight)
+            const hazardWeight = ev.name === 'reset_route_constraints' ? 0.5 : (typeof a.hazardWeight === 'number' ? a.hazardWeight : config.hazardWeight)
+            if (route?.routing?.sand_weight !== sandWeight || route?.routing?.hazard_weight !== hazardWeight) throw new Error('The routing service did not apply the requested sand/hazard weights; the current route was retained.')
             const slopeCapDeg = ev.name === 'reset_route_constraints' ? 15 : (typeof a.slopeCapDeg === 'number' ? a.slopeCapDeg : config.routeSlopeCapDeg)
             if (!validateDynamicRoute(route, preference as 'fastest'|'safest'|'balanced', targetIds, slopeCapDeg)) throw new Error('The routing service returned incomplete, mismatched or unsupported route data; the current route was retained.')
             const destination = latest.plan.goalTargets.find((target) => target.id === route.stop)
@@ -270,10 +292,18 @@ export function CopilotDock({
             if (config.roverAvailable) throw new Error('Rover availability changed while the route was being calculated; the foot-only route was discarded.')
             if (route.crew !== config.crewCount || route.routing?.body_mass_kg !== config.bodyMassKg || route.routing?.load_kg_per_astronaut !== perAstronautLoadKg(config) || route.routing?.sample_kg_per_stop !== config.sampleKgPerStop) throw new Error('Mission values changed while the route was being calculated; the stale route was discarded.')
             if (slopeCapDeg < 0 || slopeCapDeg > 15) throw new Error('Slope cap must be 0–15 degrees; the model hard limit remains 15 degrees.')
-            missionActions.patchConfig({ routePreference:preference as 'fastest'|'safest'|'balanced', routeSlopeCapDeg:slopeCapDeg, routeSlopeCapExplicit:ev.name === 'reset_route_constraints' ? false : (typeof a.slopeCapDeg === 'number' || config.routeSlopeCapExplicit) })
+            missionActions.patchConfig({ sandWeight, hazardWeight, routePreference:preference as 'fastest'|'safest'|'balanced', routeSlopeCapDeg:slopeCapDeg, routeSlopeCapExplicit:ev.name === 'reset_route_constraints' ? false : (typeof a.slopeCapDeg === 'number' || config.routeSlopeCapExplicit) })
             if (route.stop !== latest.plan.selectedTargetId) latest.plan.selectTarget(route.stop)
             latest.plan.applyDynamicRoute(route)
             result = { applied:true, preference, selectedCandidate:route.mode, routeId:route.id, metrics:{total_s:route.total_s,distance_m:route.distance_m,budget_l:route.budget_l,pnr_index:route.pnr_index}, routing:route.routing, goalAccess:route.goal_access, routeSlopeCapExplicit:ev.name === 'reset_route_constraints' ? false : (typeof a.slopeCapDeg === 'number' || mission.config.routeSlopeCapExplicit) }
+          } else if (ev.name === 'set_mission_factors') {
+            const defs = await loadFactorDefs()
+            if (!defs) throw new Error('Mission factor definitions are unavailable.')
+            if (Object.keys(a).length === 0) throw new Error('No factor values were supplied.')
+            const error = validateFactorPatch(a, defs)
+            if (error) throw new Error(error)
+            missionActions.patchConfig(a as never)
+            result = { applied:true, factors:a, badge:'Scenario', note:'Modeled dose, daylight and cold checks update in the plan panel; these are Scenario inputs, not measurements.' }
           } else throw new Error('Unsupported command.')
         } catch (error) { result = { applied:false, error:error instanceof Error ? error.message : 'Command failed.' } }
         try { await copilotActionResult(ev.callId, result) } catch { /* Stale/aborted stream: do not retry an action. */ }
@@ -550,7 +580,7 @@ export function CopilotDock({
               <span className="data-readout text-ink-faint">node server/index.mjs</span> and retry.</>
           ) : llmLive ? (
             <>
-              Streaming replies via the server-side key ({health.model}); mission-data search
+              Mission readback, UI actions and emergency simulation
               {health.webSearch ? ' + grounded web search' : ''}. Dictation:{' '}
               {dictation.mode === 'cloud' ? 'cloud Whisper' : 'local Whisper (in-browser)'}. Voice:{' '}
               {ttsEngine === 'groq-cloud' ? 'Groq cloud' : ttsEngine === 'kokoro' ? 'Kokoro local' : 'browser voice'}.
@@ -573,9 +603,9 @@ export function CopilotDock({
       >
         {messages.length === 0 ? (
           <p className="mt-6 text-center text-xs leading-relaxed text-ink-faint">
-            Ask about the mission data (“what’s the O₂ reserve assumption?”), propose changes in words
-            (“set crew to two, fifteen kilos each”), or start a voice call — press the phone button and
-            just talk; the copilot answers out loud, hands-free.
+            Ask “what is my oxygen?”, “show the fastest return” or “my leg hurts, send the rover”.
+            The copilot can read mission data and operate the controls. Emergency telemetry and rover
+            pickup are clearly labeled simulations. Use the phone button for hands-free voice.
           </p>
         ) : (
           <ul className="flex flex-col gap-2.5">

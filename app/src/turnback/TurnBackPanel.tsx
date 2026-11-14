@@ -50,7 +50,7 @@ function useTurnBackMarker(result: TurnBackResult | null) {
 export function TurnBackPanel({ bare = false }: { bare?: boolean } = {}) {
   const engine = useEngineData()
   // The budget lives in the plan store so Mission Replay plays the same budget.
-  const { activeRoute, routesStatus, o2BudgetL: budget, setO2BudgetL: setBudget } = usePlan()
+  const { activeRoute, routesStatus, o2BudgetL: budget, setO2BudgetL: setBudget, o2Scale } = usePlan()
   const { plan, missing } = useMemo(() => o2PlanFromConstants(engine.constants), [engine.constants])
 
   // Default = the full plan budget C − R; clamp if the constants change underneath.
@@ -58,12 +58,12 @@ export function TurnBackPanel({ bare = false }: { bare?: boolean } = {}) {
   const budgetL = budget == null ? maxB : Math.min(Math.max(budget, 0), maxB)
 
   const result = useMemo(
-    () => (activeRoute && plan ? turnBackPoint(activeRoute, budgetL, plan.returnMargin) : null),
-    [activeRoute, plan, budgetL],
+    () => (activeRoute && plan ? turnBackPoint(activeRoute, budgetL, plan.returnMargin, o2Scale.factor) : null),
+    [activeRoute, plan, budgetL, o2Scale.factor],
   )
   const reachNeed = useMemo(
-    () => (activeRoute && plan ? budgetToReachStop(activeRoute, plan.returnMargin) : null),
-    [activeRoute, plan],
+    () => (activeRoute && plan ? budgetToReachStop(activeRoute, plan.returnMargin, o2Scale.factor) : null),
+    [activeRoute, plan, o2Scale.factor],
   )
   useTurnBackMarker(result)
 

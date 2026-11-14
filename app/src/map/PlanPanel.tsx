@@ -36,6 +36,7 @@ import { PANORAMAS } from '@/hud/panoramas'
 import { DaylightNote } from '@/map/DaylightNote'
 import { EvaRadiationCard } from '@/map/EvaRadiationCard'
 import { RouteBreakdown } from '@/map/RouteBreakdown'
+import { FactorVerdictsCard, MissionFactorsFold } from '@/map/MissionFactors'
 import { Fold } from '@/map/Fold'
 import { usePlan } from '@/map/usePlan'
 import { MissionReplay, OPEN_360_EVENT } from '@/replay/MissionReplay'
@@ -48,9 +49,9 @@ import { Button } from '@/ui/Button'
 /* -- At a glance: the answer first, the steps below explain it ----------------------- */
 
 function PlanSummary({ plan, members }: { plan: PlanFile; members: PlanMember[] }) {
-  const { goalTargets, selectedTargetId } = usePlan()
+  const { goalTargets, selectedTargetId, o2Scale } = usePlan()
   const target = goalTargets.find((t) => t.id === selectedTargetId)
-  const s = summarizeCrew(members, plan.budget_l)
+  const s = summarizeCrew(members, plan.budget_l, o2Scale)
   const outS = Math.max(...members.map((m) => m.cum.t_s[m.coords.length - 1]))
   const backS = Math.max(...members.map((m) => m.back.t_s[m.coords.length - 1]))
   const distanceM = Math.max(...s.each.map((e) => e.distanceM))
@@ -202,7 +203,9 @@ function RouteChoice() {
     if (!Number.isFinite(cap) || cap < 0 || cap > 15) { setError('Slope limit must be 0–15°.'); return }
     // Default 15° fastest / lowest-hazard: use the precomputed engine plans shipped in public/data, so the
     // static deploy works without the routing service. Only balanced or a tighter cap needs the service.
-    if (cap === 15 && (mode === 'fastest' || mode === 'safest')) {
+    const cfg = mission.state.config
+    const defaultFactors = mode === 'fastest' || (mode === 'safest' && cfg.sandWeight === 0)
+    if (cap === 15 && defaultFactors) {
       setError('')
       mission.patchConfig({routePreference:mode,routeSlopeCapDeg:15,routeSlopeCapExplicit:false})
       plan.setMode(mode)
@@ -216,6 +219,7 @@ function RouteChoice() {
       const res = await fetch('/api/routing/route', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
         destination_id:snapshot.target,mode,slope_cap_deg:cap,crew_count:c.crewCount,
         body_mass_kg:c.bodyMassKg,load_kg:perAstronautLoadKg(c),sample_kg_per_stop:c.sampleKgPerStop,
+        sand_weight:c.sandWeight,hazard_weight:c.hazardWeight,
       })})
       const out = await res.json().catch(() => ({ message: 'Routing service unavailable on this deployment; balanced and custom-slope routes need the local terrain service.' }))
       if (!res.ok || out.status !== 'ok') throw new Error(out.message ?? out.detail?.message ?? 'No matching route; the constraint was not relaxed.')
@@ -328,7 +332,8 @@ function MemberTimeline({
   color: string
   split: boolean
 }) {
-  const s = summarizeMember(member, plan.budget_l)
+  const { o2Scale } = usePlan()
+  const s = summarizeMember(member, plan.budget_l, o2Scale)
   const last = member.coords.length - 1
   const steps: { icon: ReactNode; title: string; detail: string; tone?: 'caution' }[] = []
 
@@ -399,8 +404,8 @@ function MemberTimeline({
 
 /** The no-return line and Jana's turn-back slider: one place for "how far can we go on this O₂". */
 function OxygenFold({ plan, members }: { plan: PlanFile; members: PlanMember[] }) {
-  const { map, noReturnLine } = usePlan()
-  const s = summarizeCrew(members, plan.budget_l)
+  const { map, noReturnLine, noReturnRing, o2Scale } = usePlan()
+  const s = summarizeCrew(members, plan.budget_l, o2Scale)
   return (
     <Fold
       icon={<Gauge size={14} />}
@@ -418,10 +423,10 @@ function OxygenFold({ plan, members }: { plan: PlanFile; members: PlanMember[] }
         <span>
           {noReturnLine ? (
             <>
-              The red dashed line is where walking out any further leaves too little O₂ to get home.
-              {s.reachesAll
-                ? ' This route stays inside it.'
-                : ' This route reaches it before the target, so the plan turns back there.'}{' '}
+              The red dashed line is an approximate Scenario reference ring
+              {noReturnRing?.budgetL != null ? ` for ${Math.round(noReturnRing.budgetL)} L of O₂` : ''}. It models an 82 kg astronaut carrying 15 kg, walking the fastest path out and back, before sample pickup.
+              It moves in as you lower the budget below; the selected route may use more O₂.
+              {noReturnRing?.clipped && ' Where it meets the edge of the terrain model, the limit beyond that edge is unknown.'}{' '}
             </>
           ) : s.reachesAll ? (
             'This route gets there and back on the modeled O₂. '
@@ -447,7 +452,11 @@ function OxygenFold({ plan, members }: { plan: PlanFile; members: PlanMember[] }
 
 function showWholeLine(map: MapLibreMap, line: FeatureCollection) {
   const pts = line.features.flatMap((f) =>
-    f.geometry.type === 'LineString' ? (f.geometry.coordinates as [number, number][]) : [],
+    f.geometry.type === 'LineString'
+      ? (f.geometry.coordinates as [number, number][])
+      : f.geometry.type === 'MultiLineString'
+        ? (f.geometry.coordinates.flat() as [number, number][])
+        : [],
   )
   if (pts.length === 0) return
   const lons = pts.map((p) => p[0])
@@ -501,6 +510,7 @@ export function PlanSheet({ onOpenSources }: { onOpenSources: () => void }) {
   const wantLoad = nearestLoadBucket(perAstronautLoadKg(config))
   const goal = scienceGoalOptions.find((g) => g.id === config.scienceGoalId)
   const [tab, setTab] = useState('stop')
+  useEffect(()=>{window.dispatchEvent(new CustomEvent('redsight:plan-tab',{detail:tab}))},[tab])
 
   return (
     <BottomSheet tabs={TABS} active={tab} onTab={setTab} label="Plan">
@@ -527,6 +537,7 @@ export function PlanSheet({ onOpenSources }: { onOpenSources: () => void }) {
       <TabBody>
         <h2 className="label-console text-ink">Pick a route</h2>
         <RouteChoice />
+        <MissionFactorsFold />
         <RouteBreakdown />
         {activePlan?.split && (
           <>
@@ -552,6 +563,7 @@ export function PlanSheet({ onOpenSources }: { onOpenSources: () => void }) {
             <OxygenFold plan={activePlan} members={activeMembers} />
             <DaylightNote plan={activePlan} members={activeMembers} />
             <EvaRadiationCard />
+            <FactorVerdictsCard plan={activePlan} members={activeMembers} />
             {preset && (preset.crew !== config.crewCount || preset.load_kg !== wantLoad) && (
               <p className="text-xs leading-relaxed text-scenario">
                 No plan exists yet for your exact setup. Showing crew {preset.crew}, {preset.load_kg} kg,{' '}

@@ -5,7 +5,7 @@ import { Button } from '@/ui/Button'
 import { LedDot } from '@/ui/LedDot'
 import { scienceGoalOptions } from '@/lib/materials'
 import { useMission } from '@/lib/useMission'
-import { nearestLoadBucket, perAstronautLoadKg, totalLoadKg } from '@/types/mission'
+import { bodyMassText, nearestLoadBucket, perAstronautLoadKg, totalLoadKg } from '@/types/mission'
 
 /** Mission workspace: the setup stepper until confirmed, then an editable review. */
 export function MissionWorkspace() {
@@ -19,7 +19,7 @@ export function MissionWorkspace() {
     (config.scienceGoalId === 'custom' ? `Custom — “${config.scienceGoalNote.trim()}”` : '—')
 
   const rows: [string, string][] = [
-    ['Crew', `${config.crewCount} astronaut${config.crewCount === 1 ? '' : 's'} · ${config.bodyMassKg} kg each`],
+    ['Crew', `${config.crewCount} astronaut${config.crewCount === 1 ? '' : 's'} · ${bodyMassText(config)}`],
     [
       'Carried mass',
       `${config.loadKg} kg ${config.loadBasis === 'perAstronaut' ? 'per astronaut' : 'mission total'} → ${totalLoadKg(config).toFixed(1)} kg total · ${perAstronautLoadKg(config).toFixed(1)} kg each · engine bucket ${nearestLoadBucket(perAstronautLoadKg(config))} kg`,

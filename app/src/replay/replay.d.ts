@@ -29,14 +29,21 @@ export interface ReplayOptions {
   mapHud?: boolean
   /** Draw habitat + stop dots (default true); off when the host map has its own markers. */
   showEnds?: boolean
+  onFrame?: (frame: { timeS: number; playing: boolean; sample: import('./replay-core.js').Sample; timeline: import('./replay-core.js').Timeline }) => void
   onEvent?: (e: ReplayEvent) => void
 }
 
 export interface Replay {
+  setHeld(held: boolean): void
+  setDuration(seconds: number): void
+  setCallouts(enabled: boolean): void
+  setStatusInterval(percent: number): void
+  readonly timeS: number
   play(): void
   pause(): void
   seek(t: number): void
   setBudget(l: number): void
+  setMemberFactors(f: number[]): void
   setCapacity(l: number): void
   setRoute(route: unknown): void
   drill(factor: number, label?: string): void
