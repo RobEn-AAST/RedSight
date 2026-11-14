@@ -6,6 +6,7 @@ import type { FeatureCollection } from 'geojson'
 import { cn } from '@/lib/cn'
 import type { EngineRouteMode, PlanFile, PlanMember } from '@/lib/engineDataContext'
 import { scienceGoalOptions } from '@/lib/materials'
+import { nearestLoadBucket, perAstronautLoadKg } from '@/types/mission'
 import { useMission } from '@/lib/useMission'
 import {
   MEMBER_B_COLOR,
@@ -295,10 +296,18 @@ function OxygenFold({ plan, members }: { plan: PlanFile; members: PlanMember[] }
           style={{ backgroundImage: `repeating-linear-gradient(90deg, ${NO_RETURN_COLOR} 0 6px, transparent 6px 10px)` }}
         />
         <span>
-          The red dashed line is where walking out any further leaves too little O₂ to get home.
-          {s.reachesAll
-            ? ' This route stays inside it.'
-            : ' This route reaches it before the target, so the plan turns back there.'}{' '}
+          {noReturnLine ? (
+            <>
+              The red dashed line is where walking out any further leaves too little O₂ to get home.
+              {s.reachesAll
+                ? ' This route stays inside it.'
+                : ' This route reaches it before the target, so the plan turns back there.'}{' '}
+            </>
+          ) : s.reachesAll ? (
+            'This route gets there and back on the modeled O₂. '
+          ) : (
+            'Partway out, too little modeled O₂ is left to get home, so the plan turns back there. '
+          )}
           Drag the budget below to see where you would turn with less O₂.
           {map && noReturnLine && (
             <button
@@ -336,8 +345,9 @@ function showWholeLine(map: MapLibreMap, line: FeatureCollection) {
 
 export function PlanPanel({ onOpenSources }: { onOpenSources: () => void }) {
   const { state, reopenMission } = useMission()
-  const { activePlan, activeMembers, crewMode, mode, preset, legacy } = usePlan()
+  const { activePlan, activeMembers, crewMode, mode, preset } = usePlan()
   const { config } = state
+  const wantLoad = nearestLoadBucket(perAstronautLoadKg(config))
   const goal = scienceGoalOptions.find((g) => g.id === config.scienceGoalId)
 
   return (
@@ -394,15 +404,15 @@ export function PlanPanel({ onOpenSources }: { onOpenSources: () => void }) {
               <MissionReplay bare />
             </div>
           </Fold>
-          {preset && !preset.matchesMission && (
+          {preset && (preset.crew !== config.crewCount || preset.load_kg !== wantLoad) && (
             <p className="text-xs leading-relaxed text-scenario">
               No plan exists yet for your exact setup. Showing crew {preset.crew}, {preset.load_kg} kg,{' '}
               {preset.rover ? 'with rover' : 'on foot'} instead.
             </p>
           )}
-          {legacy && config.roverAvailable && (
+          {config.roverAvailable && !preset?.rover && (
             <p className="text-xs leading-relaxed text-scenario">
-              Rover legs are not in the engine output yet. This plan is on foot.
+              Rover plans are not modeled yet (no sourced drive model for this terrain). This plan is on foot.
             </p>
           )}
         </Section>
