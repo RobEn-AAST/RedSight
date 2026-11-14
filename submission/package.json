@@ -1,0 +1,12 @@
+{
+  "name": "redsight-submission",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "capture": "node capture/shots.mjs",
+    "clips": "bash build/clips.sh"
+  },
+  "devDependencies": {
+    "playwright": "^1.65.1"
+  }
+}
