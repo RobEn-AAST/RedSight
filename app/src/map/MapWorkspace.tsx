@@ -3,16 +3,16 @@ import { Layers } from 'lucide-react'
 
 import { useEngineData } from '@/lib/useEngineData'
 import { MapCanvas } from '@/map/MapCanvas'
-import { PlanPanel } from '@/map/PlanPanel'
+import { PlanSheet, PlanSummaryCard } from '@/map/PlanPanel'
 import { EmptyState } from '@/ui/EmptyState'
 import { usePlan } from '@/map/usePlan'
 import { Toggle } from '@/ui/Toggle'
 
 /**
- * Routes screen: the map beside one panel that walks the crew through the
- * plan — where to sample, which route, who goes where, then the plan step by
- * step. Everything shown comes from the engine files; a missing file shows as
- * missing.
+ * Routes screen: the map fills the screen. A "Your walk" card floats on it with
+ * the answer (time out and back, O₂ spare), and a bottom sheet holds the steps in
+ * tabs: Stop, Route, Plan, Replay. Everything shown comes from the engine files;
+ * a missing file shows as missing.
  */
 export function MapWorkspace({ onOpenSources }: { onOpenSources: () => void }) {
   const engine = useEngineData()
@@ -29,9 +29,9 @@ export function MapWorkspace({ onOpenSources }: { onOpenSources: () => void }) {
   const box = engine.meta?.ops_box
 
   return (
-    <div className="flex min-h-full flex-col lg:grid lg:h-full lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_26rem]">
+    <div className="routes-screen relative h-full min-h-0 overflow-hidden bg-inset">
       {/* Map */}
-      <div className="relative h-[60dvh] min-h-80 flex-none overflow-hidden bg-inset lg:h-auto">
+      <div className="absolute inset-0">
         {engine.probed && engine.meta && box && (
           <MapCanvas box={box} enabledLayers={enabledLayers} showImagery={showImagery} />
         )}
@@ -43,9 +43,16 @@ export function MapWorkspace({ onOpenSources }: { onOpenSources: () => void }) {
           />
         )}
 
+      </div>
+
+      {/* The answer first, then the Layers button: one column under the legend strip, clear of the sheet. */}
+      <div className="pointer-events-none absolute inset-x-3 top-[3.75rem] z-10 flex flex-col gap-2 sm:top-12 lg:left-[calc(26rem+1.5rem)] lg:right-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="lg:w-96">
+          <PlanSummaryCard />
+        </div>
         {/* Map layers: one button top-right; the bottom edge belongs to the replay bar and zoom. */}
         {(engine.preview || engine.curiosityPath || available.length > 0) && (
-          <div className="absolute right-3 top-12 z-10 flex flex-col items-end gap-1">
+          <div className="pointer-events-auto flex flex-col items-end gap-1 self-end">
             <button
               type="button"
               onClick={() => setLayersOpen((o) => !o)}
@@ -100,13 +107,7 @@ export function MapWorkspace({ onOpenSources }: { onOpenSources: () => void }) {
         )}
       </div>
 
-      {/* Plan panel */}
-      <aside
-        className="border-t border-seam bg-panel lg:min-h-0 lg:overflow-y-auto lg:border-l lg:border-t-0"
-        aria-label="Plan"
-      >
-        <PlanPanel onOpenSources={onOpenSources} />
-      </aside>
+      <PlanSheet onOpenSources={onOpenSources} />
     </div>
   )
 }

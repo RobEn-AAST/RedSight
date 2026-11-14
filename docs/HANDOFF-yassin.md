@@ -129,6 +129,61 @@ Ali changed the O₂ model on main (`fix/engine-o2`), but **the routes haven't b
   every number in the app is a **team choice** (demo-focus-plan B5), not a rule. Keep the evidence badges;
   full citations can live behind "Source" toggles and the Sources dialog.
 
+- **2026-11-14, branch `finalizing-frontend` (from main at `300d00d`, uncommitted):** ease-of-use pass, no
+  feature removed.
+  - **Phone map:** one finger scrolls the page, two fingers move the map (`cooperativeGestures` on coarse
+    pointers under 1024 px, `MapCanvas.tsx`; taken from the restyle stash without the restyle).
+  - **Sources dialog** scrolls inside itself (`App.tsx`; also from the stash).
+  - **Route choice:** each type says what it means (Least time / Easier ground / A bit of both). The app
+    checks the terrain service once (`/api/copilot/health`). Without it, Balanced and the slope box show as
+    unavailable with the reason, instead of failing after a tap. With it, changing the slope prompts "Tap a
+    route type to recalculate". The slope box is renamed "Steepest slope allowed" (`PlanPanel.tsx`).
+  - **360° view:** S1/S2 rows carry a "360° view" tag, and the replay row reads "Replay + 360° view · Play ·
+    look around S1". When S1 or S2 is selected, a **"360° view + helmet HUD for S1"** button sits right under
+    the stop list (one tap instead of four). It fires `redsight:open-360` (`OPEN_360_EVENT`, exported from
+    `MissionReplay.tsx`), which opens the replay's own 360° view. Its subtitle says a real Curiosity panorama
+    stands in for the site and the readings are modeled, matching the view's own "photo stand-in" label.
+  - **Wording rule from the user:** don't label the 360° view or HUD as a "simulation" or "proof of concept"
+    anywhere in the repo.
+  - Claude in Chrome could not open the local app (error page in every tab it opened; your own tab worked),
+    so checks ran in the built-in browser at 375 px and 1366 px. 26/26 tests, build green.
+  - Dev server: `.claude/launch.json` (outside the repo) now also passes `--host 127.0.0.1`.
+  - **Split up scrapped (user decision, 2026-11-14):** no NASA source gives a walker-to-walker separation
+    limit. NASA's *Tenets of Lunar EVAs for Artemis III* (tenet 2: buddy pairs, "at least 2 crewmembers
+    together", https://ntrs.nasa.gov/citations/20230008183) points the other way, and the xEVA ConOps
+    (EVA-EXP-0042 Rev B) only gives rover-to-rover "rescue range" and lander distances. The disabled
+    "Split up" placeholder from `300d00d` is removed on this branch; "Who goes where" again shows only if
+    split data ever exists. The Crew step already says the pair walks together.
+
+- **2026-11-14, branch `ui-rework` (from `finalizing-frontend` at `e060951`, uncommitted):** simple,
+  informative, smooth pass on the Routes screen.
+  - **"Your walk" card** at the top of the panel: stop name, a one-line verdict (gets there and back, or turns
+    back early), and Walk / Out / Home / O₂ spare at a glance, with the Scenario badge. Green border when it
+    fits, red when it turns back (`PlanSummary` in `PlanPanel.tsx`; numbers from `summarizeCrew`).
+  - **Smooth folds:** when a fold row opens, its detail fades and slides in (200 ms, opacity + transform);
+    closing stays instant (`index.css`, class `fold` on `Fold`). A height animation via `::details-content`
+    was tried and dropped: it did not open reliably.
+  - **Plain status line:** "Modeled estimate · ready-made route · 15° slope limit" (was "Scenario estimate ·
+    precomputed engine route · 15° cap").
+  - Checked at 375 px and 1366 px in the built-in browser; 26/26 tests, build green.
+  - **Layout redo (user decision: "full map + bottom sheet", replacing the long scrolling right panel):**
+    - The map fills the Routes screen at every size (`MapWorkspace.tsx`, class `routes-screen`).
+    - The **"Your walk" card** floats on the map under the legend, as a compact strip (stop name, verdict,
+      Walk / Out / Home / O₂ spare in one row). The **Layers** button sits under it.
+    - New **`ui/BottomSheet.tsx`**: grab handle, tab bar, one scrolling panel per tab. Three heights (small =
+      handle + tabs, 92 px; half; full = map height minus 64 px). Drag or flick the handle; tap it or press
+      Enter to step small → half → full; Escape lowers it. Past the ends it moves with friction. All panels stay
+      mounted (hidden when inactive), so the replay keeps running on the map. It starts at half on phones
+      and full on laptops, where it docks down the left edge (26rem wide).
+    - Tabs (`PlanSheet` in `PlanPanel.tsx`): **Stop** (crew + Edit, where to sample, 360° button) · **Route**
+      (route types, slope limit, why this route, split if data ever exists) · **Plan** (step-by-step walk,
+      O₂ and turn-back, daylight, radiation, notes) · **Replay** (replay controls and the 360° view).
+    - Map overlays kept clear: on phones the zoom control and replay bar sit above the small sheet (`index.css`),
+      and the scale bar moves (`MapCanvas.tsx`). On laptops the replay bar centres in the space beside the sheet.
+      Routes are framed in the visible part of the map (`routePadding()`).
+    - One-finger map panning is back on phones (the map is no longer inside a scrolling page).
+    - A drag ends with a click; a `justDragged` flag stops that click from also stepping the size.
+
 ## 6. Next steps (suggested order)
 
 1. Real-data switch: now parked in `stash@{0}`; main builds real plans, so most likely drop
