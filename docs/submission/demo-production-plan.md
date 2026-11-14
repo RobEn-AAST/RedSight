@@ -15,7 +15,10 @@ when the UI changes.
 | D3 | **Project description PDF** (Cairo Must) | No length limit; 5 sections (§A) | Google Drive, public view link → Cairo "project documentation" field |
 | D4 | GIFs + screenshots (Recommended) | Project-page uploads: JPG/PNG/GIF ≤ 10 MB each | Slides 3–5, project page gallery, README |
 
-**Why slides are the judged link and the video is not:** the rule is "video **or** slide deck" with one demo
+**Decision (Marwan, 2026-11-14):** build **both** D1 and D2 to final quality; choose which one is the judged demo
+link at submit time. The text below is the default reasoning, not the final choice.
+
+**Why slides are the default judged link:** the rule is "video **or** slide deck" with one demo
 link. Two judged demos could read as exceeding the limit. The deck carries more (members' names, data and
 honesty slide) and plays GIFs, so it shows the app running. The video is the same story in 30 s for anyone
 who prefers to watch. **Open question for the Local Lead:** is a supplementary video link acceptable? Added as
