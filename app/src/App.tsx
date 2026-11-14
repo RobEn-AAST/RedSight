@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, MotionConfig } from 'motion/react'
 import { Bot, FileSearch, X } from 'lucide-react'
 
@@ -6,11 +6,16 @@ import { MissionProvider } from '@/lib/missionStore'
 import { useMission } from '@/lib/useMission'
 import { EngineDataProvider } from '@/lib/engineData'
 import { MissionSetup } from '@/mission/MissionSetup'
-import { MapWorkspace } from '@/map/MapWorkspace'
 import { PlanProvider } from '@/map/planStore'
-import { ProvenancePanel } from '@/provenance/ProvenancePanel'
-import { CopilotDock } from '@/copilot/CopilotDock'
 import { cn } from '@/lib/cn'
+
+const MapWorkspace = lazy(() => import('@/map/MapWorkspace').then((m) => ({ default: m.MapWorkspace })))
+const ProvenancePanel = lazy(() => import('@/provenance/ProvenancePanel').then((m) => ({ default: m.ProvenancePanel })))
+const CopilotDock = lazy(() => import('@/copilot/CopilotDock').then((m) => ({ default: m.CopilotDock })))
+
+function PanelLoading() {
+  return <p role="status" className="p-4 text-sm text-ink-dim">Loading workspace…</p>
+}
 
 /*
  * Two screens, in the order a crew uses them: answer the setup questions,
@@ -110,7 +115,7 @@ function SourcesDialog({ onClose }: { onClose: () => void }) {
           >
             <X size={16} aria-hidden />
           </button>
-          <ProvenancePanel />
+          <Suspense fallback={<PanelLoading />}><ProvenancePanel /></Suspense>
         </div>
       </motion.div>
     </>
@@ -144,7 +149,7 @@ function CopilotDrawer({ onClose }: { onClose: () => void }) {
         transition={{ duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }}
         className="fixed bottom-3 right-3 top-14 z-50 flex w-[calc(100%-1.5rem)] flex-col sm:w-[26rem]"
       >
-        <CopilotDock onClose={onClose} autoFocusInput />
+        <Suspense fallback={<PanelLoading />}><CopilotDock onClose={onClose} autoFocusInput /></Suspense>
       </motion.aside>
     </>
   )
@@ -174,7 +179,7 @@ function Console() {
       </header>
 
       <main className="relative min-h-0 flex-1 overflow-y-auto lg:overflow-hidden">
-        {active ? <MapWorkspace onOpenSources={() => setSourcesOpen(true)} /> : <MissionSetup />}
+        {active ? <Suspense fallback={<PanelLoading />}><MapWorkspace onOpenSources={() => setSourcesOpen(true)} /></Suspense> : <MissionSetup />}
       </main>
 
       {/* Copilot: one floating control, available on both screens */}
