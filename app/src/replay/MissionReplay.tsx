@@ -5,6 +5,7 @@ import { PANORAMAS } from '@/hud/panoramas'
 const StopHud = lazy(() => import('@/hud/StopHud').then((m) => ({ default: m.StopHud })))
 import { fastPathFrom, type Timeline } from '@/replay/replay-core.js'
 
+import { markerSprite } from '@/lib/dataUrl'
 import type { EngineConstants } from '@/lib/engineDataContext'
 import { useEngineData } from '@/lib/useEngineData'
 import { usePlan } from '@/map/usePlan'
@@ -56,6 +57,7 @@ export function MissionReplay({ bare = false }: { bare?: boolean } = {}) {
       route,
       panelContainer: host,
       showEnds: false,
+      figure: markerSprite('astronaut'),
     })
     replayRef.current = replay
     if (import.meta.env.DEV) (window as unknown as { __replay?: Replay }).__replay = replay // for headless checks

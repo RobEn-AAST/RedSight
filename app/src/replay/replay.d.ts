@@ -19,6 +19,8 @@ export interface ReplayOptions {
   memberFactors?: number[]
   durationS?: number
   voice?: boolean
+  /** Astronaut sprite drawn on each crew dot (lib/dataUrl markerSprite); without it, plain dots. */
+  figure?: { url: string; pixelRatio?: number }
   /** Put the player panel here instead of over the map. */
   panelContainer?: HTMLElement
   /** Docked mode only: show the small play/clock/O₂ bar over the map (default true). */

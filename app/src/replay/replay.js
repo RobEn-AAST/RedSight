@@ -4,6 +4,8 @@ import { buildTimeline, routeGoalInfo, sampleAt, trailAt, formatClock, formatDur
 import { createVoice, calloutFor } from "./voice.js";
 
 const SRC = { ends: "replay-ends", observed: "replay-observed-stop", trail: "replay-trail", turn: "replay-turn", crew: "replay-crew" };
+// Astronaut sprite drawn over each crew dot (opts.figure = { url, pixelRatio }); shares the crew source.
+const CREW_FIGURE = "replay-crew-figure", FIGURE_IMAGE = "replay-astronaut";
 const DURATIONS = [30, 60, 120]; // seconds of screen time for the whole walk
 const DRILLS = [
   { id: "leak", label: "Suit leak", factor: 2 },
@@ -48,6 +50,26 @@ export function createReplay(map, opts) {
       paint: { "circle-radius": 7, "circle-color": ["get", "color"], "circle-stroke-color": "#fff", "circle-stroke-width": 2 } });
     if (!map.getLayer(SRC.crew)) map.addLayer({ id: SRC.crew, type: "circle", source: SRC.crew,
       paint: { "circle-radius": 6, "circle-color": ["get", "color"], "circle-stroke-color": "#111", "circle-stroke-width": 2 } });
+    if (opts.figure) addFigure(opts.figure);
+  }
+
+  // The crew dot stays as a coloured ring at the feet (tells A from B); the figure stands on it.
+  // The sprite's ground point is its centre, so the icon is centred on the point.
+  async function addFigure({ url, pixelRatio = 1 }) {
+    try {
+      if (!map.hasImage(FIGURE_IMAGE)) {
+        const { data } = await map.loadImage(url);
+        if (!map.hasImage(FIGURE_IMAGE)) map.addImage(FIGURE_IMAGE, data, { pixelRatio });
+      }
+      if (!map.getSource(SRC.crew) || map.getLayer(CREW_FIGURE)) return; // destroyed meanwhile, or already added
+      map.addLayer({ id: CREW_FIGURE, type: "symbol", source: SRC.crew,
+        layout: { "icon-image": FIGURE_IMAGE, "icon-anchor": "center", "icon-allow-overlap": true, "icon-ignore-placement": true,
+          "icon-size": ["interpolate", ["linear"], ["zoom"], 13, 0.45, 16, 0.75, 18, 1] } });
+      map.setPaintProperty(SRC.crew, "circle-color", "rgba(0,0,0,0)");
+      map.setPaintProperty(SRC.crew, "circle-stroke-color", ["get", "color"]);
+      map.setPaintProperty(SRC.crew, "circle-stroke-width", 3);
+      map.setPaintProperty(SRC.crew, "circle-radius", 9);
+    } catch { /* sprite missing: the plain crew dots remain */ }
   }
 
   function render() {
@@ -272,7 +294,7 @@ export function createReplay(map, opts) {
     drill(factor, label = "Contingency") { model.drill = { atS: t, factor, label }; rebuild(); },
     clearDrill() { delete model.drill; rebuild(); },
     /** Move the replay layers above anything the host map added or reordered since. */
-    raise() { for (const id of [SRC.trail, SRC.ends, SRC.turn, SRC.crew]) if (map.getLayer(id)) map.moveLayer(id); },
+    raise() { for (const id of [SRC.trail, SRC.ends, SRC.turn, SRC.crew, CREW_FIGURE]) if (map.getLayer(id)) map.moveLayer(id); },
     get timeline() { return tl; },
     voice,
     destroy() {
@@ -283,6 +305,7 @@ export function createReplay(map, opts) {
       ui.el.remove();
       hud?.el.remove();
       try {
+        if (map.getLayer(CREW_FIGURE)) map.removeLayer(CREW_FIGURE);
         for (const id of Object.values(SRC)) { if (map.getLayer(id)) map.removeLayer(id); if (map.getSource(id)) map.removeSource(id); }
       } catch { /* map already removed: its layers went with it */ }
     },

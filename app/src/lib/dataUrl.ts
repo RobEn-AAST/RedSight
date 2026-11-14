@@ -22,6 +22,15 @@ export function previewUrl(path: string): string {
   return `${import.meta.env.BASE_URL}preview/${path.replace(/^\/+/, '')}`
 }
 
+/** Map figure sprites (app/public/markers/, rendered by app/scripts/make_map_figures.py). */
+export type MapFigure = 'habitat' | 'rover' | 'astronaut'
+
+/** The sprite matching the screen's pixel density (@1x 64 px, @2x 128 px, @3x 192 px), and that density. */
+export function markerSprite(name: MapFigure): { url: string; pixelRatio: number } {
+  const pixelRatio = Math.min(3, Math.max(1, Math.ceil(globalThis.devicePixelRatio || 1)))
+  return { url: `${import.meta.env.BASE_URL}markers/${name}@${pixelRatio}x.png`, pixelRatio }
+}
+
 /** Fetch one contract file. A missing or unreadable file is `null`, never a throw. */
 export async function fetchData<T>(path: string): Promise<T | null> {
   return fetchJsonUrl<T>(dataUrl(path))
