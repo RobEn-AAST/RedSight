@@ -3,9 +3,12 @@
 import { buildTimeline, distanceM, routeGoalInfo, sampleAt, trailAt, formatClock, formatDuration } from "./replay-core.js";
 import { createVoice, calloutFor } from "./voice.js";
 
-const SRC = { ends: "replay-ends", observed: "replay-observed-stop", trail: "replay-trail", turn: "replay-turn", crew: "replay-crew" };
+const SRC = { ends: "replay-ends", observed: "replay-observed-stop", trail: "replay-trail", turn: "replay-turn", crew: "replay-crew", rover: "replay-rover" };
 // Astronaut sprite drawn over each crew dot (opts.figure = { url, pixelRatio }); shares the crew source.
 const CREW_FIGURE = "replay-crew-figure", FIGURE_IMAGE = "replay-astronaut";
+// Rover plans: the rover sprite (opts.roverFigure) drives with the crew, then waits at the park point.
+const ROVER_FIGURE = "replay-rover-figure", ROVER_IMAGE = "replay-rover-img";
+const PAIR_GAP_PX = 16; // rover plans move the pair together; B stands this far to A's side on screen
 const DURATIONS = [30, 60, 120]; // seconds of screen time for the whole walk
 const DRILLS = [
   { id: "leak", label: "Suit leak", factor: 2 },
@@ -36,6 +39,17 @@ export function createReplay(map, opts) {
 
   function build() { return buildTimeline(route, model); }
 
+  /** A point PAIR_GAP_PX to the right of `pt` on screen (keeps two walkers apart at any zoom). */
+  function beside(pt) {
+    try {
+      const q = map.project(pt);
+      const r = map.unproject([q.x + PAIR_GAP_PX, q.y]);
+      return [r.lng, r.lat];
+    } catch { return pt; }
+  }
+  const onZoom = () => render();
+  map.on("zoom", onZoom);
+
   function addLayers() {
     const empty = { type: "FeatureCollection", features: [] };
     for (const id of Object.values(SRC)) if (!map.getSource(id)) map.addSource(id, { type: "geojson", data: empty });
@@ -51,16 +65,32 @@ export function createReplay(map, opts) {
     if (!map.getLayer(SRC.crew)) map.addLayer({ id: SRC.crew, type: "circle", source: SRC.crew,
       paint: { "circle-radius": 6, "circle-color": ["get", "color"], "circle-stroke-color": "#111", "circle-stroke-width": 2 } });
     if (opts.figure) addFigure(opts.figure);
+    if (opts.roverFigure) addRover(opts.roverFigure);
+  }
+
+  async function loadSprite(name, { url, pixelRatio = 1 }) {
+    if (map.hasImage(name)) return;
+    const { data } = await map.loadImage(url);
+    if (!map.hasImage(name)) map.addImage(name, data, { pixelRatio });
+  }
+
+  async function addRover(sprite) {
+    try {
+      await loadSprite(ROVER_IMAGE, sprite);
+      if (!map.getSource(SRC.rover) || map.getLayer(ROVER_FIGURE)) return;
+      map.addLayer({ id: ROVER_FIGURE, type: "symbol", source: SRC.rover,
+        layout: { "icon-image": ROVER_IMAGE, "icon-anchor": "center", "icon-allow-overlap": true, "icon-ignore-placement": true,
+          "icon-size": ["interpolate", ["linear"], ["zoom"], 13, 0.6, 16, 0.95, 18, 1.2] } });
+      if (map.getLayer(CREW_FIGURE)) map.moveLayer(CREW_FIGURE); // walkers above the parked rover
+      render();
+    } catch { /* sprite missing: no rover drawn, the crew still rides at drive speed */ }
   }
 
   // The crew dot stays as a coloured ring at the feet (tells A from B); the figure stands on it.
   // The sprite's ground point is its centre, so the icon is centred on the point.
   async function addFigure({ url, pixelRatio = 1 }) {
     try {
-      if (!map.hasImage(FIGURE_IMAGE)) {
-        const { data } = await map.loadImage(url);
-        if (!map.hasImage(FIGURE_IMAGE)) map.addImage(FIGURE_IMAGE, data, { pixelRatio });
-      }
+      await loadSprite(FIGURE_IMAGE, { url, pixelRatio });
       if (!map.getSource(SRC.crew) || map.getLayer(CREW_FIGURE)) return; // destroyed meanwhile, or already added
       map.addLayer({ id: CREW_FIGURE, type: "symbol", source: SRC.crew,
         layout: { "icon-image": FIGURE_IMAGE, "icon-anchor": "center", "icon-allow-overlap": true, "icon-ignore-placement": true,
@@ -78,8 +108,24 @@ export function createReplay(map, opts) {
     const C = tl.tankL ?? tl.capacityL, R = tl.reserveL; // percentages of the full tank
     const goal = routeGoalInfo(route);
     const offset = goal.offsetM === null ? null : `${goal.offsetM.toFixed(1)} m`;
-    const pts = [{ pt: s.pt, color: CREW_A }];
-    if (tl.members.length >= 2) pts.push({ pt: sampleAt(tl, Math.max(0, t - lagS)).pt, color: CREW_B });
+    // Rover plans (park_index set): within the drive distance of the habitat the crew rides, beyond it they walk.
+    const parkD = driveDistanceM(route);
+    const lastD = tl.frames[tl.frames.length - 1].d;
+    const riding = parkD > 0 && s.phase !== "home" && (s.phase === "back" ? lastD - s.distM : s.distM) < parkD;
+    const pts = [];
+    if (parkD > 0) {
+      // The pair rides and walks together: no time lag (one rover), B drawn beside A on screen.
+      if (!riding) {
+        pts.push({ pt: s.pt, color: CREW_A });
+        if (tl.members.length >= 2) pts.push({ pt: beside(s.pt), color: CREW_B });
+      }
+      const roverAt = riding ? s.pt : s.phase === "home" ? route.coords[0] : route.coords[route.park_index];
+      map.getSource(SRC.rover).setData(fc([pointF(roverAt, {})]));
+    } else {
+      pts.push({ pt: s.pt, color: CREW_A });
+      if (tl.members.length >= 2) pts.push({ pt: sampleAt(tl, Math.max(0, t - lagS)).pt, color: CREW_B });
+      map.getSource(SRC.rover).setData(fc([]));
+    }
     map.getSource(SRC.crew).setData(fc(pts.map((p) => pointF(p.pt, { color: p.color }))));
     const tr = trailAt(tl, t);
     map.getSource(SRC.trail).setData(fc([
@@ -121,10 +167,6 @@ export function createReplay(map, opts) {
     ui.dist.textContent = `${(s.distM / 1000).toFixed(2)} km`;
     const fastNow = tl.switchT != null && t >= tl.switchT && s.phase !== "home";
     const approachPhase = `At approach point${offset ? ` · ${offset} from Observed stop` : ""}`;
-    // Rover plans (park_index set): within the drive distance of the habitat the crew rides, beyond it they walk.
-    const parkD = driveDistanceM(route);
-    const lastD = tl.frames[tl.frames.length - 1].d;
-    const riding = parkD > 0 && (s.phase === "back" ? lastD - s.distM : s.distM) < parkD;
     ui.phase.textContent = {
       out: riding ? "Driving out" : "Walking out",
       stop: goal.approachOnly ? approachPhase : "At the stop",
@@ -298,7 +340,7 @@ export function createReplay(map, opts) {
     drill(factor, label = "Contingency") { model.drill = { atS: t, factor, label }; rebuild(); },
     clearDrill() { delete model.drill; rebuild(); },
     /** Move the replay layers above anything the host map added or reordered since. */
-    raise() { for (const id of [SRC.trail, SRC.ends, SRC.turn, SRC.crew, CREW_FIGURE]) if (map.getLayer(id)) map.moveLayer(id); },
+    raise() { for (const id of [SRC.trail, SRC.ends, SRC.turn, ROVER_FIGURE, SRC.crew, CREW_FIGURE]) if (map.getLayer(id)) map.moveLayer(id); },
     get timeline() { return tl; },
     voice,
     destroy() {
@@ -309,7 +351,8 @@ export function createReplay(map, opts) {
       ui.el.remove();
       hud?.el.remove();
       try {
-        if (map.getLayer(CREW_FIGURE)) map.removeLayer(CREW_FIGURE);
+        map.off("zoom", onZoom);
+        for (const id of [CREW_FIGURE, ROVER_FIGURE]) if (map.getLayer(id)) map.removeLayer(id);
         for (const id of Object.values(SRC)) { if (map.getLayer(id)) map.removeLayer(id); if (map.getSource(id)) map.removeSource(id); }
       } catch { /* map already removed: its layers went with it */ }
     },

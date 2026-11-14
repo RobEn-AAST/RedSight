@@ -58,6 +58,7 @@ export function MissionReplay({ bare = false }: { bare?: boolean } = {}) {
       panelContainer: host,
       showEnds: false,
       figure: markerSprite('astronaut'),
+      roverFigure: markerSprite('rover'),
     })
     replayRef.current = replay
     if (import.meta.env.DEV) (window as unknown as { __replay?: Replay }).__replay = replay // for headless checks

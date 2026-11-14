@@ -21,6 +21,8 @@ export interface ReplayOptions {
   voice?: boolean
   /** Astronaut sprite drawn on each crew dot (lib/dataUrl markerSprite); without it, plain dots. */
   figure?: { url: string; pixelRatio?: number }
+  /** Rover sprite for rover plans: drives with the crew, then waits at the park point. */
+  roverFigure?: { url: string; pixelRatio?: number }
   /** Put the player panel here instead of over the map. */
   panelContainer?: HTMLElement
   /** Docked mode only: show the small play/clock/O₂ bar over the map (default true). */

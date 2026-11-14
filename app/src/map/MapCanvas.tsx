@@ -611,8 +611,9 @@ export function MapCanvas({
     activeMembers.forEach((m, i) => {
       if (m.park_index !== null && m.coords[m.park_index]) {
         const el = document.createElement('div')
+        // The rover itself is drawn by the replay (it drives with the crew and waits here).
         el.title = 'Rover parks here; walk from here'
-        el.append(figure('rover', 52, 'Parked rover'))
+        el.append(chip('P', 'border-ink bg-ink text-void'))
         add(el, m.coords[m.park_index])
       }
       // The turn-back marker is drawn by the turn-back slider (it moves with the O₂ budget).
