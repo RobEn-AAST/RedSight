@@ -110,3 +110,19 @@ STT (~0.5–1 s) + first token + first audio (~0.5 s, overlapped) ≈ **1.5–3 
 `app/dist` now includes the ONNX WASM runtimes (~48 MB, lazy-fetched only when voice is used).
 They make the build self-contained/offline for the demo; if the static deploy must shrink,
 point `env.backends.onnx.wasm.wasmPaths` at a CDN instead (transformers.js docs).
+
+## Gemini Live voice calls (2026-11-14)
+
+With `GEMINI_API_KEY` set (`AIza…` or `AQ.…`), the call button uses **Gemini Live**
+(`GEMINI_LIVE_MODEL`, default `gemini-3.1-flash-live-preview`) instead of the STT → chat → TTS loop.
+Lowest-latency path: the browser streams 16 kHz PCM straight to Google over one WebSocket and plays the
+24 kHz reply; Google's voice-activity detection ends turns after 300 ms of silence and lets the operator
+interrupt.
+
+- `POST /api/copilot/live/token` creates a single-use ephemeral token (30 min, new session within 60 s) with
+  the model, the server system prompt (voice mode + current mission state), the tool list and VAD settings
+  **locked in**. The API key never reaches the browser and the client cannot change the prompt or tools.
+- `POST /api/copilot/live/tool` runs `search_mission_knowledge` here and computes native-terrain routes for
+  route actions; the app validates and applies every action with the same code as text chat and returns the
+  authoritative result to the model.
+- Text chat keeps the existing provider order (Groq first). Optional `GEMINI_LIVE_VOICE` picks a prebuilt voice.

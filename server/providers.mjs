@@ -301,6 +301,24 @@ export function streamChat(opts) {
   throw new ProviderError('No provider configured — set GROQ_API_KEY or GEMINI_API_KEY in server/.env', 'no provider')
 }
 
+/** Live API function declarations: proto Type enums, nullable instead of type unions, recursively. */
+export function liveFunctionDeclarations() {
+  const types = { object:'OBJECT', string:'STRING', number:'NUMBER', integer:'INTEGER', boolean:'BOOLEAN', array:'ARRAY' }
+  const conv = (sch) => {
+    const out = { ...sch }
+    if (Array.isArray(sch.type)) {
+      const real = sch.type.filter((t) => t !== 'null')
+      out.type = types[real[0]] ?? real[0]
+      if (sch.type.includes('null')) out.nullable = true
+    } else if (sch.type) out.type = types[sch.type] ?? sch.type
+    if (sch.properties) out.properties = Object.fromEntries(Object.entries(sch.properties).map(([k, v]) => [k, conv(v)]))
+    if (sch.items) out.items = conv(sch.items)
+    if (out.properties && Object.keys(out.properties).length === 0) delete out.properties
+    return out
+  }
+  return toolSchemas.map((s) => ({ name: s.name, description: s.description, parameters: conv(s.parameters) }))
+}
+
 /** Map a tool request to the one wired executor; unknown tools are refused. */
 export async function runTool(name, args) {
   if (name === searchToolSchema.name) {
