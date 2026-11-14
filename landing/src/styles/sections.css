@@ -116,6 +116,7 @@ h3 {
 }
 .panel-title { font-size: 10.5px; letter-spacing: .24em; color: var(--ink-faint); padding: 16px 22px; border-bottom: 1px solid var(--hairline); }
 .formula { padding: 20px 22px; font-size: 13px; line-height: 1.85; color: var(--ink-muted); overflow-x: auto; }
+.formula-panel, .constants-panel { min-width: 0; } /* grid items: let the code block scroll instead of widening the page */
 .formula b { color: var(--rust); font-weight: 500; }
 .panel-note { font-size: 10px; letter-spacing: .18em; color: var(--ink-faint); padding: 14px 22px; border-top: 1px solid var(--hairline); }
 .constants { width: 100%; border-collapse: collapse; }

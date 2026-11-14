@@ -75,4 +75,4 @@ jobs:
         run: |
           curl -fsS https://mars.roben.club/ | grep -q 'href="/demo/"'
           curl -fsS https://mars.roben.club/demo/ | grep -q '<div id="root">'
-          curl -fsS https://mars.roben.club/api/copilot/health
+          curl -fsS https://mars.roben.club/api/copilot/health | tee /dev/stderr | grep -q '"ok":true'

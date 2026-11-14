@@ -20,9 +20,9 @@ window.__redsight = { lite };
 /* ── boot sequence ── */
 const bootLines = [
   'ROBEN UPLINK // ESTABLISHED',
-  'TARGET ....... JEZERO CRATER',
-  'LAYERS ....... 07 NASA DATASETS',
-  'ENGINE ....... JPL TRAVERSABILITY MODEL',
+  'TARGET ....... GALE CRATER · MOUNT SHARP',
+  'LAYERS ....... 06 NASA-DERIVED',
+  'ENGINE ....... DIJKSTRA · HIRISE DTM',
   'ZERO-G MODE .. ENGAGED',
   'RED SIGHT .... ONLINE',
 ];
