@@ -1,6 +1,6 @@
 {
   "analysis_crs": "PROJCS[\"Mars (2015) - Sphere / Ocentric / Equirectangular, clon = 0\",GEOGCS[\"Mars (2015) - Sphere / Ocentric\",DATUM[\"Mars (2015) - Sphere\",SPHEROID[\"Mars (2015) - Sphere\",3396190,0,AUTHORITY[\"IAU\",\"49900\"]],AUTHORITY[\"IAU\",\"49900\"]],PRIMEM[\"Reference Meridian\",0,AUTHORITY[\"IAU\",\"49900\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"IAU\",\"49900\"]],PROJECTION[\"Equirectangular\"],PARAMETER[\"standard_parallel_1\",0],PARAMETER[\"central_meridian\",0],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH],AUTHORITY[\"IAU\",\"49910\"]]",
-  "build_date": "2026-11-13",
+  "build_date": "2026-11-14",
   "constants_hash": "87b14a922e6427720cba0365b4f66719c50b0a9519101af8b0448354256155df",
   "crs": "+proj=longlat +R=3396190 +no_defs",
   "grid": {
@@ -29,8 +29,8 @@
       312
     ]
   },
-  "input_hash": "4cd99563a51812519b19f1500cf7a47774db0ff2b01e69361e497518a567af16",
-  "nodata": -3.4028226550889045e+38,
+  "input_hash": "eaaca24fa3b811161cb61f43eaecd31a69b24e567eab1dde28c354516e18c24a",
+  "nodata": -9999.0,
   "ops_box": {
     "east": 137.435,
     "north": -4.75,
@@ -43,41 +43,41 @@
       "optimization_scope": "Fastest and lowest-modeled-hazard paths are minimized only inside the union of the existing Scenario habitat and Observed stop coordinates expanded by the stated source-data margin. This is a corridor-limited optimum.",
       "projected_bounds_m": [
         8142966.725607634,
-        -286290.9552217876,
-        8143951.15523876,
+        -286311.1901576792,
+        8143934.967290047,
         -284138.969789717
       ],
       "requested_margin_m": 250.0,
       "source_bounds_clipped": false,
-      "source_pixel_count": 2069571,
+      "source_pixel_count": 2054679,
       "source_row_col_bounds_inclusive": [
         [
           2555,
           2448
         ],
         [
-          4681,
-          3420
+          4701,
+          3404
         ]
       ],
       "source_shape_hw": [
-        2127,
-        973
+        2147,
+        957
       ],
-      "valid_horn_source_pixels": 2069571,
-      "walkable_source_pixels": 1225538
+      "valid_horn_source_pixels": 2054679,
+      "walkable_source_pixels": 1223894
     },
     "native_slope_valid_cells": 281227,
     "native_slope_valid_fraction": 0.7811861111111111,
-    "primary_dtm_valid_cells": 281563,
-    "primary_dtm_valid_fraction": 0.7821194444444445,
+    "primary_dtm_valid_cells": 281327,
+    "primary_dtm_valid_fraction": 0.7814638888888888,
     "route_corridor_margin_m": 250.0,
     "route_grid_resolution_m": 1.0117467945795104,
     "route_grid_shape_hw": [
-      2127,
-      973
+      2147,
+      957
     ],
-    "route_grid_walkable_pixels": 1225538,
+    "route_grid_walkable_pixels": 1223894,
     "slope_aggregation": "Horn 3x3 Horn 3x3 dz/dx,dz/dy using true native 1.0117468 m pixel spacing; slope in degrees; for each 600x600 planning cell, maximum valid native Horn slope by source-pixel center; pixels whose Horn neighborhood touches source nodata are excluded; no complementary DTM fill or seam blending slope aggregated from 1.01175 m source cells to 9.87912 m planning cells",
     "slope_limit_deg": 15.0,
     "walkable_cells_after_slope_mask": 89615,
