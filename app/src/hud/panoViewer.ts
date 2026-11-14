@@ -187,7 +187,14 @@ function buildSphereTextures(img: HTMLImageElement, horizonDeg: number, maxW: nu
 export function createPanoViewer(
   container: HTMLElement,
   imageUrl: string,
-  opts: { horizonDeg?: number; onReady?: () => void; onError?: (e: unknown) => void; onView?: (yawDeg: number, fovDeg: number) => void } = {},
+  opts: {
+    horizonDeg?: number
+    /** 'sphere' = the image is already a full 2:1 equirectangular photo (no gap filling). */
+    projection?: 'mosaic' | 'sphere'
+    onReady?: () => void
+    onError?: (e: unknown) => void
+    onView?: (yawDeg: number, fovDeg: number) => void
+  } = {},
 ): PanoViewer {
   const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
@@ -218,7 +225,20 @@ export function createPanoViewer(
   img.onload = () => {
     if (disposed) return
     try {
-      const built = buildSphereTextures(img, opts.horizonDeg ?? 0, renderer.capabilities.maxTextureSize)
+      const maxW = renderer.capabilities.maxTextureSize
+      const built =
+        opts.projection === 'sphere'
+          ? (() => {
+              // Already full-sphere: only scale down if the GPU can't hold it (some phones max out at 4096).
+              const cv = document.createElement('canvas')
+              cv.width = Math.min(img.width, maxW)
+              cv.height = cv.width / 2
+              const c = cv.getContext('2d')!
+              c.imageSmoothingQuality = 'high'
+              c.drawImage(img, 0, 0, cv.width, cv.height)
+              return { filled: cv, gaps: cv }
+            })()
+          : buildSphereTextures(img, opts.horizonDeg ?? 0, maxW)
       const mk = (cv: HTMLCanvasElement) => {
         const t = new THREE.CanvasTexture(cv)
         t.colorSpace = THREE.SRGBColorSpace
@@ -227,8 +247,9 @@ export function createPanoViewer(
         t.anisotropy = renderer.capabilities.getMaxAnisotropy()
         return t
       }
-      textures = { filled: mk(built.filled), gaps: mk(built.gaps) }
-      const geo = new THREE.SphereGeometry(10, 96, 64)
+      const filled = mk(built.filled)
+      textures = { filled, gaps: built.gaps === built.filled ? filled : mk(built.gaps) }
+      const geo = new THREE.SphereGeometry(10, 128, 96)
       geo.scale(-1, 1, 1) // seen from inside, not mirrored
       mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: textures.filled }))
       scene.add(mesh)
@@ -405,7 +426,7 @@ export function createPanoViewer(
         ;(mesh.material as THREE.Material).dispose()
       }
       textures?.filled.dispose()
-      textures?.gaps.dispose()
+      if (textures && textures.gaps !== textures.filled) textures.gaps.dispose()
       renderer.dispose()
       el.remove()
     },

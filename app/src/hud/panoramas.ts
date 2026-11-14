@@ -1,6 +1,8 @@
-// Real NASA panoramas available at stops (demo-focus-plan §10). Only real imagery: no invented scenery.
+// Real NASA panoramas for the 360 view (demo-focus-plan §10). Only real imagery: no invented scenery.
 export interface StopPanorama {
   stopId: string
+  /** 'mosaic' = NASA strip (360° wide, partial height; the viewer fills the gaps live). 'sphere' = full 2:1 photo. */
+  projection?: 'mosaic' | 'sphere'
   url: string
   title: string
   pia: string
@@ -62,4 +64,40 @@ export const PANORAMAS: Record<string, StopPanorama> = {
     // Distant crater-floor horizon sits ~15° above the mosaic's centre (by eye: y ≈ 500 of 1685 → atan(342·2π/8192)).
     horizonDeg: 15,
   },
+}
+
+/**
+ * Full-sphere stand-in photo for the demo (user request 2026-11-14: "a full high-quality 360 photo of wherever on
+ * Mars"). It is NOT taken at any RedSight stop, so the HUD says so on screen and draws the route on flat ground.
+ *
+ * Source: NASA PIA26363 "Curiosity Takes a 360-Degree View of Gediz Vallis Channel" (released 2024-07-18; read
+ * 2026-11-14 via images-api.nasa.gov and the Photojournal page). Curiosity Mastcam, 336 images, sol 4220
+ * (2024-06-19), inside Gediz Vallis channel on Mount Sharp, Gale crater. Credit NASA/JPL-Caltech/MSSS. Licence: NASA
+ * media "generally are not subject to copyright in the United States" (NASA Images and Media Usage Guidelines,
+ * https://www.nasa.gov/nasa-brand-center/images-and-media/, read 2026-11-14); credit kept on screen.
+ * Original: 29240 × 8311 px JPEG (34,343,102 bytes) from
+ * https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia26/pia26363/PIA26363.jpg,
+ * kept in data/raw/pano/ (git-ignored). Web file: 8192 × 4096 equirectangular JPEG baked by
+ * app/scripts/build-pano-sphere.py: the mosaic at its true angles (horizon row 1950 by eye on the far crater rim →
+ * +24° to −78°), the sky above it and the rover deck below it (not imaged by Mastcam) colour-filled. Derived display
+ * product; the fill is not imagery.
+ */
+export const STANDIN_PANORAMA: StopPanorama & { place: string; sol: number; notAtStop: true } = {
+  stopId: 'standin',
+  projection: 'sphere',
+  url: 'pano/PIA26363-sphere.jpg',
+  title: 'Curiosity Takes a 360-Degree View of Gediz Vallis Channel',
+  pia: 'PIA26363',
+  credit: 'NASA/JPL-Caltech/MSSS',
+  taken: 'Mastcam, 336 images, sol 4220 (2024-06-19)',
+  source: 'https://science.nasa.gov/photojournal/curiosity-takes-a-360-degree-view-of-gediz-vallis-channel/',
+  place: 'Gediz Vallis channel, Mount Sharp',
+  sol: 4220,
+  notAtStop: true,
+  northCalibrated: false,
+  // Not used for the route: in stand-in mode the route is turned so the walk ahead faces the photo's centre
+  // (looking down the channel). The photo's true heading is not needed because it is not the stop.
+  northOffsetDeg: 0,
+  headingNote: 'stand-in photo: route turned to face the open channel',
+  horizonDeg: 0,
 }
