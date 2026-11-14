@@ -137,7 +137,7 @@ const slides = [
     { t: 'text', x: 5.15, y: 3.92, w: 4.25, h: 1.05, text: REPLY.emergency, size: 12, color: BODY },
     note('Click the speaker icons to hear the two asks (AI voice, Kokoro TTS). The copilot replies are added from a real test of the live version. In an emergency the app holds the astronaut at the modeled position, draws the fastest return and dispatches an illustrative rover (mission-control simulation).'), ...footer(6)],
   // 7 · Get home: 360 view + helmet HUD
-  [title('Get home: 360° view + helmet HUD'), gif('hud'), caption('Helmet HUD prototype on a NASA photo stand-in (PIA26363)'),
+  [title('Get home: 360° view + helmet HUD'), gif('hud'), caption('Helmet HUD prototype'),
     rows([['360° view. ', 'At a stop, drag to look around a real Curiosity panorama.'],
       ['Way home. ', 'Arrow, distance and turns along the modeled route back to the habitat.'],
       ['Oxygen + time. ', 'O₂ left, minutes to walk home, O₂ spare at the door.'],
