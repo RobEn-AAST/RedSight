@@ -107,6 +107,14 @@ function RouteChoice() {
   useEffect(() => { latest.current = {config:mission.state.config,target:plan.selectedTargetId} }, [mission.state.config, plan.selectedTargetId])
   const calculate = async (mode: EngineRoutePreference) => {
     if (!Number.isFinite(cap) || cap < 0 || cap > 15) { setError('Slope limit must be 0–15°.'); return }
+    // Default 15° fastest / lowest-hazard: use the precomputed engine plans shipped in public/data, so the
+    // static deploy works without the routing service. Only balanced or a tighter cap needs the service.
+    if (cap === 15 && (mode === 'fastest' || mode === 'safest')) {
+      setError('')
+      mission.patchConfig({routePreference:mode,routeSlopeCapDeg:15,routeSlopeCapExplicit:false})
+      plan.setMode(mode)
+      return
+    }
     const snapshot = latest.current
     if (snapshot.config.roverAvailable) { setError('Terrain calculations currently support foot travel only.'); return }
     setPending(true); setError('')
@@ -116,7 +124,7 @@ function RouteChoice() {
         destination_id:snapshot.target,mode,slope_cap_deg:cap,crew_count:c.crewCount,
         body_mass_kg:c.bodyMassKg,load_kg:perAstronautLoadKg(c),sample_kg_per_stop:c.sampleKgPerStop,
       })})
-      const out = await res.json()
+      const out = await res.json().catch(() => ({ message: 'Routing service unavailable on this deployment; balanced and custom-slope routes need the local terrain service.' }))
       if (!res.ok || out.status !== 'ok') throw new Error(out.message ?? out.detail?.message ?? 'No matching route; the constraint was not relaxed.')
       if (latest.current.config !== snapshot.config || latest.current.target !== snapshot.target) throw new Error('Mission changed during calculation. Please calculate again.')
       if (!validateDynamicRoute(out.route,mode,plan.goalTargets.map(t=>t.id),cap)) throw new Error('Incomplete route or return costs; route discarded.')
@@ -139,7 +147,7 @@ function RouteChoice() {
         {mode==='safest' ? 'Lowest hazard' : mode==='fastest' ? 'Fastest' : 'Balanced'}
       </button>)}
     </div>
-    <p role="status" className="text-xs text-ink-dim">{pending ? 'Calculating on native terrain…' : plan.activeRoute?.routing ? `Scenario estimate · ${plan.activeRoute.routing.slope_cap_deg}° cap · same-path return only` : 'Calculate a route using the selected slope constraint.'}</p>
+    <p role="status" className="text-xs text-ink-dim">{pending ? 'Calculating on native terrain…' : plan.activeRoute?.routing ? `Scenario estimate · ${plan.activeRoute.routing.slope_cap_deg}° cap · same-path return only` : plan.activeRoute ? 'Scenario estimate · precomputed engine route · 15° cap' : 'Calculate a route using the selected slope constraint.'}</p>
     {error && <p role="alert" className="text-sm text-ink">{error}</p>}
   </div>
 }

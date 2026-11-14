@@ -1,4 +1,7 @@
+from pathlib import Path
+
 import numpy as np
+import pytest
 from affine import Affine
 from scipy.sparse.csgraph import dijkstra
 from rasterio.crs import CRS
@@ -51,6 +54,8 @@ def test_balanced_cost_uses_equal_weight_minmax_edge_normalization():
 def test_api_rejects_over_limit_and_zero_is_not_silently_raised():
     base = {"destination_id":"S1","mode":"fastest","crew_count":2,"body_mass_kg":82,"load_kg":15}
     assert route_request({**base,"slope_cap_deg":15.01})["code"] == "invalid_slope_cap"
+    if not Path("data/raw/engine-pilot/input-manifest.json").is_file():
+        pytest.skip("ignored hash-checked native terrain bundle is not installed")
     # The real terrain cache shows the current habitat is blocked by 0 degrees; it reports no route,
     # rather than raising the cap or substituting a preset.
     result = route_request({**base,"slope_cap_deg":0})
