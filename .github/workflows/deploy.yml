@@ -35,7 +35,7 @@ jobs:
 
       - name: Install
         working-directory: app
-        run: npm ci
+        run: npm ci --ignore-scripts  # onnxruntime-node postinstall (GPU download) is not needed for the browser build
 
       - name: Lint
         working-directory: app
@@ -53,7 +53,7 @@ jobs:
 
       - name: Build landing page
         working-directory: landing
-        run: npm ci && npm run build
+        run: npm ci --ignore-scripts && npm run build
 
       - name: Backend tests
         run: node --test server/*.test.mjs

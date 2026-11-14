@@ -31,7 +31,7 @@ if [ -z "${REDSIGHT_REEXEC:-}" ]; then REDSIGHT_REEXEC=1 exec bash "$APP/deploy/
 npm_ci_if_changed() {  # $1 = project dir; reinstall only when its lockfile changed
   local hash; hash=$(sha256sum "$1/package-lock.json" | cut -d' ' -f1)
   if [ "$(cat "$1/node_modules/.lock-hash" 2>/dev/null)" != "$hash" ]; then
-    (cd "$1" && npm ci --no-audit --no-fund --loglevel=error)
+    (cd "$1" && npm ci --ignore-scripts --no-audit --no-fund --loglevel=error)
     echo "$hash" > "$1/node_modules/.lock-hash"
   fi
 }
