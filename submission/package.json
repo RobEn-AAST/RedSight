@@ -8,7 +8,8 @@
     "video": "node build/video.mjs",
     "narrated": "node build/narrated.mjs",
     "slides": "node build/slides.mjs",
-    "deck": "node build/deck.mjs"
+    "deck": "node build/deck.mjs",
+    "asks": "node build/copilot-asks.mjs"
   },
   "devDependencies": {
     "kokoro-js": "^1.2.1",

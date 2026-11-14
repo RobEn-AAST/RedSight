@@ -3,6 +3,7 @@
 // Usage: npm run deck. Wording rules: AGENTS rule 3 + docs/submission/demo-production-plan.md §5.
 import { chromium } from 'playwright'
 import { mkdir, writeFile } from 'node:fs/promises'
+import { readFileSync, existsSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 const pptxgen = createRequire(import.meta.url)('pptxgenjs')
@@ -58,6 +59,13 @@ const stats = (items, x = 0.5, y = 4.45, w = 5.2, h = 0.62) => {
     { t: 'text', x: x + i * (cw + gap) + 0.1, y: y + 0.36, w: cw - 0.2, h: 0.22, text: l, size: 9, color: MUTED }])
 }
 const note = (text) => ({ t: 'notes', text })
+const COPD = `${OUT}copilot/`
+const COP = (n) => `${COPD}${n}.mp3`
+const replyOf = (k, fallback) => { try { return 'Copilot: ' + readFileSync(`${COPD}reply-${k}.txt`, 'utf8').trim() } catch { return fallback } }
+const REPLY = {
+  normal: replyOf('normal', 'Copilot answers from the plan: O₂ left, minutes to the turn-back point, and minutes home.'),
+  emergency: replyOf('emergency', 'Copilot raises the alarm, sends the rover to your position, and guides you until it arrives. (Rover call-out: in progress.)'),
+}
 
 const slides = [
   // 1 · Title (full-bleed NASA photo, darkened on the left; built from app/public/pano/PIA26696.jpg)
@@ -110,31 +118,44 @@ const slides = [
     { t: 'text', x: 5.25, y: 4.08, w: 4.1, h: 0.25, text: 'CUT TO 70 L', size: 10, bold: true, color: 'FF6B6B' },
     { t: 'text', x: 5.25, y: 4.36, w: 4.1, h: 0.6, text: 'Turn back 950 m out, at 33 min. The science stop waits for another day.', size: 13, color: INK },
     note('Budget = 385 L minus the 25 % reserve (96.3 L). Drills: suit leak ×2 and hard work ×1.5 change O₂ use mid-walk. The turn-back point is a Scenario estimate, not a guarantee.'), ...footer(5)],
-  // 6 · Evidence
-  [title('Every number shows its source'), gif('sources'), caption('Click any number: its label, range and source link'),
-    head('FOUR LABELS', 1.1),
-    rows([['Observed ', 'measured by an instrument'], ['Derived ', 'computed from observed data'],
-      ['Scenario ', 'a model or team assumption'], ['Unavailable ', 'no public data at this scale']], 1.38, 1.35),
-    head('LIMITS WE SHOW', 2.85),
-    rows([['', 'Routes end at an approach point near each stop.'],
-      ['', 'Radiation (RAD) and weather (REMS) are measured at the rover, not along the route.'],
-      ['', 'One way home for now: no alternate return, no crew split.']], 3.13, 1.9),
-    { t: 'text', x: 0.5, y: 4.45, w: 5.2, h: 0.6, text: 'HiRISE stereo (Observed) → 1 m elevation, slope (Derived) → time + O₂ (Scenario) → turn-back point', size: 11, color: BODY },
-    note('Each layer and constant has a source card and a line in data/PROVENANCE.md (URL, date, licence).'), ...footer(6)],
-  // 7 · Status
-  [title('Working today, and next'), gif('hud'), caption('Helmet view prototype on a NASA photo stand-in'),
-    head('WORKING NOW', 1.1),
-    { t: 'text', x: 5.95, y: 1.36, w: 3.55, h: 1.3, text: 'Setup · 6 map layers · 2 routes · climb profile · turn-back point · replay + drills · rover · daylight + radiation dose · sources · helmet view', size: 12, color: BODY },
-    head('NEXT', 2.75),
-    { t: 'text', x: 5.95, y: 3.01, w: 3.55, h: 0.6, text: 'Voice copilot online · panoramas at each stop · other ways home', size: 12, color: BODY },
-    { t: 'text', x: 5.95, y: 3.75, w: 3.55, h: 0.5, text: 'mars.roben.club/demo\ngithub.com/RobEn-AAST/RedSight', size: 12, bold: true, color: INK },
-    { t: 'text', x: 0.5, y: 4.45, w: 9, h: 0.5, text: 'Team RobEn, AASTMT: Ali Omar · Marwan Mesbah · Yassin Abdallah · Youssef Nader · Mohamed Ayman · Jana Adham', size: 11, color: MUTED },
-    note('The voice copilot is built, but its server is not online yet. The helmet view is a prototype drawn on NASA photo PIA26363 (Gediz Vallis), not on the stop itself.'), ...footer(7)],
+  // 6 · Voice copilot (new live version in progress; replies come from a real test by the copilot owner)
+  [title('Talk to the copilot, hands-free'),
+    { t: 'image', path: new URL('../assets/copilot-astronaut.png', import.meta.url).pathname, x: 0.5, y: 1.1, w: 4.2, h: 4.2 * 346 / 790 },
+    { t: 'text', x: 0.5, y: 2.95, w: 4.2, h: 1.2, text: 'Ask out loud, mid-walk. The copilot knows your mission plan and answers out loud, so your hands stay free.', size: 13, color: BODY },
+    { t: 'text', x: 0.5, y: 4.15, w: 4.2, h: 0.9, text: 'IN PROGRESS: live voice version (Gemini Live) being finished now. Replies are modeled estimates, not a safety system.', size: 10, bold: true, color: ACC },
+    { t: 'card', x: 5.0, y: 1.1, w: 4.5, h: 1.85 }, { t: 'card', x: 5.0, y: 3.1, w: 4.5, h: 1.95 },
+    { t: 'audio', path: COP('ask-normal'), x: 5.15, y: 1.25, w: 0.42, h: 0.42 },
+    { t: 'text', x: 5.7, y: 1.22, w: 3.7, h: 0.25, text: 'NORMAL ASK', size: 10, bold: true, color: '4CC38A' },
+    { t: 'text', x: 5.7, y: 1.46, w: 3.7, h: 0.3, text: '“How much oxygen do I have left?”', size: 13, bold: true, color: INK },
+    { t: 'text', x: 5.15, y: 1.92, w: 4.25, h: 0.95, text: REPLY.normal, size: 12, color: BODY },
+    { t: 'audio', path: COP('ask-emergency'), x: 5.15, y: 3.25, w: 0.42, h: 0.42 },
+    { t: 'text', x: 5.7, y: 3.22, w: 3.7, h: 0.25, text: 'EMERGENCY', size: 10, bold: true, color: 'FF6B6B' },
+    { t: 'text', x: 5.7, y: 3.46, w: 3.7, h: 0.3, text: '“I fell. I think my leg is broken.”', size: 13, bold: true, color: INK },
+    { t: 'text', x: 5.15, y: 3.92, w: 4.25, h: 1.05, text: REPLY.emergency, size: 12, color: BODY },
+    note('Click the speaker icons to hear the two asks (AI voice, Kokoro TTS). The copilot replies are added from a real test of the live version. The rover call-out in an emergency is being built now.'), ...footer(6)],
+  // 7 · Get home: 360 view + helmet HUD
+  [title('Get home: 360° view + helmet HUD'), gif('hud'), caption('Helmet HUD prototype on a NASA photo stand-in (PIA26363)'),
+    rows([['360° view. ', 'At a stop, drag to look around a real Curiosity panorama.'],
+      ['Way home. ', 'Arrow, distance and turns along the modeled route back to the habitat.'],
+      ['Oxygen + time. ', 'O₂ left, minutes to walk home, O₂ spare at the door.'],
+      ['Earth delay. ', 'Today’s signal time to Earth, so the crew knows help is not instant.'],
+      ['Radar + emergency. ', 'Where home is from where you face; one press to raise an alarm.']], 1.1, 3.25),
+    { t: 'text', x: 5.95, y: 4.45, w: 3.55, h: 0.6, text: 'mars.roben.club/demo\ngithub.com/RobEn-AAST/RedSight', size: 12, bold: true, color: INK },
+    { t: 'text', x: 0.5, y: 4.45, w: 5.2, h: 0.6, text: 'Team RobEn, AASTMT: Ali Omar · Marwan Mesbah · Yassin Abdallah · Youssef Nader · Mohamed Ayman · Jana Adham', size: 11, color: MUTED },
+    note('The HUD is a prototype drawn over NASA photo PIA26363 (Gediz Vallis), not over the stop itself; the numbers are the walk’s modeled values. Messages to Earth are simulated.'), ...footer(7)],
 ]
 
 // ---- keep "22 min", "1 m", "turn-back" from breaking across lines ----
 const nb = (t) => t.replace(/(\d) (min|m|km|L|%)(?![a-z])/g, '$1\u00A0$2').replace(/~(\d)/g, '~$1').replace(/(\w)-(\w)/g, '$1\u2011$2')
 for (const els of slides) for (const e of els) { if (e.text) e.text = nb(e.text); if (e.items) e.items = e.items.map((it) => Array.isArray(it) ? it.map(nb) : nb(it)) }
+
+// speaker icon (cover image for embedded audio)
+const SPEAKER = 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#FFB224"/><path d="M6 10h3l4-3v10l-4-3H6z" fill="#0E1117"/><path d="M15.5 9.5a3.5 3.5 0 0 1 0 5M17.5 7.5a6.5 6.5 0 0 1 0 9" stroke="#0E1117" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>').toString('base64')
+
+// PowerPoint needs a PNG cover for audio
+const SPEAKER_PNG = await (async () => { const b = await chromium.launch(); const pg = await b.newPage({ viewport: { width: 96, height: 96 } })
+  await pg.setContent(`<style>body{margin:0;background:transparent}</style><img src="${SPEAKER}" width="96" height="96">`)
+  const buf = await pg.screenshot({ omitBackground: true }); await b.close(); return 'image/png;base64,' + buf.toString('base64') })()
 
 // ---- PPTX ----
 const pres = new pptxgen(); pres.layout = 'LAYOUT_16x9'; pres.title = 'RedSight · Team RobEn · NASA Space Apps 2026'
@@ -148,6 +169,7 @@ for (const els of slides) {
     else if (e.t === 'rows') s.addText(e.items.flatMap(([a, b], i) => [{ text: a, options: { bold: true, color: INK } },
       { text: b, options: { color: BODY, breakLine: i < e.items.length - 1, paraSpaceAfter: 6 } }]),
       { ...box, fontFace: FONT, fontSize: e.size, valign: 'top', margin: 0, isTextBox: true, lineSpacingMultiple: 1.1 })
+    else if (e.t === 'audio') { if (existsSync(e.path)) s.addMedia({ type: 'audio', path: e.path, ...box, cover: SPEAKER_PNG }) }
     else if (e.t === 'notes') s.addNotes(e.text)
     else if (e.t === 'gif') s.addImage({ path: `${D}gif/${e.name}.gif`, ...box, altText: `Screen recording: ${e.name}` })
     else if (e.t === 'image') s.addImage({ path: e.path, ...box, sizing: e.cover ? { type: 'cover', w: e.w, h: e.h } : undefined, altText: 'Helmet view prototype' })
@@ -163,6 +185,7 @@ const pos = (e) => `position:absolute;left:${px(e.x)};top:${px(e.y)};width:${px(
 const page = slides.map((els) => `<div class="s">${els.map((e) => {
   if (e.t === 'text') return `<div class="box" style="${pos(e)}font-size:${pt(e.size)};font-weight:${e.bold ? 700 : 400};color:#${e.color};text-align:${e.align || 'left'}">${esc(e.text)}</div>`
   if (e.t === 'bullets') return `<ul class="box" style="${pos(e)}font-size:${pt(e.size)};color:#${e.color}">${e.items.map((it) => `<li>${esc(it)}</li>`).join('')}</ul>`
+  if (e.t === 'audio') return `<img style="${pos(e)}" src="${SPEAKER}">`
   if (e.t === 'rows') return `<div class="box" style="${pos(e)}font-size:${pt(e.size)};color:#${BODY}">${e.items.map(([a, b]) => `<p style="margin-bottom:${pt(6)}"><b style="color:#${INK}">${esc(a)}</b>${esc(b)}</p>`).join('')}</div>`
   if (e.t === 'gif') return `<img style="${pos(e)}object-fit:fill" src="file://${D}still/${e.name}.png">`
   if (e.t === 'image') return `<img style="${pos(e)}object-fit:cover" src="file://${e.path}">`

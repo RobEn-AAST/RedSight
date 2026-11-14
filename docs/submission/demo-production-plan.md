@@ -121,3 +121,23 @@ only as a limit or next step. Shots/stills are produced by `submission/capture/s
 | Copilot voice/chat + app actions + avatar [38–40] | 7 (status) | — | Details + AI disclosure | `copilot` (drawer only) | ⚠ backend not running in capture: no "working copilot" claim until a real action is captured on the deploy |
 | Provenance inspector + 4 evidence classes [41] | 6 | 23–27 s | Data | `sources` | ⚠ some catalog statuses stale (slope "planned", CRISM attribution): use data/PROVENANCE.md for captions |
 | Links, team, credits, SI disclosure | 1, 7 | 27–30 s | Sections 4–5 | — | Must |
+
+## 6. Final deck (2026-11-14, user direction): the judged demo is the 7-slide PPTX
+
+`submission/build/deck.mjs` → `submission/out/deck/redsight-deck.pptx` (native editable text, animated GIFs, speaker notes; `npm run deck`, which also fails loudly on any text overflow). Upload: drag into Google Drive → Open with Google Slides (file is > 10 MB, so agents cannot upload it).
+
+| # | Slide | Status |
+|---|---|---|
+| 1 | Title (NASA PIA26696 boxwork photo, team, challenge, link) | done |
+| 2 | Problem + 4 stat cards | done |
+| 3 | NASA data: 6 layers + Curiosity path | done |
+| 4 | Plan the walk: route method + S1 stats | done |
+| 5 | Turn-back decision (full vs 70 L) | done |
+| 6 | **Voice copilot** (replaces "Evidence"): two asks with embedded audio | **waiting on copilot owner** |
+| 7 | **Get home: 360° view + helmet HUD**, team names, links | done |
+
+**Slide 6 handoff (copilot owner, new Gemini Live version):**
+1. The two astronaut asks are generated (`npm run asks`, Kokoro AI voice `am_michael`): `out/copilot/ask-normal.mp3` ("How much oxygen do I have left?") and `ask-emergency.mp3` ("I fell. I think my leg is broken. I need help.").
+2. Play each into the **live** copilot, then save the real reply text as `out/copilot/reply-normal.txt` / `reply-emergency.txt` (and audio as `reply-*.mp3` if wanted). `npm run deck` puts the text on the slide automatically; until then the slide shows the planned behaviour.
+3. The emergency rover call-out is **in progress**; keep the "(in progress)" label unless it works in the deployed app at submit time.
+4. Audio plays in PowerPoint/Keynote. Google Slides does not keep audio from an imported PPTX, so the slide text must stand on its own.
