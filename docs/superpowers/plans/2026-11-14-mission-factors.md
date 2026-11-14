@@ -45,3 +45,16 @@
 
 ### Task 5: Verify and document
 - [ ] `npm run build && npm run lint && npm run check:data`, pytest, node tests, live `/route` calls differing by factor. Add entry to `docs/ai-context.md` §2. Commit.
+
+#### Verification record — 2026-11-14
+
+Checked locally on `feat/ali-mission-factors` at implementation commit `0478135`:
+
+- [x] App build and lint pass. Build reports large on-demand chunks.
+- [x] Data check: 0 errors, 1 warning (`hazards.geojson` is 6.1 MB).
+- [x] `python3 -m pytest -p no:cacheprovider -q engine/tests engine/content/test_stops_and_cards.py`: 65 passed, no skips, in 99.24 seconds.
+- [x] All `.test.mjs` files under `app/src` and `server`, run with `node --test`: 55 passed, no failures or skips. Includes factor evaluation, patch validation and provider tool-schema tests.
+- [x] Local FastAPI HTTP check on temporary port 18791: health reports terrain configured. Two `POST /route` requests for S2, mode `safest`, identical crew/load inputs and a 15° ceiling both return `status: ok`. Changing `sand_weight` from 0 to 3 changes path length from 768 to 774 coordinates and modeled objective cost from 1102.2470541000366 to 1559.7198159694672. Both responses echo the requested weight, retain the 15° hard ceiling and label the result Scenario. These costs use different weights and are not a cross-route performance ranking. The temporary service was stopped after checking.
+- [x] The mission-factors spec and plan already have an entry in `docs/ai-context.md` §2.
+
+Boundary: these checks establish local build, automated tests and native routing HTTP behavior. Browser interaction, a live model executing the copilot tool, and production behavior were not tested in this pass. No push, deployment, submission or commit was performed. Task 5's combined checkbox remains open because it also includes a commit.
