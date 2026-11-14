@@ -753,6 +753,12 @@ def build_real_routes(
         "build_date": date.today().isoformat(),
         "command": "python3 -m engine build --input-manifest <manifest-with-native-routing-and-hazard> --constants <constants.json> --stops <stops.json> --out <app/public/data>",
         "inputs": sources,
+        # A local rebuild of the inputs (engine/tools/rebuild_pilot_inputs.py) says so here, not only in G2.
+        "input_provenance": (
+            {"kind": "local_rebuild", "note": manifest["rebuild_note"], "rebuilt_at": manifest.get("rebuilt_at")}
+            if isinstance(manifest.get("rebuild_note"), str)
+            else {"kind": "original_handoff"}
+        ),
         "s1_landmark_alignment": alignment_evidence,
         "stops_sha256": sha256_file(stops_path),
         "constants_sha256": constants_hash,
