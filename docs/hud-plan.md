@@ -105,3 +105,19 @@ the live visor camera; in the demo it is the Observed NASA Mastcam photo from th
 title → AR route on the ground → home beacon → suit and route data (Details) → message to Earth (light-time
 countdown) → emergency (red fastest way home) → "Plan on the map · walk with the HUD". It works live at the
 judges' table and as a screen recording for the video. Dragging takes over the camera; **■ STOP** ends the tour.
+
+## AR road guide on the real terrain (2026-11-14, Marwan)
+
+- **Terrain:** `app/scripts/build-hud-terrain.py` builds `app/public/hud/terrain-S1.json` / `terrain-S2.json`
+  (8 m grid, 3.6 km square around each stop, heights from the Trek 2.5 m DEM, 543 kB each; **Derived**, display
+  only, never used for routing). The route is drawn at its real ground height, so it climbs toward the habitat
+  instead of lying on a flat plane.
+- **Line of sight:** parts of the route hidden behind a ridge (ray from the 1.97 m eye over the grid) are drawn as
+  dim dashes.
+- **Look:** grid staircase smoothed (±10 m moving average), a shader ribbon with a soft glow, a bright core and a
+  dark rim for contrast, chevrons flowing along the direction of travel, width growing with distance so the far
+  route stays readable, fade near the camera and beyond ~1.5 km.
+- **Markers:** 100 m / 250 m / 500 m / 1 km labels on the guided path; the habitat is a light pillar with a
+  diamond and a HOME label.
+- **Limits:** the DEM is 2.5 m, so small rocks don't occlude; photo heading ±3° and horizon by eye mean
+  the line can sit a few metres off on the photo.

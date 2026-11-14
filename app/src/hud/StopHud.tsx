@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 import { createPanoViewer, type PanoViewer } from '@/hud/panoViewer'
-import { createRouteOverlay, type RouteOverlay } from '@/hud/routeOverlay'
+import { createRouteOverlay, parseTerrain, type RouteOverlay, type Terrain } from '@/hud/routeOverlay'
 import { CommsPanel, type CommsHandle } from '@/hud/CommsPanel'
 import { oneWayDelayS } from '@/hud/earthDelay'
 import type { StopPanorama } from '@/hud/panoramas'
@@ -151,6 +151,18 @@ export function StopHud({
   const [hint, setHint] = useState(true)
   // Guided demo tour (hackathon showcase): scripted camera moves + captions, ~45 s. The user can stop it any time.
   const [tour, setTour] = useState(false)
+  // Terrain grid around the stop (Derived, Trek 2.5 m DEM) so the AR route sits on the real ground.
+  const [terrain, setTerrain] = useState<Terrain | null>(null)
+  useEffect(() => {
+    let live = true
+    fetch(`${import.meta.env.BASE_URL}hud/terrain-${pano.stopId}.json`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => live && d && setTerrain(parseTerrain(d)))
+      .catch(() => {})
+    return () => {
+      live = false
+    }
+  }, [pano.stopId])
   const [caption, setCaption] = useState<{ title: string; text: string } | null>(null)
   const [earthMin] = useState(() => Math.round(oneWayDelayS(new Date()) / 60))
   const fovRef = useRef(58)
@@ -222,8 +234,8 @@ export function StopHud({
   useEffect(() => {
     const viewer = viewerRef.current
     if (!viewer) return
-    const yellow = { color: '#ffd400', opacity: 0.7, widthM: 1.2, arrows: true }
-    const faint = { color: '#7fe3ff', opacity: 0.35, widthM: 0.8, arrows: false }
+    const yellow = { color: '#ffcc00', opacity: 0.92, widthM: 1.6, arrows: true }
+    const faint = { color: '#7fe3ff', opacity: 0.45, widthM: 1.0, arrows: false }
     // Arrows only on the walk ahead, so they always lead away from where the viewer stands.
     const paths = emergency
       ? [{ ...faint, coords: wayOut }, { ...yellow, color: '#ff4d4d', coords: fastestHome }]
@@ -235,6 +247,7 @@ export function StopHud({
       habitat: habitatLonLat,
       paths,
       northOffsetDeg: northRef.current,
+      terrain,
     })
     overlayRef.current = overlay
     // Face the walk ahead: turn to the bearing of the yellow line ~40 m out from the stop.
@@ -245,7 +258,7 @@ export function StopHud({
       if (overlayRef.current === overlay) overlayRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [leg, emergency, fastestHome, wayOut, wayHome, stopLonLat[0], stopLonLat[1], habitatLonLat[0], habitatLonLat[1]])
+  }, [leg, emergency, terrain, fastestHome, wayOut, wayHome, stopLonLat[0], stopLonLat[1], habitatLonLat[0], habitatLonLat[1]])
 
   useEffect(() => {
     viewerRef.current?.showGaps(gaps)
