@@ -1,0 +1,70 @@
+# RedSight — build, check and deploy https://mars.roben.club on every push to main.
+# Secrets (repo → Settings → Secrets → Actions):
+#   VPS_HOST, VPS_USER, VPS_SSH_KEY (private deploy key), VPS_KNOWN_HOSTS (ssh-keyscan line)
+# Server side, layout and one-time bootstrap: deploy/README.md.
+name: Deploy mars.roben.club
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-mars
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: https://mars.roben.club
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install
+        working-directory: app
+        run: npm ci
+
+      - name: Lint
+        working-directory: app
+        run: npm run lint
+
+      - name: Build
+        working-directory: app
+        run: npm run build
+
+      - name: Check data contract
+        working-directory: app
+        run: npm run check:data
+
+      - name: Backend tests
+        run: node --test server/*.test.mjs
+
+      # The VPS pulls main and builds itself (deploy/remote-deploy.sh) — nothing big is uploaded.
+      - name: Deploy on the VPS
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+          TARGET: ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy_key "$TARGET" 'bash ~/apps/redsight/deploy/remote-deploy.sh'
+
+      - name: Public smoke test
+        run: |
+          curl -fsS https://mars.roben.club/ | grep -q '<div id="root">'
+          curl -fsS https://mars.roben.club/api/copilot/health

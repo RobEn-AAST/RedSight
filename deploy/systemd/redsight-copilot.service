@@ -1,0 +1,23 @@
+# RedSight copilot backend (server/index.mjs): chat + STT + TTS, keys server-side.
+# systemd *user* unit for the `roben` account (linger enabled by deploy/setup-root.sh).
+[Unit]
+Description=RedSight copilot backend (Node, :8788)
+After=network-online.target redsight-engine.service
+Wants=redsight-engine.service
+
+[Service]
+WorkingDirectory=%h/apps/redsight
+Environment=NODE_ENV=production
+Environment=PORT=8788
+Environment=HOST=127.0.0.1
+Environment=TRUST_PROXY=1
+Environment=ALLOWED_ORIGINS=https://mars.roben.club
+Environment=ROUTING_API_URL=http://127.0.0.1:8790
+# Provider keys (GROQ_API_KEY / GEMINI_API_KEY) live only here, never in the repo.
+EnvironmentFile=-%h/apps/redsight.env
+ExecStart=%h/.local/opt/node/bin/node server/index.mjs
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target
