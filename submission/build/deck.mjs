@@ -45,9 +45,19 @@ const footer = (n) => [
   { t: 'text', x: 0.5, y: 5.2, w: 7.5, h: 0.25, text: 'RedSight · Team RobEn · NASA Space Apps 2026 · imagery NASA/JPL-Caltech/UArizona/MSSS/USGS', size: 10, color: MUTED },
   { t: 'text', x: 8.5, y: 5.2, w: 1, h: 0.25, text: `${n} / 7`, size: 10, color: MUTED, align: 'right' },
 ]
-const gif = (name, x, y, w) => ({ t: 'gif', name, x, y, w, h: w * 9 / 16 })
-const caption = (text, x, y, w) => ({ t: 'text', x, y, w, h: 0.3, text, size: 11, color: MUTED })
-const bullets = (items, x = 6.3, y = 1.2, w = 3.2, h = 3.6) => ({ t: 'bullets', x, y, w, h, items, size: 14, color: BODY })
+const gif = (name, x = 0.5, y = 1.1, w = 5.2) => ({ t: 'gif', name, x, y, w, h: w * 9 / 16 })
+const caption = (text, x = 0.5, y = 4.07, w = 5.2) => ({ t: 'text', x, y, w, h: 0.28, text, size: 11, color: MUTED })
+const head = (text, y, x = 5.95, w = 3.55) => ({ t: 'text', x, y, w, h: 0.25, text, size: 10, bold: true, color: ACC })
+// rows: [[bold lead, rest]] as one text box, one paragraph per row
+const rows = (items, y = 1.1, h = 3.9, x = 5.95, w = 3.55, size = 12) => ({ t: 'rows', x, y, w, h, items, size })
+// stat cards in a row: [[number, label]]
+const stats = (items, x = 0.5, y = 4.45, w = 5.2, h = 0.62) => {
+  const gap = 0.1, cw = (w - gap * (items.length - 1)) / items.length
+  return items.flatMap(([n, l], i) => [{ t: 'card', x: x + i * (cw + gap), y, w: cw, h },
+    { t: 'text', x: x + i * (cw + gap) + 0.1, y: y + 0.06, w: cw - 0.2, h: 0.3, text: n, size: 15, bold: true, color: INK },
+    { t: 'text', x: x + i * (cw + gap) + 0.1, y: y + 0.36, w: cw - 0.2, h: 0.22, text: l, size: 9, color: MUTED }])
+}
+const note = (text) => ({ t: 'notes', text })
 
 const slides = [
   // 1 · Title (full-bleed NASA photo, darkened on the left; built from app/public/pano/PIA26696.jpg)
@@ -59,48 +69,72 @@ const slides = [
     { t: 'text', x: 0.6, y: 3.6, w: 5, h: 0.3, text: 'Team RobEn · Interplanetary Survival Guide: Martian Map', size: 13, color: BODY },
     { t: 'text', x: 0.6, y: 4.0, w: 5, h: 0.3, text: 'mars.roben.club/demo', size: 16, bold: true, color: ACC },
     { t: 'text', x: 0.6, y: 5.15, w: 6, h: 0.25, text: 'Boxwork ridge on Mount Sharp · NASA/JPL-Caltech/MSSS, PIA26696', size: 10, color: MUTED },
+    note('RedSight plans a science walk on foot near Curiosity, on the boxwork ridges of Mount Sharp, and shows when the crew must turn back. Try it at mars.roben.club/demo; no sign-in.'),
   ],
   // 2 · Problem
-  [title('The problem: one walk, one oxygen tank'), gif('overview', 0.5, 1.2, 5.5), caption('From the crater region down to one walk', 0.5, 4.38, 5.5),
-    bullets(['Mars maps are made for regions, not for one walk on foot',
-      'A crew has one oxygen tank, and a signal to Earth takes up to ~22 min, so they decide on site',
-      'Our site: boxwork ridges at Mount Sharp, left by ancient groundwater, where Curiosity drives today']), ...footer(2)],
+  [title('The problem: one walk, one oxygen tank'), gif('overview'), caption('From the crater region down to one walk'),
+    rows([['Maps show regions. ', 'Mars maps cover kilometres; a walk on foot needs metres.'],
+      ['One tank. ', '385 L of usable O₂ per suit. A 25 % reserve is kept and never planned.'],
+      ['No help from Earth. ', 'A signal takes up to ~22 min one way, so the crew decides on site.'],
+      ['Why this site. ', 'Boxwork ridges on Mount Sharp: veins left by ancient groundwater, where Curiosity drives today.']]),
+    ...stats([['~22 min', 'signal to Earth'], ['385 L', 'usable O₂ per suit'], ['15°', 'slope limit on foot'], ['2', 'crew, buddy rule']]),
+    note('Sources: EMU Data Book (0.55 kg usable O₂ = 385 L), NASA DRA 5.0 buddy rule. The 15° limit and the 25 % reserve are team assumptions (Scenario).'), ...footer(2)],
   // 3 · Data
-  [title('NASA data on one walk-scale map'), gif('map', 0.5, 1.2, 5.5), caption('Each layer switched on in the live app', 0.5, 4.38, 5.5),
-    bullets(['HiRISE images and a 1 m elevation model: slope decides every route',
-      'THEMIS, CRISM and USGS geology add context',
-      'Curiosity’s real path and stops',
-      'Every number is labeled Observed, Derived or Scenario']), ...footer(3)],
+  [title('NASA data on one walk-scale map'), gif('map'), caption('Each layer switched on in the live app'),
+    head('6 LAYERS + CURIOSITY’S PATH', 1.1),
+    rows([['HiRISE optical ', '(Observed): 0.25 m/px base image'],
+      ['Hillshade + slope ', '(Derived): from the ~1 m HiRISE elevation model; slope drives routing'],
+      ['THEMIS ', '(Derived): thermal inertia, a loose-sand hint'],
+      ['CRISM ', '(Derived): mineral hints from scene FRT000058A3'],
+      ['Geology ', '(Derived): USGS geologic map SIM 3292'],
+      ['Curiosity path ', '(Observed): the rover’s real drive and stops']], 1.4, 3.65),
+    { t: 'text', x: 0.5, y: 4.45, w: 5.2, h: 0.6, text: 'THEMIS, CRISM and geology are context for the science goal; they are not used as route costs.', size: 11, color: BODY },
+    note('Every layer opens a source card with its URL and date. Elevation: NASA/JPL Mars Trek Gale DEM from the PDS HiRISE DTM.'), ...footer(3)],
   // 4 · Plan
-  [title('Plan the walk: two modeled routes'), gif('routes', 0.5, 1.2, 5.5), caption('Fastest vs lowest hazard, with the climb profile', 0.5, 4.38, 5.5),
-    bullets(['Pick crew, load, rover and a science goal',
-      'Get the fastest and the lowest-hazard route on real terrain',
-      'Rover option: drive, park, walk the last 100 m']),
-    { t: 'text', x: 6.3, y: 3.75, w: 3.2, h: 0.6, text: 'S1: 1.4 km · 50 min out · 55 min back\n(modeled estimate)', size: 13, bold: true, color: ACC }, ...footer(4)],
+  [title('Plan the walk: two modeled routes'), gif('routes'), caption('Fastest vs lowest hazard, with the climb profile'),
+    head('HOW A ROUTE IS MADE', 1.1),
+    rows([['Setup. ', 'Crew, load (15 kg), rover or not, and a science goal.'],
+      ['Terrain. ', '~1 m HiRISE elevation; slopes over 15° are blocked.'],
+      ['Two routes. ', 'Fastest and lowest hazard. At S1 the fastest is 36 s quicker out; steepest 13.8°.'],
+      ['Oxygen. ', 'Walking power → O₂ at Mars gravity, with a ×1.3 suit factor.'],
+      ['Way home. ', 'Costed 20 % higher (×1.2) to keep a margin.'],
+      ['Rover option. ', 'Drive, park ~100 m short, walk the rest.']], 1.4, 3.65),
+    ...stats([['1.4 km', 'walk to S1'], ['50 min', 'out'], ['55 min', 'home'], ['27 · 61 L', 'O₂ out · home']]),
+    note('All route numbers are Scenario model estimates for S1 (First boxwork 360), crew of 2, 15 kg load. Routes end at an approach point; the last metres are not modeled.'), ...footer(4)],
   // 5 · Decision
-  [title('Know when to turn back'), gif('decision', 0.5, 1.15, 4.4), gif('replay', 5.1, 1.15, 4.4),
-    caption('Lower the oxygen budget: a TURN point appears', 0.5, 3.7, 4.4), caption('Replay: the crew turns there and walks home', 5.1, 3.7, 4.4),
-    { t: 'card', x: 0.5, y: 4.15, w: 9, h: 0.85 },
-    { t: 'text', x: 0.7, y: 4.25, w: 8.6, h: 0.65, text: 'Full budget (288.8 L): reaches S1 and back.   Cut to 70 L: turn back 950 m out, at 33 min.\nThe 25 % reserve is never planned. All values are modeled estimates.', size: 13, color: BODY }, ...footer(5)],
+  [title('Know when to turn back'), gif('decision', 0.5, 1.05, 4.4), gif('replay', 5.1, 1.05, 4.4),
+    caption('Drag the O₂ budget down: a TURN point appears', 0.5, 3.6, 4.4), caption('Replay: the crew turns there; drills re-test the plan', 5.1, 3.6, 4.4),
+    { t: 'card', x: 0.5, y: 4.0, w: 4.4, h: 1.0 }, { t: 'card', x: 5.1, y: 4.0, w: 4.4, h: 1.0 },
+    { t: 'text', x: 0.65, y: 4.08, w: 4.1, h: 0.25, text: 'FULL BUDGET · 288.8 L', size: 10, bold: true, color: '4CC38A' },
+    { t: 'text', x: 0.65, y: 4.36, w: 4.1, h: 0.6, text: 'Reaches the S1 approach point and back, with 200 L spare.', size: 13, color: INK },
+    { t: 'text', x: 5.25, y: 4.08, w: 4.1, h: 0.25, text: 'CUT TO 70 L', size: 10, bold: true, color: 'FF6B6B' },
+    { t: 'text', x: 5.25, y: 4.36, w: 4.1, h: 0.6, text: 'Turn back 950 m out, at 33 min. The science stop waits for another day.', size: 13, color: INK },
+    note('Budget = 385 L minus the 25 % reserve (96.3 L). Drills: suit leak ×2 and hard work ×1.5 change O₂ use mid-walk. The turn-back point is a Scenario estimate, not a guarantee.'), ...footer(5)],
   // 6 · Evidence
-  [title('Every number shows its source'), gif('sources', 0.5, 1.2, 5.5), caption('Click any number to see where it comes from', 0.5, 4.38, 5.5),
-    bullets(['Labels: Observed (measured), Derived (computed), Scenario (assumption)',
-      'Routes stop at an approach point near each site',
-      'Radiation and weather come from the rover, not the route',
-      'Times and oxygen are estimates, not guarantees']), ...footer(6)],
+  [title('Every number shows its source'), gif('sources'), caption('Click any number: its label, range and source link'),
+    head('FOUR LABELS', 1.1),
+    rows([['Observed ', 'measured by an instrument'], ['Derived ', 'computed from observed data'],
+      ['Scenario ', 'a model or team assumption'], ['Unavailable ', 'no public data at this scale']], 1.38, 1.35),
+    head('LIMITS WE SHOW', 2.85),
+    rows([['', 'Routes end at an approach point near each stop.'],
+      ['', 'Radiation (RAD) and weather (REMS) are measured at the rover, not along the route.'],
+      ['', 'One way home for now: no alternate return, no crew split.']], 3.13, 1.9),
+    { t: 'text', x: 0.5, y: 4.45, w: 5.2, h: 0.6, text: 'HiRISE stereo (Observed) → 1 m elevation, slope (Derived) → time + O₂ (Scenario) → turn-back point', size: 11, color: BODY },
+    note('Each layer and constant has a source card and a line in data/PROVENANCE.md (URL, date, licence).'), ...footer(6)],
   // 7 · Status
-  [title('Working today, and next'), gif('hud', 0.5, 1.2, 5.5), caption('Helmet view prototype (photo stand-in)', 0.5, 4.38, 5.5),
-    { t: 'text', x: 6.3, y: 1.2, w: 3.2, h: 0.25, text: 'WORKING NOW', size: 10, bold: true, color: ACC },
-    { t: 'text', x: 6.3, y: 1.45, w: 3.2, h: 1.2, text: 'Setup · 6 map layers · 2 routes · turn‑back point · replay + drills · rover · sources · helmet view', size: 13, color: BODY },
-    { t: 'text', x: 6.3, y: 2.75, w: 3.2, h: 0.25, text: 'NEXT', size: 10, bold: true, color: ACC },
-    { t: 'text', x: 6.3, y: 3.0, w: 3.2, h: 0.75, text: 'Voice copilot online · panoramas at each stop · other ways home', size: 13, color: BODY },
-    { t: 'text', x: 6.3, y: 3.85, w: 3.2, h: 0.55, text: 'mars.roben.club/demo\ngithub.com/RobEn-AAST/RedSight', size: 12, bold: true, color: INK },
-    { t: 'text', x: 6.3, y: 4.5, w: 3.4, h: 0.55, text: 'Team RobEn, AASTMT: Ali Omar · Marwan Mesbah · Yassin Abdallah · Youssef Nader · Mohamed Ayman · Jana Adham', size: 10, color: MUTED }, ...footer(7)],
+  [title('Working today, and next'), gif('hud'), caption('Helmet view prototype on a NASA photo stand-in'),
+    head('WORKING NOW', 1.1),
+    { t: 'text', x: 5.95, y: 1.36, w: 3.55, h: 1.3, text: 'Setup · 6 map layers · 2 routes · climb profile · turn-back point · replay + drills · rover · daylight + radiation dose · sources · helmet view', size: 12, color: BODY },
+    head('NEXT', 2.75),
+    { t: 'text', x: 5.95, y: 3.01, w: 3.55, h: 0.6, text: 'Voice copilot online · panoramas at each stop · other ways home', size: 12, color: BODY },
+    { t: 'text', x: 5.95, y: 3.75, w: 3.55, h: 0.5, text: 'mars.roben.club/demo\ngithub.com/RobEn-AAST/RedSight', size: 12, bold: true, color: INK },
+    { t: 'text', x: 0.5, y: 4.45, w: 9, h: 0.5, text: 'Team RobEn, AASTMT: Ali Omar · Marwan Mesbah · Yassin Abdallah · Youssef Nader · Mohamed Ayman · Jana Adham', size: 11, color: MUTED },
+    note('The voice copilot is built, but its server is not online yet. The helmet view is a prototype drawn on NASA photo PIA26363 (Gediz Vallis), not on the stop itself.'), ...footer(7)],
 ]
 
 // ---- keep "22 min", "1 m", "turn-back" from breaking across lines ----
 const nb = (t) => t.replace(/(\d) (min|m|km|L|%)(?![a-z])/g, '$1\u00A0$2').replace(/~(\d)/g, '~$1').replace(/(\w)-(\w)/g, '$1\u2011$2')
-for (const els of slides) for (const e of els) { if (e.text) e.text = nb(e.text); if (e.items) e.items = e.items.map(nb) }
+for (const els of slides) for (const e of els) { if (e.text) e.text = nb(e.text); if (e.items) e.items = e.items.map((it) => Array.isArray(it) ? it.map(nb) : nb(it)) }
 
 // ---- PPTX ----
 const pres = new pptxgen(); pres.layout = 'LAYOUT_16x9'; pres.title = 'RedSight · Team RobEn · NASA Space Apps 2026'
@@ -111,6 +145,10 @@ for (const els of slides) {
     if (e.t === 'text') s.addText(e.text, { ...box, fontFace: FONT, fontSize: e.size, bold: !!e.bold, color: e.color, align: e.align || 'left', valign: 'top', margin: 0, isTextBox: true, lineSpacingMultiple: 1.1 })
     else if (e.t === 'bullets') s.addText(e.items.map((it, i) => ({ text: it, options: { bullet: { indent: 14 }, breakLine: i < e.items.length - 1, paraSpaceAfter: 9 } })),
       { ...box, fontFace: FONT, fontSize: e.size, color: e.color, valign: 'top', margin: 0, isTextBox: true, lineSpacingMultiple: 1.1 })
+    else if (e.t === 'rows') s.addText(e.items.flatMap(([a, b], i) => [{ text: a, options: { bold: true, color: INK } },
+      { text: b, options: { color: BODY, breakLine: i < e.items.length - 1, paraSpaceAfter: 6 } }]),
+      { ...box, fontFace: FONT, fontSize: e.size, valign: 'top', margin: 0, isTextBox: true, lineSpacingMultiple: 1.1 })
+    else if (e.t === 'notes') s.addNotes(e.text)
     else if (e.t === 'gif') s.addImage({ path: `${D}gif/${e.name}.gif`, ...box, altText: `Screen recording: ${e.name}` })
     else if (e.t === 'image') s.addImage({ path: e.path, ...box, sizing: e.cover ? { type: 'cover', w: e.w, h: e.h } : undefined, altText: 'Helmet view prototype' })
     else if (e.t === 'card') s.addShape(pres.ShapeType.roundRect, { ...box, fill: { color: CARD }, rectRadius: 0.08, line: { color: CARD } })
@@ -125,6 +163,7 @@ const pos = (e) => `position:absolute;left:${px(e.x)};top:${px(e.y)};width:${px(
 const page = slides.map((els) => `<div class="s">${els.map((e) => {
   if (e.t === 'text') return `<div class="box" style="${pos(e)}font-size:${pt(e.size)};font-weight:${e.bold ? 700 : 400};color:#${e.color};text-align:${e.align || 'left'}">${esc(e.text)}</div>`
   if (e.t === 'bullets') return `<ul class="box" style="${pos(e)}font-size:${pt(e.size)};color:#${e.color}">${e.items.map((it) => `<li>${esc(it)}</li>`).join('')}</ul>`
+  if (e.t === 'rows') return `<div class="box" style="${pos(e)}font-size:${pt(e.size)};color:#${BODY}">${e.items.map(([a, b]) => `<p style="margin-bottom:${pt(6)}"><b style="color:#${INK}">${esc(a)}</b>${esc(b)}</p>`).join('')}</div>`
   if (e.t === 'gif') return `<img style="${pos(e)}object-fit:fill" src="file://${D}still/${e.name}.png">`
   if (e.t === 'image') return `<img style="${pos(e)}object-fit:cover" src="file://${e.path}">`
   if (e.t === 'card') return `<div style="${pos(e)}background:#${CARD};border-radius:${px(0.08)}"></div>`
