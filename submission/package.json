@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "capture": "node capture/shots.mjs",
-    "clips": "bash build/clips.sh"
+    "clips": "bash build/clips.sh",
+    "video": "node build/video.mjs"
   },
   "devDependencies": {
     "playwright": "^1.65.1"
