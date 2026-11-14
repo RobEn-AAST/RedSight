@@ -111,12 +111,12 @@ this explicitly. See the provenance inspector in the app.
   adopted 2026-11-14 by the integration owner).
 - No NASA logos/branding in any AI-generated content (Space Apps SI rule).
 
-## Super Intelligence (AI) disclosure *(draft — team to confirm before submit)*
+## Super Intelligence (AI) disclosure
 
-The team chose the problem framing, site, features and data sources. AI coding assistants (Claude Code) helped
-write and test code, summarize research and edit text; team members reviewed and tested the results. No
-AI-generated images, video or audio are used; no NASA branding in AI-generated content. Full draft for the
-project page: [docs/submission/project-page.md](docs/submission/project-page.md).
+The team chose the problem, site, features and data. Claude Code (Claude Opus 5.5 / Sonnet 5.5) helped write and
+test code and edit text; members reviewed and tested every change. In the app, an LLM copilot (Groq / Gemini),
+Whisper speech-to-text and Kokoro text-to-speech are runtime features. The demo narration and slide-6 voice clips
+are AI-generated audio (Kokoro). Full disclosure: [docs/submission/project-page.md](docs/submission/project-page.md).
 
 ## Demo & links *(fill at submission)*
 
