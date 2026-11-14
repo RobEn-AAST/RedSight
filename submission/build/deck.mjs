@@ -126,7 +126,6 @@ const slides = [
   [title('Talk to the copilot, hands-free'),
     { t: 'image', path: new URL('../assets/copilot-astronaut.png', import.meta.url).pathname, x: 0.5, y: 1.1, w: 4.2, h: 4.2 * 346 / 790 },
     { t: 'text', x: 0.5, y: 2.95, w: 4.2, h: 1.2, text: 'Ask out loud, mid-walk. The copilot knows your mission plan and answers out loud, so your hands stay free.', size: 13, color: BODY },
-    { t: 'text', x: 0.5, y: 4.15, w: 4.2, h: 0.9, text: 'Voice calls: Gemini Live (gemini-3.1-flash-live-preview), speech to speech. Replies use the modeled plan; a prototype aid, not a safety system.', size: 10, bold: true, color: ACC },
     { t: 'card', x: 5.0, y: 1.1, w: 4.5, h: 1.85 }, { t: 'card', x: 5.0, y: 3.1, w: 4.5, h: 1.95 },
     { t: 'audio', path: COP('ask-normal'), x: 5.15, y: 1.25, w: 0.42, h: 0.42 },
     { t: 'text', x: 5.7, y: 1.22, w: 3.7, h: 0.25, text: 'NORMAL ASK', size: 9, bold: true, color: OK, font: 'mono', spacing: 2 },
