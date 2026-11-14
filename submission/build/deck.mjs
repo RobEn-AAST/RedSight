@@ -50,18 +50,15 @@ const caption = (text, x, y, w) => ({ t: 'text', x, y, w, h: 0.3, text, size: 11
 const bullets = (items, x = 6.3, y = 1.2, w = 3.2, h = 3.6) => ({ t: 'bullets', x, y, w, h, items, size: 14, color: BODY })
 
 const slides = [
-  // 1 · Title
+  // 1 · Title (full-bleed NASA photo, darkened on the left; built from app/public/pano/PIA26696.jpg)
   [
-    { t: 'image', path: `${OUT}stills/hud.png`, x: 5.6, y: 0, w: 4.4, h: H, cover: true },
-    { t: 'text', x: 0.5, y: 0.6, w: 4.8, h: 0.3, text: 'NASA SPACE APPS 2026 · CAIRO', size: 12, bold: true, color: ACC },
-    { t: 'text', x: 0.5, y: 0.95, w: 4.8, h: 0.9, text: 'RedSight', size: 48, bold: true, color: INK },
-    { t: 'text', x: 0.5, y: 1.9, w: 4.8, h: 0.8, text: 'Plan a science walk on Mars.\nKnow when to turn back.', size: 20, color: BODY },
-    { t: 'text', x: 0.5, y: 2.85, w: 4.8, h: 0.25, text: 'CHALLENGE', size: 10, bold: true, color: ACC },
-    { t: 'text', x: 0.5, y: 3.1, w: 4.8, h: 0.3, text: 'Interplanetary Survival Guide: Martian Map', size: 14, color: INK },
-    { t: 'text', x: 0.5, y: 3.55, w: 4.8, h: 0.25, text: 'TEAM ROBEN · SOFTWARE & AI, AASTMT', size: 10, bold: true, color: ACC },
-    { t: 'text', x: 0.5, y: 3.8, w: 4.8, h: 0.5, text: 'Ali Omar · Marwan Mesbah · Yassin Abdallah\nYoussef Nader · Mohamed Ayman · Jana Adham', size: 12, color: BODY },
-    { t: 'text', x: 0.5, y: 4.55, w: 4.8, h: 0.3, text: 'Try it: mars.roben.club/demo', size: 14, bold: true, color: INK },
-    { t: 'text', x: 0.5, y: 5.2, w: 4.9, h: 0.25, text: 'Image: helmet view prototype over NASA photo PIA26363 (stand-in)', size: 10, color: MUTED },
+    { t: 'image', path: new URL('../assets/title-boxwork.jpg', import.meta.url).pathname, x: 0, y: 0, w: W, h: H },
+    { t: 'text', x: 0.6, y: 0.9, w: 5, h: 0.3, text: 'NASA SPACE APPS 2026 · CAIRO', size: 13, bold: true, color: ACC },
+    { t: 'text', x: 0.6, y: 1.3, w: 5, h: 1.0, text: 'RedSight', size: 60, bold: true, color: INK },
+    { t: 'text', x: 0.6, y: 2.4, w: 5, h: 0.9, text: 'Plan a science walk on Mars.\nKnow when to turn back.', size: 22, color: INK },
+    { t: 'text', x: 0.6, y: 3.6, w: 5, h: 0.3, text: 'Team RobEn · Interplanetary Survival Guide: Martian Map', size: 13, color: BODY },
+    { t: 'text', x: 0.6, y: 4.0, w: 5, h: 0.3, text: 'mars.roben.club/demo', size: 16, bold: true, color: ACC },
+    { t: 'text', x: 0.6, y: 5.15, w: 6, h: 0.25, text: 'Boxwork ridge on Mount Sharp · NASA/JPL-Caltech/MSSS, PIA26696', size: 10, color: MUTED },
   ],
   // 2 · Problem
   [title('The problem: one walk, one oxygen tank'), gif('overview', 0.5, 1.2, 5.5), caption('From the crater region down to one walk', 0.5, 4.38, 5.5),
@@ -97,7 +94,8 @@ const slides = [
     { t: 'text', x: 6.3, y: 1.45, w: 3.2, h: 1.2, text: 'Setup · 6 map layers · 2 routes · turn‑back point · replay + drills · rover · sources · helmet view', size: 13, color: BODY },
     { t: 'text', x: 6.3, y: 2.75, w: 3.2, h: 0.25, text: 'NEXT', size: 10, bold: true, color: ACC },
     { t: 'text', x: 6.3, y: 3.0, w: 3.2, h: 0.75, text: 'Voice copilot online · panoramas at each stop · other ways home', size: 13, color: BODY },
-    { t: 'text', x: 6.3, y: 3.85, w: 3.2, h: 0.55, text: 'mars.roben.club/demo\ngithub.com/RobEn-AAST/RedSight', size: 12, bold: true, color: INK }, ...footer(7)],
+    { t: 'text', x: 6.3, y: 3.85, w: 3.2, h: 0.55, text: 'mars.roben.club/demo\ngithub.com/RobEn-AAST/RedSight', size: 12, bold: true, color: INK },
+    { t: 'text', x: 6.3, y: 4.5, w: 3.4, h: 0.55, text: 'Team RobEn, AASTMT: Ali Omar · Marwan Mesbah · Yassin Abdallah · Youssef Nader · Mohamed Ayman · Jana Adham', size: 10, color: MUTED }, ...footer(7)],
 ]
 
 // ---- keep "22 min", "1 m", "turn-back" from breaking across lines ----
