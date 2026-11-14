@@ -8,7 +8,7 @@ import { execFileSync } from 'node:child_process'
 import { sel } from './selectors.mjs'
 
 const args = process.argv.slice(2)
-const BASE = args[0]?.startsWith('http') ? args.shift() : 'http://localhost:5199/'
+const BASE = args[0]?.startsWith('http') ? args.shift() : 'https://mars.roben.club/demo/'
 const ONLY = new Set(args)
 const OUT = new URL('../out/', import.meta.url).pathname
 const VIEW = { width: 1440, height: 810 } // CSS px; UI reads well at this size
@@ -97,7 +97,7 @@ async function toRoutes(p, { rover = false } = {}) {
   await sel.goalBoxwork(p).click()
   await sel.next(p).click()
   await sel.showRoutes(p).click()
-  await sleep(4000)
+  await sleep(6500)
 }
 async function scrollPanelTo(p, loc) {
   await loc.evaluate((el) => el.scrollIntoView({ block: 'start', behavior: 'instant' }))
@@ -116,155 +116,154 @@ async function setBudget(p, litres, ms = 1600) {
   await p.mouse.up()
 }
 
+const tab = (p, name) => p.getByRole('tab', { name })
+async function openTab(p, name, rec = false) { if (rec) await click(p, tab(p, name), { pause: 700 }); else { await tab(p, name).click(); await sleep(700) } }
+async function openFold(p, name, rec = false) {
+  const f = sel.fold(p, name)
+  if (rec) await click(p, f, { pause: 500 }); else { await f.click(); await sleep(400) }
+  await f.evaluate((el) => el.scrollIntoView({ block: 'start', behavior: 'smooth' })); await sleep(900)
+}
+
 const SHOTS = {
-  // 1. Mission setup: crew, goal (boxwork), show routes.
+  // Mission setup: crew, load, rover, goal (boxwork), review, show routes.
   async setup(p) {
     const stop = await startRec(p, 'setup')
     await sleep(900)
-    for (let i = 0; i < 3; i++) await click(p, sel.next(p), { pause: 700 })
-    await click(p, sel.goalBoxwork(p), { pause: 900 })
-    await click(p, sel.next(p), { pause: 1200 })
-    await click(p, sel.showRoutes(p), { pause: 4500 })
+    for (let i = 0; i < 3; i++) await click(p, sel.next(p), { pause: 900 })
+    await click(p, sel.goalBoxwork(p), { pause: 1000 })
+    await click(p, sel.next(p), { pause: 1400 })
+    await click(p, sel.showRoutes(p), { pause: 6000 })
     await stop(); await still(p, 'setup-end')
   },
-  // 2. The map: NASA layers on, Curiosity path, stops.
+  // Problem: zoom out to the wider crater, then back in to the walk.
+  async overview(p) {
+    await toRoutes(p)
+    const zin = p.getByRole('button', { name: 'Zoom in' }), zout = p.getByRole('button', { name: 'Zoom out' })
+    for (let i = 0; i < 4; i++) { await zout.click(); await sleep(250) }
+    await sleep(2500)
+    const stop = await startRec(p, 'overview')
+    await sleep(800)
+    for (let i = 0; i < 4; i++) await click(p, zin, { pause: 900 })
+    await sleep(1500)
+    await stop()
+  },
+  // NASA layers toggled one by one.
   async map(p) {
     await toRoutes(p)
     const stop = await startRec(p, 'map')
-    await sleep(800)
+    await sleep(600)
     await click(p, sel.layersBtn(p), { pause: 900 })
-    await still(p, 'map-layers')
-    await click(p, sel.layerToggle(p, 'Hillshade'), { pause: 1400 })
-    await click(p, sel.layerToggle(p, 'Hillshade'), { pause: 600 })
-    await click(p, sel.layersBtn(p), { pause: 900 })
-    await click(p, sel.stopCard(p, 'S2'), { pause: 2200 })
-    await click(p, sel.stopCard(p, 'S1'), { pause: 2200 })
-    await stop(); await still(p, 'map-route')
+    for (const l of ['Hillshade', 'Slope', 'THEMIS thermal inertia (sand proxy)', 'CRISM mineral indicators', 'Geologic units (SIM 3292)']) {
+      await click(p, sel.layerToggle(p, l), { pause: 1500 })
+      await still(p, 'layer-' + l.split(' ')[0].toLowerCase())
+      await click(p, sel.layerToggle(p, l), { pause: 400 })
+    }
+    await click(p, sel.layersBtn(p), { pause: 800 })
+    await stop()
   },
-  // 3. Route choice: fastest vs lowest hazard.
+  // Route choice + why this route (profile).
   async routes(p) {
     await toRoutes(p)
     const stop = await startRec(p, 'routes')
-    await sleep(700)
-    await click(p, sel.routePref(p, 'Lowest hazard'), { pause: 2200 })
+    await sleep(500)
+    await openTab(p, 'Route', true)
+    await click(p, sel.routePref(p, /^Lowest hazard/), { pause: 2000 })
     await still(p, 'routes-lowest-hazard')
-    await click(p, sel.routePref(p, 'Fastest'), { pause: 2200 })
-    await stop(); await still(p, 'routes-fastest')
+    await click(p, sel.routePref(p, /^Fastest/), { pause: 1500 })
+    await openFold(p, 'Why this route', true)
+    const svg = p.locator('details[open] svg').filter({ visible: true }).last()
+    const b = await svg.boundingBox().catch(() => null)
+    if (b) { await moveTo(p, b.x + 10, b.y + b.height / 2, 300); await moveTo(p, b.x + b.width - 10, b.y + b.height / 2, 2600) }
+    await sleep(600)
+    await stop(); await still(p, 'profile')
   },
-  // 4. The decision: less usable O2 -> modeled turn-back point appears before the stop.
+  // Mission factors (Scenario inputs).
+  async factors(p) {
+    await toRoutes(p)
+    await openTab(p, 'Route')
+    await openFold(p, 'Mission factors')
+    await still(p, 'factors')
+  },
+  // The decision: usable O2 288.8 L -> 70 L moves the turn-back point.
   async decision(p) {
     await toRoutes(p)
-    await scrollPanelTo(p, sel.o2Heading(p))
+    await openTab(p, 'Plan')
     await still(p, 'decision-before')
     const stop = await startRec(p, 'decision')
     await sleep(900)
-    await setBudget(p, 70, 2200)
+    await setBudget(p, 70, 2400)
     await sleep(2600)
     await stop(); await still(p, 'decision-after')
   },
-  // 5. Replay of the same reduced-budget mission: walk out, turn at the marker, head home.
+  // Replay of the reduced-budget walk: out, turn at the marker, home.
   async replay(p) {
     await toRoutes(p)
-    await scrollPanelTo(p, sel.o2Heading(p))
-    await setBudget(p, 70, 200)
-    await sel.replayFold(p).click(); await sleep(500)
+    await openTab(p, 'Plan'); await setBudget(p, 70, 200)
+    await openTab(p, 'Replay')
     await sel.replayLength(p).selectOption('30 s')
-    await scrollPanelTo(p, sel.o2Heading(p))
     const stop = await startRec(p, 'replay')
     await sleep(600)
-    await click(p, sel.play(p).first(), { pause: 0 })
+    await click(p, sel.play(p).last(), { pause: 0 })
     for (let t = 0; t < 32; t++) { await sleep(1000); if (t === 14) await still(p, 'replay-turn') }
     await stop(); await still(p, 'replay-end')
   },
-  // 6. Contingency drill (Scenario multiplier) during the replay.
+  // Suit-leak drill during the full-budget replay.
   async drill(p) {
     await toRoutes(p)
-    await sel.replayFold(p).click(); await sleep(500)
+    await openTab(p, 'Replay')
     await sel.replayLength(p).selectOption('30 s')
-    await scrollPanelTo(p, sel.replayFold(p))
     const stop = await startRec(p, 'drill')
-    await click(p, sel.play(p).first(), { pause: 3500 })
+    await click(p, sel.play(p).last(), { pause: 3500 })
     await click(p, sel.drill(p, 'Suit leak ×2'), { pause: 0 })
-    for (let t = 0; t < 12; t++) { await sleep(1000); if (t === 4) await still(p, 'drill') }
+    for (let t = 0; t < 14; t++) { await sleep(1000); if (t === 5) await still(p, 'drill') }
     await stop()
   },
-  // 7. Evidence: a source chip, then the provenance inspector.
-  async sources(p) {
+  // Rover Scenario: drive, park ~100 m short, walk the last leg.
+  async rover(p) {
+    await toRoutes(p, { rover: true })
+    await still(p, 'rover-plan')
+    await openTab(p, 'Replay')
+    await sel.replayLength(p).selectOption('30 s')
+    const stop = await startRec(p, 'rover')
+    await click(p, sel.play(p).last(), { pause: 0 })
+    for (let t = 0; t < 16; t++) { await sleep(1000); if (t === 8) await still(p, 'rover-drive') }
+    await stop()
+  },
+  // Daylight + radiation folds.
+  async environment(p) {
     await toRoutes(p)
-    await scrollPanelTo(p, sel.o2Heading(p))
-    const stop = await startRec(p, 'sources')
-    await sleep(600)
-    await click(p, sel.sourceChip(p), { pause: 2000 })
-    await still(p, 'sources-chip')
-    await click(p, sel.sourcesBtn(p), { pause: 1500 })
-    await still(p, 'sources-inspector')
-    await p.mouse.wheel(0, 600); await sleep(1600)
-    await stop()
+    await openTab(p, 'Plan')
+    await openFold(p, 'Daylight'); await still(p, 'daylight')
+    await openFold(p, 'Radiation dose'); await still(p, 'radiation')
   },
-  // 8. Tier 2 prototype: 360 photo stand-in + AR helmet HUD.
+  // 360 photo stand-in + helmet HUD: tour, details, emergency.
   async hud(p) {
     await toRoutes(p)
-    await sel.replayFold(p).click(); await sleep(500)
-    await click(p, sel.hudBtn(p), { pause: 0 })
-    await sleep(5000)
+    await click(p, p.getByRole('button', { name: /^360° view \+ helmet HUD/ }), { pause: 0 })
+    await sleep(6000)
     const stop = await startRec(p, 'hud')
     await still(p, 'hud')
     await click(p, sel.hudTour(p), { pause: 0 })
     await sleep(9000)
-    await stop(); await still(p, 'hud-tour')
-  },
-  // 10. Rover Scenario: drive the walking path, park ~100 m short, walk the last leg.
-  async rover(p) {
-    await toRoutes(p, { rover: true })
-    await still(p, 'rover-plan')
-    await sel.replayFold(p).click(); await sleep(500)
-    await sel.replayLength(p).selectOption('30 s')
-    const stop = await startRec(p, 'rover')
-    await click(p, sel.play(p).first(), { pause: 0 })
-    for (let t = 0; t < 16; t++) { await sleep(1000); if (t === 8) await still(p, 'rover-drive') }
-    await stop()
-  },
-  // 11. Why this route: cost explanation + elevation profile.
-  async profile(p) {
-    await toRoutes(p)
-    const stop = await startRec(p, 'profile')
-    const why = sel.fold(p, 'Why this route')
-    await click(p, why, { pause: 600 })
-    await why.evaluate((el) => el.scrollIntoView({ block: 'start', behavior: 'smooth' })); await sleep(1200)
-    await still(p, 'profile')
-    const svg = p.locator('details[open] svg').filter({ visible: true }).last()
-    const b = await svg.boundingBox().catch(() => null)
-    if (b) { await moveTo(p, b.x + 10, b.y + b.height / 2, 300); await moveTo(p, b.x + b.width - 10, b.y + b.height / 2, 2500) }
-    await sleep(800)
-    await stop(); await still(p, 'profile-hover')
-  },
-  // 12. Environment folds: daylight + EVA radiation dose.
-  async environment(p) {
-    await toRoutes(p)
-    for (const [f, n] of [['Daylight', 'daylight'], ['Radiation dose', 'radiation']]) {
-      const s = sel.fold(p, f); await s.click(); await sleep(500)
-      await s.evaluate((el) => el.scrollIntoView({ block: 'start' })); await sleep(600)
-      await still(p, n)
-    }
-  },
-  // 13. HUD details + emergency (simulated comms, local UI only).
-  async huddetails(p) {
-    await toRoutes(p)
-    await sel.replayFold(p).click(); await sleep(500)
-    await sel.hudBtn(p).click(); await sleep(5000)
-    const stop = await startRec(p, 'huddetails')
-    await click(p, sel.hudDetails(p), { pause: 2000 })
+    await click(p, sel.hudTour(p).or(p.getByRole('button', { name: /STOP|Stop/ })).first(), { pause: 600 }).catch(() => {})
+    await click(p, sel.hudDetails(p), { pause: 2200 })
     await still(p, 'hud-details')
     await click(p, sel.hudEmergency(p), { pause: 3000 })
     await still(p, 'hud-emergency')
     await stop()
   },
-  // 9. Copilot drawer (only shown if it works in the final build).
-  async copilot(p) {
+  // Evidence: a source chip, then the provenance inspector.
+  async sources(p) {
     await toRoutes(p)
-    const stop = await startRec(p, 'copilot')
-    await click(p, sel.copilotBtn(p), { pause: 3000 })
-    await stop(); await still(p, 'copilot')
+    await openTab(p, 'Plan')
+    const stop = await startRec(p, 'sources')
+    await sleep(500)
+    await click(p, sel.sourceChip(p), { pause: 1800 })
+    await still(p, 'sources-chip')
+    await click(p, sel.sourcesBtn(p), { pause: 1600 })
+    await still(p, 'sources-inspector')
+    await p.mouse.wheel(0, 500); await sleep(1500)
+    await stop()
   },
 }
 

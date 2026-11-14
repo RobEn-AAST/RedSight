@@ -5,9 +5,11 @@
   "scripts": {
     "capture": "node capture/shots.mjs",
     "clips": "bash build/clips.sh",
-    "video": "node build/video.mjs"
+    "video": "node build/video.mjs",
+    "narrated": "node build/narrated.mjs"
   },
   "devDependencies": {
+    "kokoro-js": "^1.2.1",
     "playwright": "^1.65.1"
   }
 }
