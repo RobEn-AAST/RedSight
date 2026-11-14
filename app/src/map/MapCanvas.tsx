@@ -228,6 +228,9 @@ export function MapCanvas({
       maxBounds: [[outer.west, outer.south], [outer.east, outer.north]],
       maxZoom: 18,
       attributionControl: false,
+      // Phone layout: the map sits inside a scrolling page, so one finger scrolls the page and two
+      // fingers move the map. Desktop (side-by-side, nothing to scroll past) keeps normal gestures.
+      cooperativeGestures: window.matchMedia('(pointer: coarse) and (max-width: 1023px)').matches,
       dragRotate: false,
       pitchWithRotate: false,
       touchPitch: false,

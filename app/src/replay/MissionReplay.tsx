@@ -10,6 +10,9 @@ import type { EngineConstants } from '@/lib/engineDataContext'
 import { useEngineData } from '@/lib/useEngineData'
 import { usePlan } from '@/map/usePlan'
 import { Panel } from '@/ui/Panel'
+
+/** Fired by the stop list's "Look around" button; the replay opens its 360° view + HUD. */
+export const OPEN_360_EVENT = 'redsight:open-360'
 import { createReplay, type Replay, type ReplayOptions } from '@/replay/replay.js'
 import '@/replay/replay.css'
 
@@ -46,6 +49,11 @@ export function MissionReplay({ bare = false }: { bare?: boolean } = {}) {
   }, [activeRoute])
   const hasRoute = !!activeRoute
   const closeHud = useCallback(() => setHud(null), [])
+  useEffect(() => {
+    const open = () => replayRef.current && setHud(replayRef.current.timeline as unknown as Timeline)
+    window.addEventListener(OPEN_360_EVENT, open)
+    return () => window.removeEventListener(OPEN_360_EVENT, open)
+  }, [])
 
   // One replay per map + constants; the route is swapped in place.
   useEffect(() => {

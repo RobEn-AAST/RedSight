@@ -115,7 +115,9 @@ function SourcesDialog({ onClose }: { onClose: () => void }) {
           >
             <X size={16} aria-hidden />
           </button>
-          <Suspense fallback={<PanelLoading />}><ProvenancePanel /></Suspense>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <Suspense fallback={<PanelLoading />}><ProvenancePanel /></Suspense>
+          </div>
         </div>
       </motion.div>
     </>

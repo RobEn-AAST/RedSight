@@ -129,6 +129,32 @@ Ali changed the O₂ model on main (`fix/engine-o2`), but **the routes haven't b
   every number in the app is a **team choice** (demo-focus-plan B5), not a rule. Keep the evidence badges;
   full citations can live behind "Source" toggles and the Sources dialog.
 
+- **2026-11-14, branch `finalizing-frontend` (from main at `300d00d`, uncommitted):** ease-of-use pass, no
+  feature removed.
+  - **Phone map:** one finger scrolls the page, two fingers move the map (`cooperativeGestures` on coarse
+    pointers under 1024 px, `MapCanvas.tsx`; taken from the restyle stash without the restyle).
+  - **Sources dialog** scrolls inside itself (`App.tsx`; also from the stash).
+  - **Route choice:** each type says what it means (Least time / Easier ground / A bit of both). The app
+    checks the terrain service once (`/api/copilot/health`). Without it, Balanced and the slope box show as
+    unavailable with the reason, instead of failing after a tap. With it, changing the slope prompts "Tap a
+    route type to recalculate". The slope box is renamed "Steepest slope allowed" (`PlanPanel.tsx`).
+  - **360° view:** S1/S2 rows carry a "360° view" tag, and the replay row reads "Replay + 360° view · Play ·
+    look around S1". When S1 or S2 is selected, a **"360° view + helmet HUD for S1"** button sits right under
+    the stop list (one tap instead of four). It fires `redsight:open-360` (`OPEN_360_EVENT`, exported from
+    `MissionReplay.tsx`), which opens the replay's own 360° view. Its subtitle says a real Curiosity panorama
+    stands in for the site and the readings are modeled, matching the view's own "photo stand-in" label.
+  - **Wording rule from the user:** don't label the 360° view or HUD as a "simulation" or "proof of concept"
+    anywhere in the repo.
+  - Claude in Chrome could not open the local app (error page in every tab it opened; your own tab worked),
+    so checks ran in the built-in browser at 375 px and 1366 px. 26/26 tests, build green.
+  - Dev server: `.claude/launch.json` (outside the repo) now also passes `--host 127.0.0.1`.
+  - **Split up scrapped (user decision, 2026-11-14):** no NASA source gives a walker-to-walker separation
+    limit. NASA's *Tenets of Lunar EVAs for Artemis III* (tenet 2: buddy pairs, "at least 2 crewmembers
+    together", https://ntrs.nasa.gov/citations/20230008183) points the other way, and the xEVA ConOps
+    (EVA-EXP-0042 Rev B) only gives rover-to-rover "rescue range" and lander distances. The disabled
+    "Split up" placeholder from `300d00d` is removed on this branch; "Who goes where" again shows only if
+    split data ever exists. The Crew step already says the pair walks together.
+
 ## 6. Next steps (suggested order)
 
 1. Real-data switch: now parked in `stash@{0}`; main builds real plans, so most likely drop
