@@ -4,9 +4,11 @@ import { config } from './config.mjs'
 import { ProviderError, streamChat } from './providers.mjs'
 
 const originalProvider = config.provider
+const originalKey = config.groqApiKey
 const originalFetch = globalThis.fetch
 afterEach(() => {
   config.provider = originalProvider
+  config.groqApiKey = originalKey
   globalThis.fetch = originalFetch
 })
 
@@ -112,3 +114,22 @@ for (const provider of ['groq','gemini']) {
     }
   })
 }
+
+test('set_mission_factors and the route weights are exposed to the model with ranges from factors.json', async () => {
+  const { runTool } = await import('./providers.mjs')
+  const sent = []
+  config.provider = 'groq'
+  config.groqApiKey = 'gsk_test'
+  globalThis.fetch = async (_url, init) => {
+    sent.push(JSON.parse(init.body))
+    return new Response('data: {"choices":[{"delta":{"content":"ok"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n', { status: 200 })
+  }
+  await streamChat(opts())
+  const tools = Object.fromEntries(sent[0].tools.map((t) => [t.function.name, t.function]))
+  const factors = tools.set_mission_factors.parameters.properties
+  assert.deepEqual(Object.keys(factors).sort(), ['coldLimitK', 'daylightRequired', 'radiationBudgetMsv', 'sepEvent', 'startLocalHour', 'stopMinutes'])
+  assert.equal(factors.radiationBudgetMsv.maximum, 5)
+  assert.equal(tools.set_route_preference.parameters.properties.sandWeight.maximum, 3)
+  assert.equal(tools.set_route_preference.parameters.properties.hazardWeight.maximum, 1)
+  assert.deepEqual(await runTool('set_mission_factors', { sepEvent: true }), { clientAction: true, name: 'set_mission_factors', args: { sepEvent: true } })
+})
