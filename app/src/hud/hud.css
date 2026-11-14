@@ -2,7 +2,7 @@
    top-left = what you're looking at (+ photo source + view options) · top-right = actions ·
    top-centre = navigation card (heading, home arrow, next turn) · bottom = key numbers · bottom-right = EMERGENCY.
    DETAILS adds instrument panels at the sides. */
-.hud-root { --hud: #7fe3ff; --hud-dim: rgba(127, 227, 255, 0.55); --glass: rgba(4, 14, 20, 0.74); --route: #2fb8ff;
+.hud-root { --hud: #7fe3ff; --hud-dim: rgba(127, 227, 255, 0.55); --glass: rgba(4, 18, 26, 0.34); --route: #2fb8ff;
   --amber: #ffb347; --red: #ff4d4d;
   position: fixed; inset: 0; z-index: 1000; background: #0c0807; color: #eefaff; overflow: hidden;
   font: 13px/1.4 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif; font-variant-numeric: tabular-nums;
@@ -20,7 +20,7 @@
 @media (prefers-reduced-motion: reduce) { .hud-in, .hud-pulse, .hud-caption, .hud-em-title, .hud-alert { animation: none !important; } }
 
 /* Shared bits */
-.hud-glass { position: absolute; padding: 12px 14px; background: var(--glass); backdrop-filter: blur(10px);
+.hud-glass { position: absolute; padding: 12px 14px; background: var(--glass); backdrop-filter: blur(3px);
   border: 1px solid rgba(127, 227, 255, 0.25); border-radius: 10px; }
 .hud-chip { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
   color: #fff; text-shadow: none; vertical-align: 1px; }
@@ -68,7 +68,7 @@
 
 /* Top centre: navigation card */
 .hud-nav { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); width: 330px; z-index: 2;
-  background: rgba(4, 14, 20, 0.78); backdrop-filter: blur(10px); border: 1px solid rgba(47, 184, 255, 0.55); border-radius: 12px;
+  background: rgba(4, 14, 20, 0.78); backdrop-filter: blur(3px); border: 1px solid rgba(47, 184, 255, 0.55); border-radius: 12px;
   overflow: hidden; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35); }
 .hud-nav[data-emergency] { border-color: var(--red); }
 .hud-tape { position: relative; height: 22px; overflow: hidden; border-bottom: 1px solid rgba(127, 227, 255, 0.2);
@@ -94,7 +94,7 @@
 
 /* Bottom: key numbers */
 .hud-strip { position: absolute; left: 50%; bottom: 40px; transform: translateX(-50%); display: flex; z-index: 2;
-  background: rgba(4, 14, 20, 0.78); border: 1px solid rgba(127, 227, 255, 0.28); border-radius: 12px; backdrop-filter: blur(10px); }
+  background: rgba(4, 14, 20, 0.78); border: 1px solid rgba(127, 227, 255, 0.28); border-radius: 12px; backdrop-filter: blur(3px); }
 .hud-cell { display: flex; flex-direction: column; align-items: center; padding: 8px 20px 9px; min-width: 110px; }
 .hud-cell + .hud-cell { border-left: 1px solid rgba(127, 227, 255, 0.16); }
 .hud-cell i { font-style: normal; font-size: 12px; color: #bfe9ff; white-space: nowrap; }
@@ -115,7 +115,7 @@
 .hud-root[data-emergency] .hud-visor { background: radial-gradient(ellipse 80% 75% at 50% 50%, transparent 55%, rgba(130, 0, 0, 0.6) 100%); }
 .hud-emergency { position: absolute; right: 16px; bottom: 40px; width: min(380px, calc(100% - 32px)); z-index: 3;
   padding: 14px 16px; background: rgba(50, 0, 0, 0.82); border: 2px solid var(--red); border-radius: 12px; color: #ffe1e1;
-  backdrop-filter: blur(10px); }
+  backdrop-filter: blur(3px); }
 .hud-em-title { font-size: 17px; font-weight: 800; letter-spacing: 0.06em; color: #ff8080; animation: hud-blink 1.2s steps(2) infinite; }
 @keyframes hud-blink { 50% { opacity: 0.55; } }
 .hud-em-grid { display: grid; grid-template-columns: 1fr auto; gap: 3px 14px; margin: 10px 0 4px; font-size: 14px; }
@@ -128,7 +128,7 @@
   background: rgba(0, 0, 0, 0.6); border-radius: 18px; font-size: 14px; color: #fff; animation: hud-fade 6s ease-in both; white-space: nowrap; }
 @keyframes hud-fade { 0%, 75% { opacity: 1; } 100% { opacity: 0; } }
 .hud-caption { position: absolute; left: 50%; bottom: 128px; transform: translateX(-50%); width: min(620px, calc(100% - 32px));
-  padding: 12px 18px; background: rgba(4, 14, 20, 0.85); border-left: 4px solid #ffd400; border-radius: 8px; backdrop-filter: blur(10px);
+  padding: 12px 18px; background: rgba(4, 14, 20, 0.85); border-left: 4px solid #ffd400; border-radius: 8px; backdrop-filter: blur(3px);
   display: flex; flex-direction: column; gap: 4px; animation: hud-cap 0.5s ease-out both; pointer-events: none; z-index: 4; }
 .hud-caption b { color: #ffd400; letter-spacing: 0.12em; font-size: 14px; }
 .hud-caption span { color: #fff; font-size: 16px; line-height: 1.45; }
@@ -228,3 +228,14 @@
   .hud-root[data-details] .hud-nav { display: none; }
   .hud-hint { white-space: normal; width: 80%; text-align: center; }
 }
+
+/* Visor look (2026-11-14): see-through panels, thin cyan edges, text kept readable with a soft shadow. */
+.hud-root { text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85); }
+.hud-glass { border: 1px solid rgba(127, 227, 255, 0.32); box-shadow: inset 0 0 18px rgba(127, 227, 255, 0.06); }
+.hud-nav, .hud-strip { background: rgba(4, 18, 26, 0.38) !important; backdrop-filter: blur(3px) !important; }
+.hud-photo-note, .hud-seg, .hud-btn, .hud-close, .hud-foot > span { background: rgba(4, 18, 26, 0.42) !important; backdrop-filter: blur(3px); }
+.hud-btn[aria-pressed="true"] { background: var(--hud) !important; }
+.hud-tour[aria-pressed="true"] { background: #ffd400 !important; }
+.hud-visor { background: radial-gradient(ellipse 95% 88% at 50% 48%, transparent 66%, rgba(127, 227, 255, 0.05) 80%, rgba(0, 10, 16, 0.55) 100%); }
+.hud-root::after { content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: 48px;
+  box-shadow: inset 0 0 0 1px rgba(127, 227, 255, 0.12), inset 0 0 60px rgba(127, 227, 255, 0.06); }

@@ -56,7 +56,7 @@ export const CommsPanel = forwardRef<CommsHandle>(function CommsPanel(_props, re
   return (
     <div className="hud-comms">
       <div className="hud-label">
-        COMMS · EARTH DELAY {mmss(delayS)} ONE WAY
+        MESSAGES · EARTH {mmss(delayS)} AWAY
         <span className="hud-chip hud-der">DERIVED</span>
       </div>
       <div className="hud-presets">

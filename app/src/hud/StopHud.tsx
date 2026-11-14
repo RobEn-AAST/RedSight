@@ -90,28 +90,6 @@ function MiniMap({ frames, habitat, stop, switchPt, turnPt }: {
   )
 }
 
-/** O₂ ring: fill = O₂ left (worst suit); striped red = reserve (never planned); amber = needed to get home. */
-function O2Ring({ leftL, tankL, reserveL, homeL }: { leftL: number; tankL: number; reserveL: number; homeL: number }) {
-  const R = 46
-  const C = 2 * Math.PI * R
-  const arc = (from: number, to: number, color: string, w = 7, extra = {}) => (
-    <circle cx="60" cy="60" r={R} fill="none" stroke={color} strokeWidth={w}
-      strokeDasharray={`${Math.max(0, (to - from) / tankL) * C} ${C}`}
-      strokeDashoffset={-(from / tankL) * C} transform="rotate(-90 60 60)" {...extra} />
-  )
-  const left = Math.max(0, leftL)
-  return (
-    <svg className="hud-ring" viewBox="0 0 120 120" aria-hidden>
-      <circle cx="60" cy="60" r={R} fill="none" stroke="rgba(255,255,255,0.10)" strokeWidth="7" />
-      {arc(0, left, left - reserveL - homeL < 0.1 * tankL ? '#ffd166' : '#06d6a0')}
-      {arc(reserveL, Math.min(left, reserveL + homeL), 'rgba(255,179,71,0.9)', 3)}
-      {arc(0, reserveL, '#ef476f', 3)}
-      <text x="60" y="58" textAnchor="middle" className="hud-ring-big">{Math.round((left / tankL) * 100)}%</text>
-      <text x="60" y="76" textAnchor="middle" className="hud-ring-small">O₂ · {left.toFixed(0)} L</text>
-    </svg>
-  )
-}
-
 export function StopHud({
   pano,
   stopName,
@@ -444,8 +422,7 @@ export function StopHud({
         </div>
         {standin ? (
           <div className="hud-photo-note" data-standin>
-            <b>PHOTO STAND-IN</b> Curiosity at {STANDIN_PANORAMA.place}, sol {STANDIN_PANORAMA.sol}: not the {pano.stopId} spot.
-            Route on flat ground.
+            <b>PHOTO STAND-IN</b> Curiosity, {STANDIN_PANORAMA.place} (not {pano.stopId})
           </div>
         ) : (
           <div className="hud-photo-note">
@@ -564,8 +541,7 @@ export function StopHud({
 
       {/* DETAILS: instrument panels. */}
       <div hidden={!details} className="hud-left hud-glass hud-in">
-        <div className="hud-label">SUIT OXYGEN · WORST SUIT</div>
-        <O2Ring leftL={s.o2Left} tankL={T} reserveL={tl.reserveL} homeL={s.homeL} />
+        <div className="hud-label">SUIT OXYGEN</div>
         {s.members.map((l, i) => (
           <div key={i} className="hud-member">
             <span>{'AB'[i] ?? i + 1}</span>
@@ -573,13 +549,13 @@ export function StopHud({
             <b>{pct(Math.max(0, l))}</b>
           </div>
         ))}
-        <div className="hud-row"><span>Time left at walk-back rate</span><b>≈{formatDuration(s.minutesLeft * 60)}</b></div>
-        <div className="hud-row"><span>Reserve (never planned)</span><b>{pct(tl.reserveL)}</b></div>
+        <div className="hud-row"><span>Lasts at walking pace</span><b>≈{formatDuration(s.minutesLeft * 60)}</b></div>
+        <div className="hud-row"><span>Reserve (untouched)</span><b>{pct(tl.reserveL)}</b></div>
         <div className="hud-sep" />
-        <div className="hud-label">MISSION</div>
-        <div className="hud-row"><span>Clock</span><b>T+{formatClock(tAt)}</b></div>
-        <div className="hud-row"><span>Walked</span><b>{(s.distM / 1000).toFixed(2)} km</b></div>
-        <div className="hud-row"><span>Crew</span><b>{tl.members.length} · {routeMode === 'fastest' ? 'fastest' : 'lowest hazard'}</b></div>
+        <div className="hud-small">
+          T+{formatClock(tAt)} · {(s.distM / 1000).toFixed(2)} km walked · crew {tl.members.length} ·{' '}
+          {routeMode === 'fastest' ? 'fastest' : 'lowest-hazard'} route
+        </div>
       </div>
 
       <div hidden={!details} className="hud-right hud-glass hud-in">
@@ -588,10 +564,7 @@ export function StopHud({
             <div className="hud-label">WAY HOME</div>
             <div className={`hud-ret ${tl.fastHome ? 'hud-amber' : ''}`}>{ret}</div>
             {tl.fastHome && <div className="hud-alert">O₂ LOW · SWITCHED AT T+{formatClock(tl.switchT ?? 0)}</div>}
-            <div className="hud-row"><span>Walk home</span><b>{formatDuration(homeS)}</b></div>
-            <div className="hud-row"><span>Oxygen needed</span><b>{pct(s.homeL)} · {s.homeL.toFixed(0)} L</b></div>
-            <div className="hud-row"><span>Spare at home</span><b className={o2Low ? 'hud-amber' : ''}>{pct(Math.max(0, spareL))}</b></div>
-            <div className="hud-row"><span>Habitat</span><b>{habKm.toFixed(2)} km · {habBearing.toFixed(0)}°</b></div>
+            <div className="hud-row"><span>Oxygen it needs</span><b>{pct(s.homeL)} · {s.homeL.toFixed(0)} L</b></div>
           </>
         ) : (
           <>
@@ -605,7 +578,6 @@ export function StopHud({
         {dose != null && (
           <div className="hud-row"><span>Walk dose (unshielded)</span><b>{dose < 10 ? dose.toFixed(3) : dose.toFixed(0)} {doseUnit}</b></div>
         )}
-        {rate && <div className="hud-row hud-dim"><span>Surface dose rate</span><span>{String(rate.value)} {rate.unit}</span></div>}
         {pressure && <div className="hud-row hud-dim"><span>Air pressure (year)</span><span>{String(pressure.value)} {pressure.unit}</span></div>}
         {airT && <div className="hud-row hud-dim"><span>Air temp (day)</span><span>{String(airT.value)} {airT.unit}</span></div>}
       </div>
@@ -637,7 +609,7 @@ export function StopHud({
         <MiniMap frames={tl.frames} habitat={habitatLonLat} stop={stopLonLat} switchPt={tl.switchPoint} turnPt={tl.turnPoint} />
         <div className="hud-small">
           {standin
-            ? 'AR line on the stand-in photo: flat ground, turned to face the open channel. Not this landscape.'
+            ? 'Stand-in photo: route drawn on flat ground.'
             : `AR line from the route’s coordinates on Trek DEM ground; photo heading ≈${northDeg}° at centre (${pano.headingNote}; [ ] adjust).`}
         </div>
       </div>
