@@ -57,6 +57,23 @@ type CallStatus = 'listening' | 'transcribing' | 'thinking' | 'speaking' | 'gap'
  * with the browser voice as the instant fallback. Every degraded state is
  * honest: backend down → messages stay local; no reply is ever faked.
  */
+
+/** Tool results go into the LLM prompt, and the hosted free tier allows ~8k tokens per minute. Long arrays
+ *  (route coordinates, per-point cost arrays) become {count, first, last}; totals, names and labels stay. */
+const MAX_TOOL_CHARS = 12_000
+function compactForModel(value: unknown, depth = 0): unknown {
+  if (Array.isArray(value)) {
+    if (value.length <= 6) return value.map((v) => compactForModel(v, depth + 1))
+    return { count: value.length, first: value.slice(0, 3).map((v) => compactForModel(v, depth + 1)), last: compactForModel(value[value.length - 1], depth + 1) }
+  }
+  if (value && typeof value === 'object') {
+    if (depth > 6) return '…'
+    return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, compactForModel(v, depth + 1)]))
+  }
+  if (typeof value === 'number' && !Number.isInteger(value)) return Math.round(value * 1000) / 1000
+  return value
+}
+
 export function CopilotDock({
   onClose,
   autoFocusInput = false,
@@ -197,9 +214,9 @@ export function CopilotDock({
           result = await missionControl.execute(a, callId)
         } else if (name === 'read_app_data') {
           if (Object.keys(a).some((key) => !['section', 'id'].includes(key)) || typeof a.section !== 'string') throw new Error('Choose a supported data section.')
-          const data = missionControl.read(a.section, typeof a.id === 'string' ? a.id : undefined)
+          const data = compactForModel(missionControl.read(a.section, typeof a.id === 'string' ? a.id : undefined))
           const serialized = JSON.stringify(data)
-          result = serialized && serialized.length <= 220_000 ? { applied: true, section: a.section, data } : { applied: false, error: 'Dataset too large; query an exact ID or a smaller section.' }
+          result = serialized && serialized.length <= MAX_TOOL_CHARS ? { applied: true, section: a.section, data } : { applied: false, error: 'Dataset too large; query an exact ID or a smaller section.' }
         } else if (name === 'set_mission_screen') {
           if (a.screen === 'setup') missionActions.reopenMission()
           else if (a.screen === 'routes' && latest.mission.config.scienceGoalId) missionActions.confirmMission()
