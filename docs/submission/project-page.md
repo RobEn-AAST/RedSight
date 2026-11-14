@@ -66,7 +66,7 @@ walk-scale radiation or weather map exists, and the app says so.
 
 ## Use of Super Intelligence (SI)
 
-*Updated 2026-11-14 from the repository. Items marked **[Team: confirm]** are not provable from the repo.*
+*Updated 2026-11-14 from the repository and the team's answers.*
 
 **Idea and decisions: people, not SI.** The team chose the problem framing, the site (Gale crater / lower
 Mount Sharp, boxwork), the features, the oxygen model's sources and the data sources. Per the Submission
@@ -76,7 +76,8 @@ Guide, SI was not used to come up with how to solve the challenge.
 - **Claude Code** (Anthropic; models Claude Opus 5.5 and Claude Sonnet 5.5, credited as co-author on ~96
   commits): helped write and test code (app, engine, server, capture scripts), summarize papers and
   documentation, and edit text. Team members reviewed, ran and tested every change before merging.
-- **[Team: confirm]** any other assistant a member used (e.g. ChatGPT, Gemini, Copilot), and for what.
+- **Claude (claude.ai)** and **Manus AI**: research help, drafting and editing text, and planning; the team checked
+  every claim against primary sources before using it.
 
 **SI inside the app (runtime features, labeled in the UI):**
 - **Voice/text copilot:** a large language model answers questions about the mission plan and can operate
@@ -90,10 +91,10 @@ Guide, SI was not used to come up with how to solve the challenge.
 - **AI-generated audio:** the narration of the walkthrough video and the two astronaut voice clips on
   slide 6 of the deck are synthetic voices (Kokoro TTS). Stated on the video's end card, in its file metadata
   and in the slide notes.
-- **No AI-generated images or video** in the app or demo: map and photos are NASA/USGS data, screen recordings
-  are of the working app. **[Team: confirm]** the origin of the 3D astronaut model
-  (`app/src/copilot/assets/astronaut.glb`) and the landing image (`landing/public/assets/og-image.jpg`): if
-  either was AI-generated, add a visible "AI-generated" mark and list it here.
+- **AI-generated image:** the landing page's share image (`landing/public/assets/og-image.jpg`) is AI-generated;
+  it carries a visible "AI-GENERATED IMAGE" mark.
+- **No other AI-generated images or video:** map and photos are NASA/USGS data, screen recordings are of the
+  working app, and the 3D astronaut model (`app/src/copilot/assets/astronaut.glb`) was made by the team.
 - No NASA logos or branding in any AI-generated content.
 
 ## NASA Data
