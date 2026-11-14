@@ -57,12 +57,14 @@ export interface PlanStore {
   activePlan: PlanFile | null
   /** Who walks where under the current crew mode. */
   activeMembers: PlanMember[]
-  /** The modeled no-return line for the current crew/load/rover setup. */
+  /** The modeled no-return ring for the current crew/load/rover setup and O₂ budget (slider). */
   noReturnLine: FeatureCollection | null
   /** O₂ factor per astronaut from body mass (1 = the mass the route was modeled for); A first. */
   memberFactors: number[]
   /** Worst member's factor + the return margin, for summaries (map/format.ts summarizeMember). */
   o2Scale: O2Scale
+  /** Which ring is drawn: its budget level (L), and whether it runs into the terrain model's edge. */
+  noReturnRing: { budgetL: number | null; clipped: boolean } | null
   preset: PlanPreset | null
   /** true when plans come from the older single-route files (no legs, no split). */
   legacy: boolean

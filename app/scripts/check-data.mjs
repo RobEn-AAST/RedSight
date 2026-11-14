@@ -235,6 +235,29 @@ if (planIndex) {
   }
 }
 
+// No-return rings (engine/tools/export_limits.py): plan/limits_c{crew}_l{load}_{foot|rover}.geojson.
+// One no_return_line feature per O₂ budget level, levels rising and never above the full usable budget.
+const planDir = join(DATA, "plan");
+for (const name of existsSync(planDir) ? readdirSync(planDir) : []) {
+  if (!/^limits_c\d+_l\d+_(foot|rover)\.geojson$/.test(name)) continue;
+  const rel = `plan/${name}`;
+  const fc = load(rel);
+  if (!fc) continue;
+  if (fc.type !== "FeatureCollection" || !Array.isArray(fc.features) || fc.features.length === 0) { err(rel, "needs a non-empty FeatureCollection"); continue; }
+  checkBadge(rel, "collection", fc.badge);
+  if (!isNum(fc.full_budget_l) || fc.full_budget_l <= 0) err(rel, "full_budget_l must be a positive number");
+  const levels = [];
+  for (const [i, f] of fc.features.entries()) {
+    const p = f?.properties ?? {};
+    if (p.kind !== "no_return_line") err(rel, `feature ${i}: kind must be no_return_line`);
+    if (!["LineString", "MultiLineString"].includes(f?.geometry?.type)) err(rel, `feature ${i}: LineString or MultiLineString geometry required`);
+    if (!isNum(p.budget_l) || p.budget_l <= 0) { err(rel, `feature ${i}: budget_l must be a positive number`); continue; }
+    if (isNum(fc.full_budget_l) && p.budget_l > fc.full_budget_l + 1e-6) err(rel, `feature ${i}: budget_l ${p.budget_l} above the full budget ${fc.full_budget_l}`);
+    levels.push(p.budget_l);
+  }
+  if (!levels.every((x, i) => i === 0 || x > levels[i - 1])) err(rel, "budget_l levels must rise from feature to feature");
+}
+
 // Engine outputs must be byte-identical to what the engine wrote (engine-build-manifest.json output_sha256);
 // a hand-edited or substituted route/hazard/constants file fails here.
 const manifest = load("engine-build-manifest.json", { optional: true });

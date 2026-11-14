@@ -16,6 +16,7 @@ import type {
 import { useEngineData } from '@/lib/useEngineData'
 import { useMission } from '@/lib/useMission'
 import { memberO2Factors } from '@/lib/memberFactor'
+import { ringForBudget } from '@/map/noReturn'
 import { PlanContext, type CrewMode, type PlanPreset, type PlanStore } from '@/map/planContext'
 import { nearestLoadBucket, perAstronautLoadKg } from '@/types/mission'
 
@@ -300,6 +301,12 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     }
   }, [limitsFile])
 
+  // The ring for the O₂ slider's budget (rounded down to the safer side); full tank when the slider is unset.
+  const ring = useMemo(
+    () => ringForBudget(limits && limits.key === limitsFile ? limits.line : null, o2BudgetL),
+    [limits, limitsFile, o2BudgetL],
+  )
+
   const store = useMemo<PlanStore>(() => {
     const current = loaded && loaded.key === key ? loaded.plans : null
     const plans = current ?? {}
@@ -358,7 +365,8 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       status,
       activePlan,
       activeMembers,
-      noReturnLine: limits && limits.key === limitsFile ? limits.line : null,
+      noReturnLine: ring?.line ?? null,
+      noReturnRing: ring ? { budgetL: ring.budgetL, clipped: ring.clipped } : null,
       preset: pick?.preset ?? null,
       legacy,
       activeRoute,
@@ -372,7 +380,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       map,
       setMap,
     }
-  }, [goalTargets, goalUnmatched, selectedTargetId, mode, crewMode, loaded, key, loadedContract, routeKey, pick, limits, limitsFile, legacy, map, o2BudgetL, showCuriosityPath, dynamicRoute, state.config, engine.constants, chooseMode, applyDynamicRoute, clearDynamicRoute, layerVisibility, setLayerVisibility])
+  }, [goalTargets, goalUnmatched, selectedTargetId, mode, crewMode, loaded, key, loadedContract, routeKey, pick, ring, legacy, map, o2BudgetL, showCuriosityPath, dynamicRoute, state.config, engine.constants, chooseMode, applyDynamicRoute, clearDynamicRoute, layerVisibility, setLayerVisibility])
 
   return <PlanContext.Provider value={store}>{children}</PlanContext.Provider>
 }
