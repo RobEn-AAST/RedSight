@@ -6,10 +6,12 @@
     "capture": "node capture/shots.mjs",
     "clips": "bash build/clips.sh",
     "video": "node build/video.mjs",
-    "narrated": "node build/narrated.mjs"
+    "narrated": "node build/narrated.mjs",
+    "slides": "node build/slides.mjs"
   },
   "devDependencies": {
     "kokoro-js": "^1.2.1",
-    "playwright": "^1.65.1"
+    "playwright": "^1.65.1",
+    "pptxgenjs": "^4.0.1"
   }
 }
