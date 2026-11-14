@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react'
 
+import { Astronaut } from './Astronaut'
 import { Button } from '@/ui/Button'
 import { LedDot } from '@/ui/LedDot'
 import { cn } from '@/lib/cn'
@@ -32,7 +33,7 @@ import {
   copilotReset,
   type ChatStreamEvent,
 } from '@/lib/copilotClient'
-import { setTtsHealth, ttsSpeak, ttsSpeakStream, ttsStop, type StreamingSpeech } from '@/copilot/tts'
+import { setTtsHealth, ttsSpeakStream, ttsStop, type StreamingSpeech } from '@/copilot/tts'
 import { useDictation } from '@/copilot/useDictation'
 import type { ChatMessage, CopilotHealth, CopilotRequestContext } from '@/types/copilot'
 
@@ -68,6 +69,7 @@ export function CopilotDock({
   const [ttsEnabled, setTtsEnabled] = useState(() => localStorage.getItem('copilot-tts') !== 'off')
   const [ttsEngine, setTtsEngine] = useState<string | null>(null)
   const [callMode, setCallMode] = useState(false)
+  const [avatarSpeaking, setAvatarSpeaking] = useState(false)
   const [callStatus, setCallStatus] = useState<CallStatus>('gap')
 
   const inputRef = useRef<HTMLInputElement>(null)
@@ -86,6 +88,26 @@ export function CopilotDock({
     ttsEnabledRef.current = ttsEnabled
     streamingRef.current = streaming
   }, [callMode, ttsEnabled, streaming])
+
+  const speechSequence = useRef(0)
+  const startSpeech = useCallback(() => {
+    const sequence = ++speechSequence.current
+    const speech = ttsSpeakStream((state) => {
+      if (sequence !== speechSequence.current) return
+      setAvatarSpeaking(state === 'speaking')
+      if (state === 'speaking' && callModeRef.current) setCallStatus('speaking')
+    })
+    void speech.finished.then(() => {
+      if (sequence === speechSequence.current) setAvatarSpeaking(false)
+    })
+    return speech
+  }, [])
+  const speakReply = (text: string) => {
+    const speech = startSpeech()
+    speech.push(text)
+    speech.end()
+    void speech.firstAudio.then(setTtsEngine)
+  }
 
   const { state: mission } = useMission()
   const missionActions = useMission()
@@ -188,9 +210,7 @@ export function CopilotDock({
       // Streaming TTS: sentences synthesize while the LLM is still generating,
       // so first audio starts seconds before the reply completes.
       const speech: StreamingSpeech | null = wantSpeech
-        ? ttsSpeakStream((state) => {
-            if (state === 'speaking' && callModeRef.current) setCallStatus('speaking')
-          })
+        ? startSpeech()
         : null
       speech?.firstAudio.then((engine) => setTtsEngine(engine))
       speech?.finished.then(() => {
@@ -321,7 +341,7 @@ export function CopilotDock({
         }
       }
     },
-    [llmLive, backendDown, buildContext, missionActions, mission, plan, engine],
+    [llmLive, backendDown, buildContext, missionActions, mission, plan, engine, startSpeech],
   )
 
   const send = () => {
@@ -515,6 +535,8 @@ export function CopilotDock({
         </div>
       </header>
 
+      <Astronaut state={avatarSpeaking ? 'speaking' : dictation.state === 'recording' ? 'listening' : streaming ? 'thinking' : 'idle'} />
+
       {/* Provider status notice — honest in every state */}
       <div className="flex items-start gap-2.5 border-b border-seam bg-inset/40 px-4 py-2.5">
         {backendDown ? (
@@ -585,7 +607,7 @@ export function CopilotDock({
                   {m.role === 'copilot' && m.delivery === 'delivered' && (
                     <button
                       type="button"
-                      onClick={() => void ttsSpeak(m.text).then(setTtsEngine)}
+                      onClick={() => speakReply(m.text)}
                       aria-label="Speak this reply"
                       className="ml-auto flex size-6 items-center justify-center text-ink-faint opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
                     >

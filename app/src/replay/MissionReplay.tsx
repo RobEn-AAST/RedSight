@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { PlayCircle, ScanEye } from 'lucide-react'
 
 import { PANORAMAS } from '@/hud/panoramas'
-import { StopHud } from '@/hud/StopHud'
+const StopHud = lazy(() => import('@/hud/StopHud').then((m) => ({ default: m.StopHud })))
 import { fastPathFrom, type Timeline } from '@/replay/replay-core.js'
 
 import type { EngineConstants } from '@/lib/engineDataContext'
@@ -135,7 +135,7 @@ export function MissionReplay({ bare = false }: { bare?: boolean } = {}) {
           </div>
         )}
         {hud && pano && stop && habitat && activeRoute && (
-          <StopHud
+          <Suspense fallback={<p role="status" className="p-4 text-ink-dim">Loading panorama…</p>}><StopHud
             pano={pano}
             stopName={stop.name}
             sols={stop.sols.length ? `${Math.min(...stop.sols)}–${Math.max(...stop.sols)}` : undefined}
@@ -149,7 +149,7 @@ export function MissionReplay({ bare = false }: { bare?: boolean } = {}) {
             fastestHome={fastestHome}
             fastHomeCost={fastHomeCost}
             onClose={closeHud}
-          />
+          /></Suspense>
         )}
       </>
   )
