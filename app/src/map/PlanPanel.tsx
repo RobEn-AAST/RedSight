@@ -403,7 +403,7 @@ function MemberTimeline({
 
 /** The no-return line and Jana's turn-back slider: one place for "how far can we go on this O₂". */
 function OxygenFold({ plan, members }: { plan: PlanFile; members: PlanMember[] }) {
-  const { map, noReturnLine } = usePlan()
+  const { map, noReturnLine, noReturnRing } = usePlan()
   const s = summarizeCrew(members, plan.budget_l)
   return (
     <Fold
@@ -422,10 +422,10 @@ function OxygenFold({ plan, members }: { plan: PlanFile; members: PlanMember[] }
         <span>
           {noReturnLine ? (
             <>
-              The red dashed line is where walking out any further leaves too little O₂ to get home.
-              {s.reachesAll
-                ? ' This route stays inside it.'
-                : ' This route reaches it before the target, so the plan turns back there.'}{' '}
+              The red dashed line is an approximate Scenario reference ring
+              {noReturnRing?.budgetL != null ? ` for ${Math.round(noReturnRing.budgetL)} L of O₂` : ''}. It models an 82 kg astronaut carrying 15 kg, walking the fastest path out and back, before sample pickup.
+              It moves in as you lower the budget below; the selected route may use more O₂.
+              {noReturnRing?.clipped && ' Where it meets the edge of the terrain model, the limit beyond that edge is unknown.'}{' '}
             </>
           ) : s.reachesAll ? (
             'This route gets there and back on the modeled O₂. '
@@ -451,7 +451,11 @@ function OxygenFold({ plan, members }: { plan: PlanFile; members: PlanMember[] }
 
 function showWholeLine(map: MapLibreMap, line: FeatureCollection) {
   const pts = line.features.flatMap((f) =>
-    f.geometry.type === 'LineString' ? (f.geometry.coordinates as [number, number][]) : [],
+    f.geometry.type === 'LineString'
+      ? (f.geometry.coordinates as [number, number][])
+      : f.geometry.type === 'MultiLineString'
+        ? (f.geometry.coordinates.flat() as [number, number][])
+        : [],
   )
   if (pts.length === 0) return
   const lons = pts.map((p) => p[0])

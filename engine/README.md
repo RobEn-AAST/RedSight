@@ -2,7 +2,7 @@
 
 ## Build the bounded native-route real-data payload
 
-From the repository root, with Python 3 plus the already-installed NumPy, rasterio, SciPy and pytest:
+From the repository root, with Python 3 plus the already-installed NumPy, rasterio, SciPy, scikit-image and pytest:
 
 ```sh
 python3 -m engine build \

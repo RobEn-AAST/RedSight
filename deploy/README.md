@@ -17,6 +17,7 @@ Manual redeploy: `ssh roben 'bash ~/apps/redsight/deploy/remote-deploy.sh'` (or 
 | `/var/www/mars.roben.club/demo` | built `app/dist` (base `/demo/`) | every deploy (`tiles/` kept) |
 | `/var/www/mars.roben.club/demo/tiles` | map XYZ tiles (git-ignored) | [`upload-assets.sh`](upload-assets.sh) |
 | `~/apps/redsight-data/engine-pilot` | hash-checked terrain bundle (git-ignored) | [`upload-assets.sh`](upload-assets.sh) |
+| `~/apps/redsight/data/processed/themis_ti_10m.npy` | THEMIS sand grid for the live router's sand weight (git-ignored) | [`upload-assets.sh`](upload-assets.sh) |
 | `~/apps/redsight.env` | provider keys (`GROQ_API_KEY` / `GEMINI_API_KEY`), mode 600 | by hand, never in git |
 | `~/apps/redsight-venv`, `~/.local/opt/node` | Python venv (engine), Node 24 LTS | bootstrap / deploy |
 
