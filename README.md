@@ -114,9 +114,9 @@ this explicitly. See the provenance inspector in the app.
 ## Super Intelligence (AI) disclosure
 
 The team chose the problem, site, features and data. Claude Code (Claude Opus 5.5 / Sonnet 5.5) helped write and
-test code and edit text; members reviewed and tested every change. In the app, an LLM copilot (Groq / Gemini),
+test code and edit text; Claude (claude.ai) and Manus AI helped with research and drafting; members reviewed and tested every change. In the app, an LLM copilot (Groq / Gemini),
 Whisper speech-to-text and Kokoro text-to-speech are runtime features. The demo narration and slide-6 voice clips
-are AI-generated audio (Kokoro). Full disclosure: [docs/submission/project-page.md](docs/submission/project-page.md).
+are AI-generated audio (Kokoro); the landing share image is AI-generated and marked as such. Full disclosure: [docs/submission/project-page.md](docs/submission/project-page.md).
 
 ## Demo & links *(fill at submission)*
 
