@@ -6,14 +6,14 @@ Sources: [`../../requirements/competition-requirements.md`](../../requirements/c
 
 > **Status update (2026-11-14, integration owner session):** judged demo = the 7-slide PPTX
 > ([`demo-production-plan.md`](demo-production-plan.md) §6), built; slide 6 waits on the copilot owner's
-> real replies. PR #13 merged; PRs #12/#14 conflict with `main` (owner asked to merge `main`).
-> Still open: LICENSE (team sign-off), Cairo PDF, hosting + incognito link test, SI disclosure, credits.
+> real replies. PRs #13 and #15 merged; PRs #12/#14 conflict with `main` (owner asked to merge `main`).
+> Still open: Cairo PDF, hosting + incognito link test, SI disclosure, credits.
 
 ---
 
 ## 1. Hard Submission Blockers
 
-- [ ] **Add an OSI-approved `LICENSE` file in the repo root.** Space Apps 2026 Terms require original content to be OSI-licensed (or restriction-free) with license documentation included. Currently no `LICENSE` file exists, and [`../../README.md`](../../README.md) still marks Apache-2.0 as pending team sign-off.
+- [x] **Add an OSI-approved `LICENSE` file in the repo root.** *(Done 2026-11-14: Apache-2.0, adopted by the integration owner.)* Space Apps 2026 Terms require original content to be OSI-licensed (or restriction-free) with license documentation included. Currently no `LICENSE` file exists, and [`../../README.md`](../../README.md) still marks Apache-2.0 as pending team sign-off.
 - [ ] **Create and host the Cairo Project Description PDF** (mandatory Cairo local requirement — judges receive no live pitch). Must be a real PDF (not `.docx`), written in English, and contain all 5 required sections from [`../../requirements/cairo-participant-guidance.md`](../../requirements/cairo-participant-guidance.md) §A:
   1. Project identity & summary (project name, team name, challenge, problem, solution, impact).
   2. Project details (step-by-step workflow, tools/languages/hardware, **explicit split of working features vs. limits/unfinished parts vs. future plans**).
