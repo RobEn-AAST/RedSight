@@ -8,8 +8,10 @@ export interface MissionConfig {
   /** EVA crew size. Range 1–2, default 2. NASA DRA 5.0 buddy rule informs the
    *  default; solo is allowed by the team model with a buddy-rule warning. */
   crewCount: number
-  /** Body mass per astronaut W (kg). Range 43–110, default 82 (ICES-2026-127). */
+  /** Body mass of astronaut A (or the solo astronaut), W in kg. Range 43–110, default 82 (ICES-2026-127). */
   bodyMassKg: number
+  /** Body mass of astronaut B when the crew is a pair (kg). Same range and default. */
+  bodyMassKgB: number
   /** Carried package/equipment mass in kilograms, interpreted per `loadBasis`.
  *  Per-astronaut range 0–40 kg, default 15 (Scenario slider, plan §8). */
   loadKg: number
@@ -61,9 +63,15 @@ export interface MissionState {
 }
 
 /** Plan §8 / §15 defaults — team model choices. */
+/** "82 kg" for one astronaut, "A 82 kg · B 90 kg" for a pair. */
+export function bodyMassText(config: Pick<MissionConfig, 'crewCount' | 'bodyMassKg' | 'bodyMassKgB'>): string {
+  return config.crewCount === 2 ? `A ${config.bodyMassKg} kg · B ${config.bodyMassKgB} kg` : `${config.bodyMassKg} kg`
+}
+
 export const defaultMissionConfig: MissionConfig = {
   crewCount: 2,
   bodyMassKg: 82,
+  bodyMassKgB: 82,
   loadKg: 15,
   loadBasis: 'perAstronaut',
   sampleKgPerStop: 2,

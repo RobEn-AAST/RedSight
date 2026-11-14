@@ -6,6 +6,7 @@ import { cn } from '@/lib/cn'
 import { scienceGoalOptions } from '@/lib/materials'
 import { useMission } from '@/lib/useMission'
 import {
+  bodyMassText,
   missionLimits,
   perAstronautLoadKg,
   totalLoadKg,
@@ -14,10 +15,62 @@ import {
 
 /* -- Step 1: crew + body mass (plan §8, D19) --------------------------------- */
 
+/** One astronaut's body mass: − / number / + (44 px targets). */
+function MassStepper({
+  label,
+  who,
+  value,
+  onChange,
+}: {
+  label: string
+  who: string
+  value: number
+  onChange: (kg: number) => void
+}) {
+  const L = missionLimits
+  return (
+    <Field label={label} hint={`${L.bodyMassMin}–${L.bodyMassMax} kg, without the suit.`}>
+      {({ describedBy, invalid }) => (
+        <div className="flex max-w-xs items-center gap-3">
+          <button
+            type="button"
+            onClick={() => onChange(Math.max(L.bodyMassMin, value - 1))}
+            aria-label={`Decrease ${who}'s body mass by one kilogram`}
+            className="flex size-11 items-center justify-center border border-seam-lit text-ink hover:border-signal/60 hover:text-signal"
+          >
+            <Minus size={16} aria-hidden />
+          </button>
+          <input
+            type="number"
+            inputMode="decimal"
+            min={L.bodyMassMin}
+            max={L.bodyMassMax}
+            step={1}
+            value={Number.isFinite(value) ? value : ''}
+            aria-label={label}
+            aria-invalid={invalid}
+            aria-describedby={describedBy}
+            onChange={(e) => onChange(Number.parseFloat(e.target.value))}
+            className="data-readout w-24 border border-seam-lit bg-inset px-3 py-2 text-center text-xl text-ink focus:border-signal/60 focus:outline-none"
+          />
+          <button
+            type="button"
+            onClick={() => onChange(Math.min(L.bodyMassMax, value + 1))}
+            aria-label={`Increase ${who}'s body mass by one kilogram`}
+            className="flex size-11 items-center justify-center border border-seam-lit text-ink hover:border-signal/60 hover:text-signal"
+          >
+            <Plus size={16} aria-hidden />
+          </button>
+          <span className="text-sm text-ink-dim">kg</span>
+        </div>
+      )}
+    </Field>
+  )
+}
+
 export function CrewStep() {
   const { state, patchConfig } = useMission()
-  const { crewCount, bodyMassKg } = state.config
-  const L = missionLimits
+  const { crewCount, bodyMassKg, bodyMassKgB } = state.config
 
   return (
     <div className="flex flex-col gap-6">
@@ -50,45 +103,24 @@ export function CrewStep() {
         )}
       </Field>
 
-      <Field
-        label="Body mass per astronaut (kg)"
-        hint={`${L.bodyMassMin}–${L.bodyMassMax} kg, without the suit.`}
-      >
-        {({ describedBy, invalid }) => (
-          <div className="flex max-w-xs items-center gap-3">
-            <button
-              type="button"
-              onClick={() => patchConfig({ bodyMassKg: Math.max(L.bodyMassMin, bodyMassKg - 1) })}
-              aria-label="Decrease body mass by one kilogram"
-              className="flex size-11 items-center justify-center border border-seam-lit text-ink hover:border-signal/60 hover:text-signal"
-            >
-              <Minus size={16} aria-hidden />
-            </button>
-            <input
-              type="number"
-              inputMode="decimal"
-              min={L.bodyMassMin}
-              max={L.bodyMassMax}
-              step={1}
-              value={Number.isFinite(bodyMassKg) ? bodyMassKg : ''}
-              aria-invalid={invalid}
-              aria-describedby={describedBy}
-              onChange={(e) => patchConfig({ bodyMassKg: Number.parseFloat(e.target.value) })}
-              className="data-readout w-24 border border-seam-lit bg-inset px-3 py-2 text-center text-xl text-ink focus:border-signal/60 focus:outline-none"
-            />
-            <button
-              type="button"
-              onClick={() => patchConfig({ bodyMassKg: Math.min(L.bodyMassMax, bodyMassKg + 1) })}
-              aria-label="Increase body mass by one kilogram"
-              className="flex size-11 items-center justify-center border border-seam-lit text-ink hover:border-signal/60 hover:text-signal"
-            >
-              <Plus size={16} aria-hidden />
-            </button>
-            <span className="text-sm text-ink-dim">kg</span>
-          </div>
-        )}
-      </Field>
-
+      {crewCount === 2 ? (
+        <div className="grid gap-5 sm:grid-cols-2">
+          <MassStepper
+            label="Astronaut A body mass (kg)"
+            who="astronaut A"
+            value={bodyMassKg}
+            onChange={(v) => patchConfig({ bodyMassKg: v })}
+          />
+          <MassStepper
+            label="Astronaut B body mass (kg)"
+            who="astronaut B"
+            value={bodyMassKgB}
+            onChange={(v) => patchConfig({ bodyMassKgB: v })}
+          />
+        </div>
+      ) : (
+        <MassStepper label="Body mass (kg)" who="the astronaut" value={bodyMassKg} onChange={(v) => patchConfig({ bodyMassKg: v })} />
+      )}
     </div>
   )
 }
@@ -289,34 +321,6 @@ export function GoalStep() {
         </label>
       ))}
 
-      <label
-        className={cn(
-          'flex cursor-pointer flex-col gap-2 border p-4 transition-colors',
-          selected === 'custom'
-            ? 'border-signal/60 bg-signal-soft/50'
-            : 'border-seam bg-inset/40 hover:border-seam-lit',
-        )}
-      >
-        <span className="flex w-full items-center gap-2">
-          <input
-            type="radio"
-            name="science-goal"
-            value="custom"
-            checked={selected === 'custom'}
-            onChange={() => patchConfig({ scienceGoalId: 'custom' })}
-            className="accent-[#ffb224]"
-          />
-          <span className="label-console text-ink">Custom goal</span>
-          <EvidenceBadge evidence="scenario" className="ml-auto" />
-        </span>
-        <textarea
-          rows={2}
-          value={state.config.scienceGoalNote}
-          onChange={(e) => patchConfig({ scienceGoalNote: e.target.value })}
-          placeholder="Describe the target in one or two sentences…"
-          className="w-full resize-y border border-seam-lit bg-inset px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-signal/60 focus:outline-none"
-        />
-      </label>
 
     </fieldset>
   )
@@ -333,7 +337,7 @@ export function ReviewStep() {
 
   const rows: [string, string][] = [
     ['Crew', `${config.crewCount} astronaut${config.crewCount === 1 ? '' : 's'}`],
-    ['Body mass', `${config.bodyMassKg} kg each`],
+    ['Body mass', bodyMassText(config)],
     [
       'Carried mass',
       `${perAstronautLoadKg(config).toFixed(1)} kg each · ${totalLoadKg(config).toFixed(1)} kg in total`,

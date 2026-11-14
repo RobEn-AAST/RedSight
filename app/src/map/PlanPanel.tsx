@@ -49,9 +49,9 @@ import { Button } from '@/ui/Button'
 /* -- At a glance: the answer first, the steps below explain it ----------------------- */
 
 function PlanSummary({ plan, members }: { plan: PlanFile; members: PlanMember[] }) {
-  const { goalTargets, selectedTargetId } = usePlan()
+  const { goalTargets, selectedTargetId, o2Scale } = usePlan()
   const target = goalTargets.find((t) => t.id === selectedTargetId)
-  const s = summarizeCrew(members, plan.budget_l)
+  const s = summarizeCrew(members, plan.budget_l, o2Scale)
   const outS = Math.max(...members.map((m) => m.cum.t_s[m.coords.length - 1]))
   const backS = Math.max(...members.map((m) => m.back.t_s[m.coords.length - 1]))
   const distanceM = Math.max(...s.each.map((e) => e.distanceM))
@@ -332,7 +332,8 @@ function MemberTimeline({
   color: string
   split: boolean
 }) {
-  const s = summarizeMember(member, plan.budget_l)
+  const { o2Scale } = usePlan()
+  const s = summarizeMember(member, plan.budget_l, o2Scale)
   const last = member.coords.length - 1
   const steps: { icon: ReactNode; title: string; detail: string; tone?: 'caution' }[] = []
 
@@ -403,8 +404,8 @@ function MemberTimeline({
 
 /** The no-return line and Jana's turn-back slider: one place for "how far can we go on this O₂". */
 function OxygenFold({ plan, members }: { plan: PlanFile; members: PlanMember[] }) {
-  const { map, noReturnLine, noReturnRing } = usePlan()
-  const s = summarizeCrew(members, plan.budget_l)
+  const { map, noReturnLine, noReturnRing, o2Scale } = usePlan()
+  const s = summarizeCrew(members, plan.budget_l, o2Scale)
   return (
     <Fold
       icon={<Gauge size={14} />}
