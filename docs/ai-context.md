@@ -28,6 +28,8 @@ Per-person status and next steps: [`team-plan.md`](team-plan.md) §4c. Data chec
 
 | Priority | Doc | Role |
 |---|---|---|
+| — | [`astronaut-performance.md`](astronaut-performance.md) | Local chat astronaut optimization, verification, and read-only roben hosting findings (2026-11-14; not deployed) |
+| — | [`superpowers/plans/2026-11-14-astronaut.md`](superpowers/plans/2026-11-14-astronaut.md) | Approved astronaut implementation plan and completion boundaries |
 | 1 | [`challenge-in-plain-language.md`](challenge-in-plain-language.md) | The challenge, the glossary, the corrections, why-judges-care — start here |
 | 2 | [`../requirements/competition-requirements.md`](../requirements/competition-requirements.md) | Every participation/submission/judging rule, each linked to its official source, plus the onsite checklist |
 | 3 | [`../requirements/challenge-details-and-resources.md`](../requirements/challenge-details-and-resources.md) | Faithful section-by-section account of the official challenge Details + Resources tabs |
