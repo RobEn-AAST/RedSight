@@ -32,6 +32,23 @@ export interface MissionConfig {
   routeSlopeCapDeg: number
   /** true only when the operator explicitly selected the Scenario cap. */
   routeSlopeCapExplicit: boolean
+  /** Mission factors (public/data/factors.json). All Scenario inputs; see lib/factors.ts. */
+  /** THEMIS-derived loose-ground cost weight on lowest-hazard/balanced routes (0–3). */
+  sandWeight: number
+  /** Share of hazard vs time in balanced routes (0–1). */
+  hazardWeight: number
+  /** Modeled radiation dose budget per EVA (mSv). */
+  radiationBudgetMsv: number
+  /** Add the September 2017 solar particle event dose to the modeled EVA dose. */
+  sepEvent: boolean
+  /** EVA start, local true solar time hour (0–24). */
+  startLocalHour: number
+  /** Require the modeled EVA to fit inside daylight. */
+  daylightRequired: boolean
+  /** Minimum acceptable modeled air temperature (K); null = no limit. */
+  coldLimitK: number | null
+  /** On-site time at the stop (minutes). */
+  stopMinutes: number
 }
 
 export type LoadBasis = 'perAstronaut' | 'total'
@@ -57,6 +74,14 @@ export const defaultMissionConfig: MissionConfig = {
   routePreference: 'fastest',
   routeSlopeCapDeg: 15,
   routeSlopeCapExplicit: false,
+  sandWeight: 0,
+  hazardWeight: 0.5,
+  radiationBudgetMsv: 0.5,
+  sepEvent: false,
+  startLocalHour: 8,
+  daylightRequired: true,
+  coldLimitK: null,
+  stopMinutes: 30,
 }
 
 /** Model limits (team choices, plan §8) — keep in one place for validation + UI. */

@@ -42,3 +42,8 @@ Radio contact = phase 2. Rover on/off = existing.
 
 ## Testing
 Python tests for sand/hazard weight changing the route; node tests for `factors.ts`, validation and copilot action; `npm run build`, `lint`, `check:data`; live run against the routing API.
+
+## Implementation notes (2026-11-14)
+- Factor 10 (`geologyPreference`) was replaced by `stopMinutes` (time at the stop): all five stops lie in the same SIM 3292 unit (Htu), so a geology preference could not change any ranking. SEP is a toggle inside the radiation factor; the factor panel lists ten rows.
+- `sandWeight` defaults to 0 (opt-in) so the shipped precomputed 15° plans (built without a sand term) stay the default; fastest ignores sand/hazard weights.
+- `set_route_preference` carries `sandWeight`/`hazardWeight` because only one app-changing command runs per assistant turn.

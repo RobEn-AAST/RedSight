@@ -28,6 +28,8 @@ class RouteRequest(BaseModel):
     body_mass_kg: float = Field(ge=43, le=110)
     load_kg: float = Field(ge=0, le=40)
     sample_kg_per_stop: float = Field(ge=0, le=10)
+    sand_weight: float = Field(default=0.0, ge=0, le=3)
+    hazard_weight: float = Field(default=0.5, ge=0, le=1)
 
 
 @app.get("/health")

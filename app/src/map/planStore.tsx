@@ -295,7 +295,9 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       dynamicRoute.routing?.body_mass_kg === state.config.bodyMassKg &&
       dynamicRoute.routing?.load_kg_per_astronaut === perAstronautLoadKg(state.config) &&
       dynamicRoute.routing?.sample_kg_per_stop === state.config.sampleKgPerStop &&
-      dynamicRoute.routing?.slope_cap_deg === state.config.routeSlopeCapDeg ? dynamicRoute : null
+      dynamicRoute.routing?.slope_cap_deg === state.config.routeSlopeCapDeg &&
+      (dynamicRoute.routing?.sand_weight ?? 0) === state.config.sandWeight &&
+      (dynamicRoute.mode !== 'balanced' || (dynamicRoute.routing?.hazard_weight ?? 0.5) === state.config.hazardWeight) ? dynamicRoute : null
     const contractRoutes = (validDynamic ? { ...baseContractRoutes, [validDynamic.mode]: validDynamic } : baseContractRoutes) as Partial<Record<EngineRoutePreference, EngineRoute>>
     const status = validDynamic ? 'ready' : (state.config.routeSlopeCapExplicit || mode === 'balanced') ? 'missing' : !selectedTargetId
       ? 'idle'

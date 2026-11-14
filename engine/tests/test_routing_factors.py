@@ -70,3 +70,15 @@ def test_hazard_weight_changes_balanced_objective():
     assert a["status"] == b["status"] == "ok"
     assert a["route"]["routing"]["hazard_weight"] == 0.0
     assert a["route"]["routing"]["objective_cost"] != b["route"]["routing"]["objective_cost"]
+
+
+def test_http_request_model_accepts_factor_weights_and_bounds_them():
+    from pydantic import ValidationError
+    from engine.api import RouteRequest
+    base = {**BASE, "mode": "safest"}
+    ok = RouteRequest(**base, sand_weight=1.5, hazard_weight=0.2)
+    assert ok.sand_weight == 1.5 and ok.hazard_weight == 0.2
+    assert RouteRequest(**base).sand_weight == 0.0 and RouteRequest(**base).hazard_weight == 0.5
+    for bad in ({"sand_weight": 3.1}, {"sand_weight": -0.1}, {"hazard_weight": 1.1}):
+        with pytest.raises(ValidationError):
+            RouteRequest(**base, **bad)

@@ -150,7 +150,7 @@ def route_request(request: dict) -> dict:
     body_mass = request.get("body_mass_kg", 82)
     load = request.get("load_kg", 15)
     samples = request.get("sample_kg_per_stop", 0)
-    sand_weight = request.get("sand_weight", 1.0)
+    sand_weight = request.get("sand_weight", 0.0)
     hazard_weight = request.get("hazard_weight", 0.5)
     if stop_id not in SUPPORTED_STOPS:
         return {"status": "error", "code": "unsupported_destination", "message": "Destination is not a supported observed stop."}

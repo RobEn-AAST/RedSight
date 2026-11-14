@@ -285,6 +285,10 @@ async function handleChat(req, res, ip) {
       const cap = name === 'reset_route_constraints' ? 15 : (args.slopeCapDeg ?? mission.routeSlopeCapDeg ?? 15)
       if (!['S1','S2','S3','D1','D2'].includes(destinationId)) return { applied:false, error:'Select an available destination before requesting a route.' }
       if (typeof cap !== 'number' || !Number.isFinite(cap) || cap < 0 || cap > 15) return { applied:false, error:'Slope cap must be 0–15 degrees; the hard model limit is 15 degrees.' }
+      const sandWeight = name === 'reset_route_constraints' ? 0 : (args.sandWeight ?? mission.sandWeight ?? 0)
+      const hazardWeight = name === 'reset_route_constraints' ? 0.5 : (args.hazardWeight ?? mission.hazardWeight ?? 0.5)
+      if (typeof sandWeight !== 'number' || !Number.isFinite(sandWeight) || sandWeight < 0 || sandWeight > 3) return { applied:false, error:'Sand weight must be 0–3.' }
+      if (typeof hazardWeight !== 'number' || !Number.isFinite(hazardWeight) || hazardWeight < 0 || hazardWeight > 1) return { applied:false, error:'Hazard weight must be 0–1.' }
       if (mission.roverAvailable === true) return { applied:false, error:'The native routing engine currently supports foot travel only; no rover route was calculated or substituted.' }
       const base = (process.env.ROUTING_API_URL || 'http://127.0.0.1:8790').replace(/\/$/, '')
       let response
@@ -292,7 +296,7 @@ async function handleChat(req, res, ip) {
         response = await fetch(`${base}/route`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
           destination_id:destinationId, mode:routeMode, slope_cap_deg:cap,
           crew_count:mission.crewCount, body_mass_kg:mission.bodyMassKg, load_kg:mission.routeLoadKg,
-          sample_kg_per_stop:mission.sampleKgPerStop,
+          sample_kg_per_stop:mission.sampleKgPerStop, sand_weight:sandWeight, hazard_weight:hazardWeight,
         }), signal:abort.signal })
       } catch (e) {
         if (abort.signal.aborted) throw e

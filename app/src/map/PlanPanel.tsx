@@ -21,6 +21,7 @@ import {
 import { DaylightNote } from '@/map/DaylightNote'
 import { EvaRadiationCard } from '@/map/EvaRadiationCard'
 import { RouteBreakdown } from '@/map/RouteBreakdown'
+import { FactorVerdictsCard, MissionFactorsFold } from '@/map/MissionFactors'
 import { Fold } from '@/map/Fold'
 import { usePlan } from '@/map/usePlan'
 import { MissionReplay } from '@/replay/MissionReplay'
@@ -111,7 +112,9 @@ function RouteChoice() {
     if (!Number.isFinite(cap) || cap < 0 || cap > 15) { setError('Slope limit must be 0–15°.'); return }
     // Default 15° fastest / lowest-hazard: use the precomputed engine plans shipped in public/data, so the
     // static deploy works without the routing service. Only balanced or a tighter cap needs the service.
-    if (cap === 15 && (mode === 'fastest' || mode === 'safest')) {
+    const cfg = mission.state.config
+    const defaultFactors = mode === 'fastest' || (mode === 'safest' && cfg.sandWeight === 0)
+    if (cap === 15 && defaultFactors) {
       setError('')
       mission.patchConfig({routePreference:mode,routeSlopeCapDeg:15,routeSlopeCapExplicit:false})
       plan.setMode(mode)
@@ -125,6 +128,7 @@ function RouteChoice() {
       const res = await fetch('/api/routing/route', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
         destination_id:snapshot.target,mode,slope_cap_deg:cap,crew_count:c.crewCount,
         body_mass_kg:c.bodyMassKg,load_kg:perAstronautLoadKg(c),sample_kg_per_stop:c.sampleKgPerStop,
+        sand_weight:c.sandWeight,hazard_weight:c.hazardWeight,
       })})
       const out = await res.json().catch(() => ({ message: 'Routing service unavailable on this deployment; balanced and custom-slope routes need the local terrain service.' }))
       if (!res.ok || out.status !== 'ok') throw new Error(out.message ?? out.detail?.message ?? 'No matching route; the constraint was not relaxed.')
@@ -412,6 +416,7 @@ export function PlanPanel({ onOpenSources }: { onOpenSources: () => void }) {
 
       <Section step={2} title="Pick a route">
         <RouteChoice />
+        <MissionFactorsFold />
         <RouteBreakdown />
       </Section>
 
@@ -435,6 +440,7 @@ export function PlanPanel({ onOpenSources }: { onOpenSources: () => void }) {
           <OxygenFold plan={activePlan} members={activeMembers} />
           <DaylightNote plan={activePlan} members={activeMembers} />
           <EvaRadiationCard />
+          <FactorVerdictsCard plan={activePlan} members={activeMembers} />
           <Fold icon={<PlayCircle size={14} />} title="Replay the walk" answer="Play bar on the map">
             <p className="text-xs leading-relaxed text-ink-dim">
               Plays the modeled walk on the map: crew position, O₂ tank, the turn-back moment. Drills raise O₂ use from
