@@ -16,7 +16,7 @@ import type { Feature, FeatureCollection } from 'geojson'
 
 import '@/map/map.css'
 import { cn } from '@/lib/cn'
-import { absoluteDataUrl } from '@/lib/dataUrl'
+import { absoluteDataUrl, markerSprite, type MapFigure } from '@/lib/dataUrl'
 import type { EngineRouteMode, PlanMember } from '@/lib/engineDataContext'
 import { useEngineData } from '@/lib/useEngineData'
 import { curiosityLineCollection, curiosityWaypointCollection } from '@/map/curiosityPath'
@@ -143,6 +143,17 @@ function marsRadiusM(crs: string | undefined): number | null {
 
 function moveDuration(): number {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 500
+}
+
+/** A map figure sprite; its ground point is the image centre, so the marker anchors at the centre. */
+function figure(name: MapFigure, sizePx: number, alt: string): HTMLImageElement {
+  const img = document.createElement('img')
+  img.src = markerSprite(name).url
+  img.alt = alt
+  img.width = img.height = sizePx
+  img.draggable = false
+  img.className = 'pointer-events-none select-none'
+  return img
 }
 
 function chip(text: string, className: string): HTMLSpanElement {
@@ -590,20 +601,18 @@ export function MapCanvas({
     if (habitat) {
       const el = document.createElement('div')
       el.title = `Habitat (${habitat.badge})`
-      el.className = 'flex flex-col items-center gap-1'
-      const dot = document.createElement('span')
-      dot.className = 'size-3.5 border-2 border-scenario bg-void'
-      el.append(chip('HAB', 'border-scenario/70 bg-hull/90 text-scenario'), dot)
-      markers.push(
-        new Marker({ element: el, anchor: 'bottom', offset: [0, 7] }).setLngLat(habitat.lonlat).addTo(map),
-      )
+      el.className = 'relative'
+      const label = chip('HAB', 'border-scenario/70 bg-hull/90 text-scenario')
+      label.classList.add('absolute', 'bottom-full', 'left-1/2', '-translate-x-1/2')
+      el.append(figure('habitat', 56, 'Habitat'), label)
+      markers.push(new Marker({ element: el, anchor: 'center' }).setLngLat(habitat.lonlat).addTo(map))
     }
 
     activeMembers.forEach((m, i) => {
       if (m.park_index !== null && m.coords[m.park_index]) {
         const el = document.createElement('div')
         el.title = 'Rover parks here; walk from here'
-        el.append(chip('P', 'border-ink bg-ink text-void'))
+        el.append(figure('rover', 40, 'Parked rover'))
         add(el, m.coords[m.park_index])
       }
       // The turn-back marker is drawn by the turn-back slider (it moves with the O₂ budget).
