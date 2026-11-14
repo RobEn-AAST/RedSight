@@ -52,11 +52,21 @@ export async function copilotReset(): Promise<void> {
   }).catch(() => undefined)
 }
 
+export async function copilotActionResult(callId: string, result: Record<string, unknown>): Promise<void> {
+  const res = await fetch('/api/copilot/action-result', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Copilot-Session': copilotSessionId() },
+    body: JSON.stringify({ callId, result }),
+  })
+  if (!res.ok) throw new Error('Action result was stale or not accepted by the copilot server.')
+}
+
 /** Server → client SSE event types for /api/copilot/chat. */
 export type ChatStreamEvent =
   | { t: 'meta'; provider: string; model: string }
   | { t: 'token'; v: string }
   | { t: 'tool'; name: string; resultCount: number }
+  | { t: 'action'; callId: string; name: string; args: Record<string, unknown>; route?: Record<string, unknown> }
   | { t: 'notice'; v: string }
   | { t: 'done' }
   | { t: 'error'; message: string }

@@ -5,7 +5,6 @@ import { Bot, FileSearch, X } from 'lucide-react'
 import { MissionProvider } from '@/lib/missionStore'
 import { useMission } from '@/lib/useMission'
 import { EngineDataProvider } from '@/lib/engineData'
-import { useEngineData } from '@/lib/useEngineData'
 import { MissionSetup } from '@/mission/MissionSetup'
 import { MapWorkspace } from '@/map/MapWorkspace'
 import { PlanProvider } from '@/map/planStore'
@@ -153,7 +152,6 @@ function CopilotDrawer({ onClose }: { onClose: () => void }) {
 
 function Console() {
   const { state, confirmMission } = useMission()
-  const engine = useEngineData()
   const [sourcesOpen, setSourcesOpen] = useState(false)
   const [copilotOpen, setCopilotOpen] = useState(false)
   const active = state.status === 'active'
@@ -166,11 +164,6 @@ function Console() {
         <div className="mx-auto">
           <StepTabs onRoutes={confirmMission} />
         </div>
-        {engine.mock && (
-          <span className="label-console hidden border border-scenario/50 px-1.5 py-0.5 text-[10px] text-scenario sm:inline">
-            Mock data
-          </span>
-        )}
         <button
           type="button"
           onClick={() => setSourcesOpen(true)}

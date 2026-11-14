@@ -1,3 +1,5 @@
+import { hasCompleteAlternateReturn } from '../replay/replay-core.js'
+
 /**
  * Turn-back slider logic (Tier 1, B4). Owner: Jana. Pure functions, no React,
  * no imports, so it runs under `node --test` and in the browser alike.
@@ -78,7 +80,7 @@ export interface TurnBackRoute {
   cum: { t_s: number[]; o2_l: number[] }
   back?: { t_s?: number[]; o2_l?: number[] }
   /** Optional fastest way home from each vertex (demo-focus-plan §9 Back_fast); ignored on a fastest route. */
-  back_fast?: { t_s?: number[]; o2_l?: number[] }
+  back_fast?: { t_s?: number[]; o2_l?: number[]; path?: [number, number][][] }
   mode?: string
 }
 
@@ -109,8 +111,6 @@ export interface TurnBackResult {
    * B − f × (out + home). The return margin is why this is > 0.
    */
   spareAtHomeL: number
-  /** true when back.* was missing and the way home was assumed equal to the way out. */
-  backAssumed: boolean
 }
 
 const lerp = (a: number, b: number, f: number) => a + (b - a) * f
@@ -124,7 +124,7 @@ function wayHome(route: TurnBackRoute, ownO: number[], ownT: number[]): { BO: nu
   const bf = route.back_fast
   const fo = bf?.o2_l
   const ft = bf?.t_s
-  if (route.mode === 'fastest' || fo?.length !== n || ft?.length !== n) return { BO: ownO, BT: ownT }
+  if (!hasCompleteAlternateReturn(route) || fo?.length !== n || ft?.length !== n) return { BO: ownO, BT: ownT }
   return {
     BO: ownO.map((o, i) => Math.min(o, fo[i])),
     BT: ownT.map((t, i) => (fo[i] < ownO[i] ? ft[i] : t)),
@@ -143,8 +143,8 @@ export function turnBackPoint(
   const T = route.cum?.t_s
   if (n < 2 || U?.length !== n || T?.length !== n) return null
   const hasBack = route.back?.o2_l?.length === n && route.back?.t_s?.length === n
-  // Same fallback as the replay: without the engine's return field, home costs what the way out cost.
-  const { BO, BT } = wayHome(route, hasBack ? (route.back!.o2_l as number[]) : U, hasBack ? (route.back!.t_s as number[]) : T)
+  if (!hasBack) return null
+  const { BO, BT } = wayHome(route, route.back!.o2_l as number[], route.back!.t_s as number[])
   const f = memberFactor
   const m = returnMargin
   const need = (i: number) => f * (U[i] + m * BO[i])
@@ -175,7 +175,6 @@ export function turnBackPoint(
       routeFraction:
         cumD && cumD[n - 1] > 0 ? at(cumD) / cumD[n - 1] : (index + frac) / (n - 1),
       spareAtHomeL: budgetL - f * (outO2L + homeO2L),
-      backAssumed: !hasBack,
     }
   }
 
@@ -194,8 +193,8 @@ export function turnBackPoint(
 export function budgetToReachStop(route: TurnBackRoute, returnMargin: number, memberFactor = 1): number | null {
   const n = route.coords?.length ?? 0
   const U = route.cum?.o2_l
-  if (n < 2 || U?.length !== n) return null
-  const own = route.back?.o2_l?.length === n ? route.back.o2_l : U
+  if (n < 2 || U?.length !== n || route.back?.o2_l?.length !== n || route.back.t_s?.length !== n) return null
+  const own = route.back.o2_l
   const { BO } = wayHome(route, own, own)
   let worst = 0
   for (let i = 0; i < n; i++) worst = Math.max(worst, memberFactor * (U[i] + returnMargin * BO[i]))

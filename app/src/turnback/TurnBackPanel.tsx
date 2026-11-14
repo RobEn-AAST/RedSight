@@ -67,7 +67,6 @@ export function TurnBackPanel({ bare = false }: { bare?: boolean } = {}) {
   )
   useTurnBackMarker(result)
 
-  const mock = engine.mock || !!activeRoute?._mock
   const routeInfo = (note?: string): SourceInfo => ({
     badge: activeRoute?.badge ?? 'Scenario',
     source: (
@@ -77,7 +76,6 @@ export function TurnBackPanel({ bare = false }: { bare?: boolean } = {}) {
       </>
     ),
     note: note ?? 'Modeled guidance from the walking and O₂ model, not a measurement and not a guarantee.',
-    mock,
   })
   const budgetInfo: SourceInfo = {
     badge: 'Scenario',
@@ -90,7 +88,6 @@ export function TurnBackPanel({ bare = false }: { bare?: boolean } = {}) {
       'constants.json'
     ),
     unit: 'L',
-    mock,
   }
 
   const content = (
@@ -103,6 +100,11 @@ export function TurnBackPanel({ bare = false }: { bare?: boolean } = {}) {
       {plan && routesStatus !== 'ready' && (
         <p className="px-1 text-xs leading-relaxed text-ink-faint">
           Pick a stop with route files to see where the modeled turn-back point falls.
+        </p>
+      )}
+      {plan && activeRoute && !result && (
+        <p role="status" className="border border-caution/40 bg-caution-soft/30 px-3 py-2 text-xs leading-relaxed text-caution">
+          Complete directed return costs are unavailable for this route. The turn-back estimate and replay are disabled; no outbound-cost fallback is used.
         </p>
       )}
       {plan && activeRoute && result && (
@@ -128,7 +130,7 @@ export function TurnBackPanel({ bare = false }: { bare?: boolean } = {}) {
             <div className="data-readout flex justify-between text-[10px] text-ink-faint">
               <span>0 L</span>
               {reachNeed != null && reachNeed <= maxB && (
-                <span>stop needs ≥ {reachNeed.toFixed(1)} L</span>
+                <span>endpoint needs ≥ {reachNeed.toFixed(1)} L</span>
               )}
               <span>{maxB.toFixed(1)} L (full)</span>
             </div>
@@ -153,7 +155,7 @@ export function TurnBackPanel({ bare = false }: { bare?: boolean } = {}) {
             )}
           >
             {result.status === 'reaches-stop' &&
-              `The stop fits inside this budget: modeled return with the ${plan.returnMargin}× margin still fits.`}
+              `The modeled endpoint fits inside this budget: modeled return with the ${plan.returnMargin}× margin still fits.`}
             {result.status === 'turns-back' &&
               `Modeled turn-back point: ${result.distanceM != null ? formatDistance(result.distanceM) : `${Math.round(result.routeFraction * 100)} %`} along the route, ${formatDuration(result.outTimeS)} after leaving. Turn there and head home.`}
             {result.status === 'no-go' && 'This budget does not cover leaving the habitat (modeled).'}
@@ -164,18 +166,14 @@ export function TurnBackPanel({ bare = false }: { bare?: boolean } = {}) {
             {result.status !== 'no-go' && (
               <>
                 <SourcedValue
-                  label={result.status === 'reaches-stop' ? 'Walk out to the stop' : 'Walk out to the turn point'}
+                  label={result.status === 'reaches-stop' ? 'Walk out to the modeled endpoint' : 'Walk out to the turn point'}
                   value={`${formatDuration(result.outTimeS)} · ${result.outO2L.toFixed(1)} L`}
                   info={routeInfo()}
                 />
                 <SourcedValue
                   label="Expected walk home"
                   value={`${formatDuration(result.homeTimeS)} · ${result.homeO2L.toFixed(1)} L`}
-                  info={routeInfo(
-                    result.backAssumed
-                      ? 'The route file has no back table, so the way home is assumed to cost the same as the way out.'
-                      : undefined,
-                  )}
+                  info={routeInfo()}
                 />
                 <SourcedValue
                   label="Spare O₂ on arrival, above the reserve"
@@ -195,7 +193,6 @@ export function TurnBackPanel({ bare = false }: { bare?: boolean } = {}) {
                 badge: 'Scenario',
                 source: 'max(reserve_fraction × capacity, reserve_minutes × walkback_o2_lpm), all from constants.json',
                 note: 'Apollo planned traverses with a 30-minute consumables reserve; the plan never spends it.',
-                mock,
               }}
             />
             <ConstantValue k="reserve_fraction" label="Reserve share of tank" />
@@ -204,11 +201,6 @@ export function TurnBackPanel({ bare = false }: { bare?: boolean } = {}) {
             <ConstantValue k="return_cost_margin" label="Return margin" />
           </dl>
 
-          {result.backAssumed && (
-            <p className="border border-scenario/40 bg-scenario-soft/30 px-3 py-2 text-[11px] leading-relaxed text-scenario">
-              No return table in this route file: the way home is assumed to cost the same as the way out.
-            </p>
-          )}
           <p className="px-1 text-[11px] leading-relaxed text-ink-faint">
             Per crew member, one suit each. A modeled estimate for planning, never a guarantee: real O₂ use
             depends on the person, the suit and the ground.

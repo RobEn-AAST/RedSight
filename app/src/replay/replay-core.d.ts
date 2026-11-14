@@ -18,7 +18,6 @@ export interface Timeline {
   switchT: number | null
   turnPoint: [number, number] | null
   arrivalL: number
-  backAssumed: boolean
 }
 export interface Sample {
   t: number
@@ -36,4 +35,7 @@ export function sampleAt(tl: Timeline, t: number): Sample
 export function formatDuration(s: number): string
 export function formatClock(s: number): string
 export function distanceM(a: [number, number], b: [number, number]): number
+
+export function hasCompleteAlternateReturn(route: unknown): boolean
+
 export function fastPathFrom(route: unknown, i: number): [number, number][] | null

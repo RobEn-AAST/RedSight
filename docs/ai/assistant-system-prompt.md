@@ -1,9 +1,9 @@
-# RedSight Copilot — System Prompt (planned; enforced server-side when a backend exists)
+# RedSight Copilot — Prompt Design (runtime prompt is server/prompt.mjs)
 
-**Written:** 2026-11-13 by the web-foundation worker. This is the *design* of the system prompt the
-future backend (`/api/copilot/chat`, see [`voice-copilot-plan.md`](voice-copilot-plan.md) §6) must
-send with every request — the client may never override it. Nothing here is live: no provider is
-configured and no calls are made. **STATUS: UNCONNECTED.**
+**Written:** 2026-11-13 by the web-foundation worker. This is the original prompt design reference.
+The live server-enforced prompt includes direct app functions, constraint reporting and
+mobility-specific guardrails; see [`../server/prompt.mjs`](../server/prompt.mjs) and the current
+capability contract in [`function-execution.md`](function-execution.md).
 
 ---
 

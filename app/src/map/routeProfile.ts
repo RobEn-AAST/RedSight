@@ -7,7 +7,7 @@
  * 3D `coords`). The UI never invents model numbers or claims.
  */
 
-export type RouteModeKind = 'fastest' | 'safest'
+export type RouteModeKind = 'fastest' | 'safest' | 'balanced'
 
 export interface ProfileSegment {
   t_s: number
@@ -370,6 +370,8 @@ export function buildWhyRoute(
     } else {
       headline = `Lowest-hazard path: ${distPhrase} than ${otherLabel} across ${active.segmentCount} segments.`
     }
+  } else if (activeMode === 'balanced') {
+    headline = `Balanced candidate selected by equal-weight normalized time and mapped hazard cost; ${formatDur(Math.abs(deltaTimeS))} ${deltaTimeS >= 0 ? 'slower' : 'faster'} outbound than ${otherLabel}.`
   } else {
     const timePhrase =
       deltaTimeS < -1

@@ -75,15 +75,15 @@ function validate(route) {
     if (!Array.isArray(arr) || arr.length !== n) throw new Error(`route.cum.${k} must have ${n} values`);
     for (let i = 1; i < n; i++) if (arr[i] < arr[i - 1]) throw new Error(`route.cum.${k} must not decrease`);
   }
+  for (const k of ["t_s", "o2_l"]) {
+    const arr = route.back?.[k];
+    if (!Array.isArray(arr) || arr.length !== n || arr[0] !== 0 || !arr.every(Number.isFinite)) throw new Error(`route.back.${k} must have ${n} finite directed return values starting at 0`);
+    for (let i = 1; i < n; i++) if (arr[i] < arr[i - 1]) throw new Error(`route.back.${k} must not decrease`);
+  }
   return n;
 }
 
-/**
- * Fastest way home from route point i as a polyline (starts at coords[i], ends at the habitat), or null.
- * With back_fast.path_from (engine export since 2026-11-14) paths are stored only at key points: walk the
- * route back to the nearest key point at or before i, then follow its path. Without path_from, path has
- * one polyline per route point (older contract).
- */
+/** Alternate return is usable only with complete costs AND endpoint-matched geometry. */
 export function fastPathFrom(route, i) {
   const bf = route?.back_fast;
   const coords = route?.coords;
@@ -97,28 +97,36 @@ export function fastPathFrom(route, i) {
   return line.length > 1 ? line : null;
 }
 
-/** Copy the route arrays; use engine back arrays if present, else assume home costs the same as out. */
+export function hasCompleteAlternateReturn(route) {
+  const n = route?.coords?.length ?? 0;
+  const bf = route?.back_fast;
+  if (n < 2 || route.mode === "fastest" || !bf) return false;
+  for (const key of ["t_s", "o2_l"]) {
+    if (!Array.isArray(bf[key]) || bf[key].length !== n || bf[key][0] !== 0 ||
+        !bf[key].every(v => Number.isFinite(v) && v >= 0)) return false;
+  }
+  const same = (a,b) => Array.isArray(a) && Array.isArray(b) && a[0]===b[0] && a[1]===b[1];
+  return Array.isArray(bf.path) && bf.path.length === n && bf.path.every((path,i) =>
+    Array.isArray(path) && path.length >= (i===0 ? 1 : 2) &&
+    path.every(p => Array.isArray(p) && p.length===2 && p.every(Number.isFinite)) &&
+    same(path[0],route.coords[i]) && same(path.at(-1),route.coords[0]));
+}
+
+/** Copy complete outbound and directed same-path return arrays; never infer missing return costs. */
 function arrays(route) {
-  const n = route.coords.length;
-  const hasBack =
-    Array.isArray(route.back?.t_s) && route.back.t_s.length === n &&
-    Array.isArray(route.back?.o2_l) && route.back.o2_l.length === n;
   // Optional back_fast: the fastest way home from each vertex (O2, time, path). Ignored on a fastest route.
   const bf = route.back_fast;
-  const hasFast = route.mode !== "fastest" &&
-    Array.isArray(bf?.t_s) && bf.t_s.length === n && Array.isArray(bf?.o2_l) && bf.o2_l.length === n;
+  const hasFast = hasCompleteAlternateReturn(route);
   return {
     P: route.coords.map((p) => [...p]),
     T: [...route.cum.t_s],
     U: [...route.cum.o2_l],
-    BT: hasBack ? [...route.back.t_s] : [...route.cum.t_s],
-    BO: hasBack ? [...route.back.o2_l] : [...route.cum.o2_l],
+    BT: [...route.back.t_s],
+    BO: [...route.back.o2_l],
     BFT: hasFast ? [...bf.t_s] : null,
     BFO: hasFast ? [...bf.o2_l] : null,
-    // Without a path, the fastest way home is drawn back along this route (its cost still from back_fast).
-    BFP: hasFast ? route.coords.map((p, i) => fastPathFrom(route, i) ?? route.coords.slice(0, i + 1).reverse()) : null,
+    BFP: hasFast ? bf.path.map(path => path.map(p => [...p])) : null,
     fast: hasFast,
-    assumed: !hasBack,
   };
 }
 
@@ -318,7 +326,7 @@ export function buildTimeline(route, opts = {}) {
     return {
       frames, events, ...plan, budgetL: B, members, worstFactor: f,
       totalS: last.t, arrivalL, arrivalMin: arrivalL / plan.walkbackLpm,
-      reserveUsedL: Math.max(0, R - arrivalL), backAssumed: a.assumed, drill, ...extra,
+      reserveUsedL: Math.max(0, R - arrivalL), drill, ...extra,
       // Keep reachStop as the legacy route-endpoint flag; the additive flags identify what endpoint it represents.
       reachStop: frames.length > 1 && extra.reachStop,
       reachedApproachPoint: frames.length > 1 && extra.reachStop && goalInfo.approachOnly,

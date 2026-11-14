@@ -1,33 +1,31 @@
 # app/public/data — engine → app contract files
 
-Shapes follow [`docs/demo-focus-plan.md`](../../../docs/demo-focus-plan.md) §15. Ali's real route,
-constants, metadata and hazard outputs have replaced their mocks using the build command in
-[`engine/README.md`](../../../engine/README.md). Youssef's layer list and Ayman's stops/cards remain
-mock or incomplete where indicated below. Do not regenerate the whole mock set after real Ali data
-has landed; `_mock/make-mock.mjs` overwrites every data file.
+Shapes follow [`docs/demo-focus-plan.md`](../../../docs/demo-focus-plan.md) §15. Production contracts
+contain sourced real observations plus explicitly labeled Derived and Scenario outputs. Mock contract
+generators and fake production fallback data have been removed; test fixtures remain in tests only.
 
 | File | Owner (real data) | What's real already |
 |---|---|---|
 | `meta.json` | Ali | real ops grid and CRS; habitat is a Scenario cell selected in the native-mask-reachable component |
 | `constants.json` | Ali | real file; stable keys and descriptive `source` retained with additive `source_url` for every constant |
-| `layers.json` | Youssef | layer list + sources; `available:false` until tiles exist |
+| `layers.json` | Youssef | six source-backed layers; `available:true` in the current build |
 | `stops.json` | Ayman | real (no `_mock`): 5 stops from live MMGIS waypoints, per-sol/per-instrument NASA raw photos, PIA26559 / PIA26696 metadata, sourced science text & cards |
 | `curiosity_path.geojson` | Ayman | real (no `_mock`): Curiosity's Observed MMGIS rover traverse inside the ops box (`sols 3345–5073`, 464 waypoints across contiguous segments) |
 | `routes/index.json`, `routes/{stop}_{mode}_{crew}_{load}.json` | Ali | fastest + lowest-modeled-hazard outcome for each of S1, S2, S3, D1 and D2 (crew 2, 15 kg); each route has a separate Derived approach endpoint and the Observed stop coordinate remains in `stops.json` |
 | `hazards.geojson` | Ali | primary-DTM nodata, unavailable native slope support and native Horn slope hard masks |
 | `engine-build-manifest.json` | Ali | input/output hashes, source/licence, seam/alignment evidence, G1–G4 status, timing, model and route outcomes |
 | `cards/rad.json`, `cards/rems.json` | Ayman | real (no `_mock`): RAD GCR baseline + Sept 2017 SEP (Si) + Scenario 4-h walk dose; REMS pressure, air/ground temp, Armstrong limit, PDS links |
-| `plan/{target}_{mode}_c{1,2}_l15_foot.json` (20) | built by `node app/scripts/build-plans.mjs` | real (no `_mock`): the route file copied unchanged (coords, seg, cum, back, back_fast, pnr_index); `derived_from` holds the route file + SHA-256. Crew 1 uses the same numbers because the engine's O₂ model is per member with no crew-size term (`engine/export.py`, `engine/route/pnr.py`). `split: null` because the separation limit has no primary source yet |
+| `plan/{target}_{mode}_c{1,2}_l15_foot.json` (20) | built by `node app/scripts/build-plans.mjs` | real (no `_mock`): route geometry, segments, cumulative outbound and complete same-path directed return arrays; `derived_from` holds the route file + SHA-256. Crew 1 uses the same numbers because the engine's O₂ model is per member with no crew-size term (`engine/export.py`, `engine/route/pnr.py`). |
 | `targets.geojson` | built by `node app/scripts/build-plans.mjs` | real (no `_mock`): Observed site from `stops.json`; the polygon is the routes' Scenario access bound (`goal_access.access_bound_m`, 10 m), not a mapped rock extent. Not shipped (removed 2026-11-14, no primary-sourced model): rover plans, split plans and `plan/limits_*.geojson`; the app hides those options |
-| `fields/*.png`, `fields/coverage.png` | Ali / Youssef | not mocked yet (If-time features) |
+| `fields/*.png`, `fields/coverage.png` | Ali / Youssef | unavailable and not offered by the current app |
 
 ## Check your files before a PR
 
 `cd app && npm run check:data` checks every file here against this contract (shapes, lengths, routes start at
 the habitat, `cum` never decreasing, `budget_l` = C − R from `constants.json`, badges, sources, tiles present
 for `available` layers, banned wording). Errors fail the run. Before submission use
-`npm run check:data -- --final`, which also fails on any `"_mock": true` left in any JSON/GeoJSON under
-`app/public/data/` (except `_mock/` and `tiles/`), including `plan/` and `targets.geojson`. Plan members are
+`npm run check:data -- --final`; both modes fail on any `"_mock": true` in production JSON/GeoJSON
+under `app/public/data/` (except raster map tiles), including `plan/` and `targets.geojson`. Plan members are
 checked with the same route rules. After editing route files, run `node app/scripts/build-plans.mjs`.
 
 ## Note for Ali (engine) — O₂ numbers, read before writing routes (D27, demo-focus-plan §9c)
@@ -51,18 +49,20 @@ checked with the same route rules. After editing route files, run `node app/scri
 | `goal_access` | `{badge: "Derived", status: "approach_only", observed_stop_lonlat, endpoint_lonlat, offset_m, access_bound_m, native_cell_rc, reason, last_leg_modeled: false}`. Keep the Observed stop marker separate from the route endpoint; do not draw a last-leg segment or claim exact arrival. |
 | `seg[]` | N−1 segments: `t_s`, `o2_l` (per crew member), `slope_deg`, `cost_terms` |
 | `cum.t_s`, `cum.o2_l` | cumulative from the habitat to each point (N values, non-decreasing) |
-| `back.t_s`, `back.o2_l` | time / O₂ to walk **home from** each point (return field sampled on the route) |
+| `back.t_s`, `back.o2_l` | complete directed time / O₂ to walk home from each outbound point on the same route geometry, indexed by the matching outbound vertex; return costs use reversed edge grades and inputs |
 | `budget_l` | usable O₂ per member after reserve (385 L × 0.75 by default) |
 | `pnr_index` | last reachable point in the outbound prefix where `f × (cum.o2_l + m × back.o2_l) ≤ budget_l`; baseline `f = 1` per crew member and `m = constants.return_cost_margin` |
-| `back_fast` *(optional, added 2026-11-13; safest routes only; not yet in the engine export)* | the **fastest** way home from each point (demo-focus-plan §9 `Back_fast`): `t_s[]`, `o2_l[]` (N values, plain expected O₂ like `back`), `path[]` (polylines ending at the habitat; N of them, one per point, or, with `path_from[]`, one per listed key point: `path[k]` starts at point `path_from[k]` and the way home from another point is drawn as the route walked back to the nearest earlier key point, then that path; the engine export uses key points every 25 m to keep files small), `via` (id of the fastest route it follows). Lets the replay and the turn-back slider switch to the fastest return when O₂ gets low. Without `path` the way home is drawn back along the route; without `back_fast` there is no switch |
+| alternate fastest return | Unavailable in the current production contract. No `back_fast` field is accepted; a future version must provide complete legal return geometry and matching costs before enabling a switch. |
 | `id`, `stop`, `mode` (`fastest`/`safest`), `crew`, `load_kg`, `badge`, `constants_hash` | labels |
 
 `budget_l = capacity − max(reserve_fraction × capacity, reserve_minutes × walkback_o2_lpm)`, with
 capacity read from `constants.json`. Route `cum.o2_l` and `back.o2_l` remain raw expected per-member
 liters: reserve, return margin and crew factor are applied by the PNR calculation, not baked into the
 arrays. Current replay invocation must pass capacity, reserve, margin and default member factors
-`[1, 1]` from constants/settings. `total_s` remains outbound + return time. Return arrays describe the
-same route geometry walked in reverse, with index 0 at the habitat and the final index at the stop.
+`[1, 1]` from constants/settings. `total_s` remains outbound + same-path return time. Return arrays
+have one value for every outbound vertex, start at zero at the habitat, and end at the stop. Missing
+return data invalidates turn-back and replay calculations; the app never assumes outbound costs apply
+on return.
 
 **Terrain and route grids:** the primary mean-elevation context DEM is 600×600 at ~9.879 m/cell.
 Routes use a bounded native 1.0117468 m primary-DTM graph. The separate Horn 3×3 maximum-slope grid
@@ -98,8 +98,9 @@ represents modeled slope exposure only. Sample pickup mass is not included in th
 bucket. The full upstream COG SHA-256 was not computed; local crop/cache hashes and source ETag are
 distinguished in the manifest.
 
-Regenerate mocks: `node app/public/data/_mock/make-mock.mjs`. It only overwrites files that still have
-`"_mock": true`; real files (no flag, e.g. Ayman's `stops.json` and cards) are skipped.
+For live constrained routing, follow [`docs/ai/function-execution.md`](../../../docs/ai/function-execution.md).
+The dynamic route API requires the ignored, hash-checked native routing DEM bundle; missing terrain is
+reported as unavailable and does not fall back to these committed 15° reference routes.
 
 ## Stop file fields (`stops.json`)
 

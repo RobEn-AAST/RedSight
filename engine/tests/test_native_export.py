@@ -129,20 +129,7 @@ def test_synthetic_native_slope_manifest_drives_all_five_stop_exports(tmp_path):
             assert route["goal_access"]["observed_stop_lonlat"] == route["observed_stop_lonlat"]
             assert len(route["coords"]) == len(route["cum"]["t_s"])
             assert len(route["coords"]) == len(route["back"]["o2_l"])
-            if mode == "fastest":
-                assert "back_fast" not in route
-            else:
-                fast = route["back_fast"]
-                n = len(route["coords"])
-                assert len(fast["t_s"]) == len(fast["o2_l"]) == n
-                keys = fast["path_from"]
-                assert len(fast["path"]) == len(keys) and keys[0] == 0 and keys[-1] == n - 1
-                assert keys == sorted(set(keys))
-                for k, i in enumerate(keys):
-                    assert fast["path"][k][0] == pytest.approx(route["coords"][i], abs=1e-6)
-                assert fast["t_s"][0] == 0.0 and fast["o2_l"][0] == 0.0
-                assert all(t <= b + 1e-6 for t, b in zip(fast["t_s"], route["back"]["t_s"]))
-                assert all(path[-1] == fast["path"][0][-1] for path in fast["path"])
+            assert "back_fast" not in route
             assert result["manifest"]["output_sha256"][f"routes/{stop_id}_{mode}_2_15.json"] == hashlib.sha256(
                 (tmp_path / "out/routes" / f"{stop_id}_{mode}_2_15.json").read_bytes()
             ).hexdigest()

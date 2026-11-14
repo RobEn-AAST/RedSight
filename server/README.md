@@ -38,13 +38,33 @@ add your deployed origin in production).
 |---|---|
 | `GET /api/copilot/health` | which provider/STT/model are configured — never the key |
 | `POST /api/copilot/stt` | audio blob (≤12 MB) → `{text}` (Groq Whisper, English pinned) |
-| `POST /api/copilot/chat` | SSE stream: `meta` → `token`* → `tool`? → `notice`? → `done` \| `error`; server-side memory per session id (`X-Copilot-Session` header) |
+| `POST /api/copilot/chat` | SSE stream: `meta` → `token`* → `action`? → `tool`? → `notice`? → `done` \| `error`; server-side memory per session id (`X-Copilot-Session` header) |
+| `POST /api/copilot/action-result` | App returns applied/failed state for a streamed command UUID; stale and duplicate results are rejected |
 | `POST /api/copilot/reset` | forget a session's memory |
 
-The chat endpoint builds the system prompt server-side (`prompt.mjs` — the runtime source of
-truth, ported from `docs/ai/assistant-system-prompt.md`) and executes the copilot's ONE tool,
-`search_mission_knowledge`, over `app/public/data` (`search.mjs`). The LLM can only *request*
-the tool; unknown tools are refused.
+The chat endpoint builds the system prompt server-side (`prompt.mjs`) and exposes typed mission,
+destination, layer, route and knowledge-search functions. The app validates UI actions and returns
+actual applied state before the model finishes its reply. Routing calls the FastAPI engine service.
+
+## Native terrain routing service
+
+Install Python API/runtime dependencies with `python3 -m pip install -r engine/requirements-api.txt`.
+Provide the ignored SHA-256-checked native terrain bundle at
+`data/raw/engine-pilot/input-manifest.json` (or set `REDSIGHT_ENGINE_MANIFEST`). Start FastAPI and
+Node in separate terminals:
+
+```bash
+uvicorn engine.api:app --host 127.0.0.1 --port 8790
+node server/index.mjs
+```
+
+Node connects to `ROUTING_API_URL` (default `http://127.0.0.1:8790`). FastAPI admits one CPU-bound
+request at a time to a persistent worker that caches verified terrain arrays. It computes fastest,
+lowest-modeled-hazard or balanced paths under the requested slope constraint. Dynamic responses carry
+full same-path directed return time/O₂ arrays and PNR; alternate `back_fast` is omitted, so no
+separate fastest-return switch is claimed. Missing terrain is reported as unavailable; the service
+never substitutes static presets or mock data. See
+[`../docs/ai/function-execution.md`](../docs/ai/function-execution.md) for constraint details.
 
 ## Security posture
 

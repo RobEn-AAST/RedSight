@@ -18,7 +18,6 @@ import { EvidenceBadge } from '@/ui/Badge'
 
 function memberAsRouteInput(plan: PlanFile, m: PlanMember): EngineRoute {
   return {
-    _mock: plan._mock,
     id: `${plan.id}:${m.member}`,
     stop: m.targets[m.targets.length - 1] ?? plan.target,
     mode: plan.mode,
@@ -124,7 +123,6 @@ export function EvaRadiationCard() {
     )
   }
 
-  const mock = engine.mock || !!activePlan._mock || radParams.mock
   const barPct = estimate.doseMSv > 0 ? Math.min(100, Math.max(estimate.careerLimitPct, 0.75)) : 0
 
   return (
@@ -234,7 +232,6 @@ export function EvaRadiationCard() {
                 .filter(Boolean)
                 .join(' '),
               sourceUrl: radParams.primaryUrl ?? undefined,
-              mock,
             }}
           />
         </div>

@@ -1,18 +1,17 @@
-import { Check, Footprints, Gauge, Home, Microscope, Pencil, PlayCircle, Truck, TriangleAlert, Users } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { Footprints, Gauge, Home, Microscope, Pencil, PlayCircle, Truck, TriangleAlert, Users } from 'lucide-react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Map as MapLibreMap } from 'maplibre-gl'
 import type { FeatureCollection } from 'geojson'
 
 import { cn } from '@/lib/cn'
-import type { EngineRouteMode, PlanFile, PlanMember } from '@/lib/engineDataContext'
+import { validateDynamicRoute } from '@/copilot/actions'
+import type { EngineRoutePreference, PlanFile, PlanMember } from '@/lib/engineDataContext'
 import { scienceGoalOptions } from '@/lib/materials'
 import { nearestLoadBucket, perAstronautLoadKg } from '@/types/mission'
 import { useMission } from '@/lib/useMission'
 import {
   MEMBER_B_COLOR,
-  MODE_CAPTION,
   MODE_COLOR,
-  MODE_LABEL,
   NO_RETURN_COLOR,
   formatDistance,
   formatDuration,
@@ -28,7 +27,6 @@ import { MissionReplay } from '@/replay/MissionReplay'
 import { TurnBackPanel } from '@/turnback/TurnBackPanel'
 import { Button } from '@/ui/Button'
 
-const MODES: EngineRouteMode[] = ['fastest', 'safest']
 
 function Section({ step, title, children }: { step: number; title: string; children: ReactNode }) {
   return (
@@ -100,52 +98,58 @@ function TargetPicker() {
 /* -- 2. Pick a route --------------------------------------------------------------- */
 
 function RouteChoice() {
-  const { plans, mode, setMode, activeMembers, crewMode, status } = usePlan()
-  if (status === 'loading') return <p className="text-sm text-ink-dim">Loading routes…</p>
-  if (status !== 'ready') return <p className="text-sm text-ink-dim">No routes exist for this area yet.</p>
-
-  return (
-    <div role="radiogroup" aria-label="Route" className="grid grid-cols-2 gap-2">
-      {MODES.map((m) => {
-        const plan = plans[m]
-        const active = mode === m
-        if (!plan) {
-          return (
-            <p key={m} className="border border-dashed border-seam-lit p-3 text-xs text-ink-dim">
-              {MODE_LABEL[m]}: no route
-            </p>
-          )
-        }
-        // Totals for whatever crew mode is showing, so both cards compare like with like.
-        const members = active ? activeMembers : crewMode === 'split' && plan.split ? plan.split.members : plan.together
-        const s = summarizeCrew(members, plan.budget_l)
-        const usedPct = Math.round((s.roundTripO2L / plan.budget_l) * 100)
-        return (
-          <button
-            key={m}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            onClick={() => setMode(m)}
-            className={cn(
-              'flex flex-col gap-2 border p-3 text-left transition-colors',
-              active ? 'border-signal/70 bg-signal-soft/50' : 'border-seam bg-inset/40 hover:border-seam-lit',
-            )}
-          >
-            <span className="flex items-center gap-2">
-              <span aria-hidden className="h-1 w-5 flex-none" style={{ backgroundColor: MODE_COLOR[m] }} />
-              <span className="label-console text-ink">{MODE_LABEL[m]}</span>
-              {active && <Check size={14} aria-hidden className="ml-auto text-signal" />}
-            </span>
-            <span className="data-readout text-xl leading-none text-ink">{formatDuration(s.roundTripS)}</span>
-            <span className="text-xs text-ink-dim">round trip · {usedPct}% of O₂</span>
-            <span className="text-xs text-ink-dim">steepest {s.maxSlopeDeg.toFixed(0)}°</span>
-          </button>
-        )
-      })}
-      <p className="col-span-2 text-xs leading-relaxed text-ink-dim">{MODE_CAPTION[mode]}</p>
+  const plan = usePlan()
+  const mission = useMission()
+  const [cap, setCap] = useState(mission.state.config.routeSlopeCapDeg)
+  const [pending, setPending] = useState(false)
+  const [error, setError] = useState('')
+  const latest = useRef({config:mission.state.config,target:plan.selectedTargetId})
+  useEffect(() => { latest.current = {config:mission.state.config,target:plan.selectedTargetId} }, [mission.state.config, plan.selectedTargetId])
+  const calculate = async (mode: EngineRoutePreference) => {
+    if (!Number.isFinite(cap) || cap < 0 || cap > 15) { setError('Slope limit must be 0–15°.'); return }
+    // Default 15° fastest / lowest-hazard: use the precomputed engine plans shipped in public/data, so the
+    // static deploy works without the routing service. Only balanced or a tighter cap needs the service.
+    if (cap === 15 && (mode === 'fastest' || mode === 'safest')) {
+      setError('')
+      mission.patchConfig({routePreference:mode,routeSlopeCapDeg:15,routeSlopeCapExplicit:false})
+      plan.setMode(mode)
+      return
+    }
+    const snapshot = latest.current
+    if (snapshot.config.roverAvailable) { setError('Terrain calculations currently support foot travel only.'); return }
+    setPending(true); setError('')
+    try {
+      const c = snapshot.config
+      const res = await fetch('/api/routing/route', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+        destination_id:snapshot.target,mode,slope_cap_deg:cap,crew_count:c.crewCount,
+        body_mass_kg:c.bodyMassKg,load_kg:perAstronautLoadKg(c),sample_kg_per_stop:c.sampleKgPerStop,
+      })})
+      const out = await res.json().catch(() => ({ message: 'Routing service unavailable on this deployment; balanced and custom-slope routes need the local terrain service.' }))
+      if (!res.ok || out.status !== 'ok') throw new Error(out.message ?? out.detail?.message ?? 'No matching route; the constraint was not relaxed.')
+      if (latest.current.config !== snapshot.config || latest.current.target !== snapshot.target) throw new Error('Mission changed during calculation. Please calculate again.')
+      if (!validateDynamicRoute(out.route,mode,plan.goalTargets.map(t=>t.id),cap)) throw new Error('Incomplete route or return costs; route discarded.')
+      mission.patchConfig({routePreference:mode,routeSlopeCapDeg:cap,routeSlopeCapExplicit:true})
+      plan.applyDynamicRoute(out.route)
+    } catch (e) { setError(`${e instanceof Error ? e.message : 'Route calculation failed.'} The previous route and its stated constraints were retained.`) }
+    finally { setPending(false) }
+  }
+  return <div className="space-y-3">
+    <label className="flex items-center justify-between gap-3 text-sm text-ink-dim">
+      Modeled maximum slope (°)
+      <input aria-label="Maximum route slope in degrees" type="number" min={0} max={15} step={0.5} disabled={pending} value={Number.isFinite(cap) ? cap : ''}
+        onChange={e=>setCap(e.target.value === '' ? NaN : Number(e.target.value))}
+        className="w-20 border border-seam bg-inset p-2 text-ink" />
+    </label>
+    <div role="radiogroup" aria-label="Route preference" className="grid grid-cols-3 gap-2">
+      {(['fastest','safest','balanced'] as const).map(mode=><button key={mode} type="button" role="radio"
+        aria-checked={plan.mode===mode} disabled={pending || !plan.selectedTargetId}
+        onClick={()=>void calculate(mode)} className={cn('border p-2 text-sm disabled:opacity-50',plan.mode===mode ? 'border-signal text-signal' : 'border-seam text-ink-dim')}>
+        {mode==='safest' ? 'Lowest hazard' : mode==='fastest' ? 'Fastest' : 'Balanced'}
+      </button>)}
     </div>
-  )
+    <p role="status" className="text-xs text-ink-dim">{pending ? 'Calculating on native terrain…' : plan.activeRoute?.routing ? `Scenario estimate · ${plan.activeRoute.routing.slope_cap_deg}° cap · same-path return only` : plan.activeRoute ? 'Scenario estimate · precomputed engine route · 15° cap' : 'Calculate a route using the selected slope constraint.'}</p>
+    {error && <p role="alert" className="text-sm text-ink">{error}</p>}
+  </div>
 }
 
 /* -- 3. Who goes where (pair only) ---------------------------------------------------- */
@@ -229,8 +233,8 @@ function MemberTimeline({
   if (s.reachesTarget) {
     steps.push({
       icon: <Microscope size={14} aria-hidden />,
-      title: `Sample at ${member.targets.join(', ')}`,
-      detail: `Reached after ${formatDuration(member.cum.t_s[last])}`,
+      title: `Modeled endpoint for ${member.targets.join(', ')}`,
+      detail: `Approach reached after ${formatDuration(member.cum.t_s[last])}; any final leg is unmodeled.`,
     })
   } else {
     steps.push({
@@ -419,9 +423,6 @@ export function PlanPanel({ onOpenSources }: { onOpenSources: () => void }) {
       )}
 
       <footer className="flex flex-col gap-2 px-4 py-4 text-xs leading-relaxed text-ink-dim">
-        {activePlan?._mock && (
-          <p className="text-scenario">Mock numbers: the engine's real routes replace these.</p>
-        )}
         <p>
           Times and O₂ are model estimates, not a safety guarantee.{' '}
           <button type="button" onClick={onOpenSources} className="text-ink underline underline-offset-2 hover:text-signal">

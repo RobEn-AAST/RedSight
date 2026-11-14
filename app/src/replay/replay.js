@@ -119,7 +119,6 @@ export function createReplay(map, opts) {
     }
     ui.summary.textContent = t >= tl.totalS && tl.totalS > 0 ? arrivalText() : "";
     const notes = [];
-    if (tl.backAssumed) notes.push("Return cost assumed equal to the way out (engine back data missing).");
     if (goal.approachOnly) {
       notes.push(`Route ends at the Derived approach point${offset ? ` ${offset} from the Observed stop` : ""}; no final leg is modeled.`);
     }
@@ -223,7 +222,7 @@ export function createReplay(map, opts) {
       <div class="replay-members"></div>
       <div class="replay-legend"><i style="background:${CREW_A}"></i>crew ${showEnds ? '<i style="background:#fff"></i>habitat <i style="background:#9b5de5"></i><span class="replay-goal-label">stop</span>' : '<span class="replay-goal-label" hidden>stop</span>'}
         <span class="replay-observed-stop" hidden> · <i style="background:transparent;border:2px solid #f78c6b"></i>Observed stop</span>
-        <i style="background:${SWITCH}"></i>switch to fastest way home <i style="background:#ef476f"></i>turn-back <i style="background:${OUT}"></i>walked out <i style="background:${BACK}"></i>walked home</div>
+        <i style="background:#ef476f"></i>turn-back <i style="background:${OUT}"></i>walked out <i style="background:${BACK}"></i>walked home</div>
       <div class="replay-row replay-stats"><span class="replay-phase"></span><span class="replay-clock"></span><span class="replay-dist"></span></div>
       <ul class="replay-log" aria-live="polite"></ul>
       <div class="replay-summary"></div>
@@ -237,7 +236,7 @@ export function createReplay(map, opts) {
       </div>
       <div class="replay-foot"><span class="replay-badge">Scenario</span> modeled estimate, not a measurement.<span class="replay-note"></span></div>
       <div class="replay-earth">A signal to Earth takes up to ≈ 22 min one way, so the crew decides on site: that's why
-        the turn-back and the switch home are planned ahead.
+        the modeled turn-back and return costs are shown here.
         <a href="https://ntrs.nasa.gov/citations/20220013418" target="_blank" rel="noopener">NASA, NTRS 20220013418</a></div>`;
     container.appendChild(el);
     const q = (c) => el.querySelector(c);

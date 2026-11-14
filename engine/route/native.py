@@ -49,7 +49,7 @@ def path_from_field(graph, *, start, goal, objective, distances, predecessors, c
     return NativePathResult(nodes, objective, float(distances[target]), arrays["cum"]["t_s"][-1], arrays)
 
 
-def _edge(graph, source_node, destination_node, constants):
+def _edge(graph, source_node, destination_node, constants, *, load_kg=None):
     source_row, source_col = graph.cell(source_node)
     destination_row, destination_col = graph.cell(destination_node)
     dr, dc = destination_row - source_row, destination_col - source_col
@@ -69,7 +69,7 @@ def _edge(graph, source_node, destination_node, constants):
         distance_m=distance,
         grade_deg=grade,
         body_mass_kg=constants["body_mass_kg"],
-        load_kg=constants["carried_load_kg"],
+        load_kg=constants["carried_load_kg"] if load_kg is None else load_kg,
         terrain_factor=1.0,
         kappa=constants["suit_factor_kappa"],
         watts_to_o2_ml_per_min=constants["watts_to_o2_ml_per_min"],
@@ -98,11 +98,13 @@ def native_route_arrays(graph, nodes, *, constants=None):
         coords.append([float(lon[0]), float(lat[0])])
 
     forward = [_edge(graph, a, b, constants) for a, b in zip(nodes, nodes[1:])]
-    reverse = [_edge(graph, b, a, constants) for a, b in zip(nodes, nodes[1:])]
+    reverse = [_edge(graph, b, a, constants, load_kg=constants.get("return_load_kg", constants["carried_load_kg"])) for a, b in zip(nodes, nodes[1:])]
     segments = []
     for cost, grade in forward:
         distance = cost.distance_m
-        hazard = distance * (1.0 + (abs(grade) / constants["slope_limit_foot_deg"]) ** 2)
+        slope_limit = float(constants["slope_limit_foot_deg"])
+        slope_fraction = 0.0 if slope_limit == 0 else abs(grade) / slope_limit
+        hazard = distance * (1.0 + slope_fraction ** 2)
         segments.append({
             "t_s": cost.t_s,
             "o2_l": cost.o2_l,

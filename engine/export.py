@@ -25,9 +25,7 @@ from engine.model.constants import read_constants
 from engine.model.grid import build_graph
 from engine.model.native_grid import select_access_goal
 from engine.route.native import (
-    back_fast_arrays,
     dijkstra_field as native_dijkstra_field,
-    fastest_home_field,
     path_from_field,
 )
 from engine.route.pnr import point_of_no_return
@@ -431,7 +429,8 @@ def build_real_routes(
     }
     alignment_evidence = native_slope.alignment_evidence
     constants_raw, c = read_constants(constants_path)
-    constants_raw.pop("_mock", None)
+    if constants_raw.get("_mock") is True:
+        raise ValueError("mock constants are not valid routing inputs")
     constants_raw.pop("_note", None)
     constants_bytes = _json_bytes(constants_raw)
     constants_hash = hashlib.sha256(constants_bytes).hexdigest()
@@ -491,8 +490,6 @@ def build_real_routes(
         objective: native_dijkstra_field(native_graph, start=native_habitat, objective=objective)
         for objective in ("time", "hazard")
     }
-    # Fastest modeled way home from any pixel (demo-focus-plan §9 Back_fast), same graph and costs.
-    native_home_field = fastest_home_field(native_graph, home=native_habitat)
     native_graph_diagnostics = {
         **native_inputs.extent,
         "source": native_inputs.asset,
@@ -570,26 +567,8 @@ def build_real_routes(
                     return_margin=c["return_cost_margin"],
                     member_factors=[1.0, 1.0][: int(c["crew_size_default"])],
                 )
-                back_fast = None
-                if mode == "safest":
-                    back_fast = {
-                        **back_fast_arrays(
-                            native_graph, path.nodes, home=native_habitat,
-                            field=native_home_field, constants=c,
-                        ),
-                        "badge": "Scenario",
-                        "method": (
-                            "Shortest modeled time from each route point to the habitat pixel on the same native "
-                            "graph and corridor (Dijkstra on reversed edges); t_s and o2_l are raw expected values "
-                            "per crew member with no reserve or margin, like back. path is stored only at the route points in "
-                            "path_from (first, last, one every 25 m of route); the way home from another point is the "
-                            "route walked back to the nearest earlier key point, then that path. path is simplified "
-                            "for display (1 m Ramer-Douglas-Peucker, one native pixel); costs use the unsimplified pixel path."
-                        ),
-                    }
                 route_payload = {
                     **arrays,
-                    **({"back_fast": back_fast} if back_fast else {}),
                     **record,
                     "stop_name": stop["name"],
                     "badge": "Scenario",

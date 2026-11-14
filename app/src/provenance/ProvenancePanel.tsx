@@ -73,7 +73,6 @@ function ContextCard({ card, icon }: { card: EngineCard; icon: ReactNode }) {
           badge: card.badge,
           source: card.source,
           note: [card.note, card.date_range ? `Data period: ${card.date_range}.` : null].filter(Boolean).join(' '),
-          mock: card._mock,
         }}
       />
     </li>
@@ -141,14 +140,13 @@ export function ProvenancePanel() {
         <p className="border-b border-seam bg-inset/50 px-4 py-3 text-xs leading-relaxed text-ink-faint">
           Every number the route model and the turn-back point use, read from{' '}
           <span className="data-readout">constants.json</span>. The app never hardcodes one.
-          {engine.mock && ' This build uses the mock contract files.'}
         </p>
         {engine.probed && constants.length === 0 && (
           <p className="px-4 py-4 text-xs text-ink-faint">constants.json is missing or unreadable.</p>
         )}
         <ul className="divide-y divide-seam">
           {constants.map(([key, c]) => {
-            const info = constantInfo(c, engine.mock)
+            const info = constantInfo(c)
             return (
               <li key={key} className="flex flex-col gap-2 px-4 py-3">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">

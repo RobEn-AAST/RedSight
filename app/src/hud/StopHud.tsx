@@ -136,14 +136,14 @@ export function StopHud({
   /** Way out (habitat → stop) and the way home from the stop, as lon/lat lines. */
   wayOut: LonLat[]
   wayHome: LonLat[]
-  /** Fastest way home from the stop (back_fast path, or the route back if none) and its model cost. */
+  /** Displayed return geometry from the stop and its matching model cost. */
   fastestHome: LonLat[]
   fastHomeCost: { t_s: number; o2_l: number } | null
   onClose: () => void
 }) {
   const commsRef = useRef<CommsHandle>(null)
   const homeEdgeRef = useRef<HTMLDivElement>(null)
-  // Emergency: return now on the fastest way home, view turns to it, a message goes to habitat + Earth.
+  // Emergency: return on the displayed modeled route, turn toward the habitat, message habitat + Earth.
   const [emergency, setEmergency] = useState(false)
   // Clean view by default (photo first, like Street View); Details opens the full instrument panels.
   const [details, setDetails] = useState(false)
@@ -279,7 +279,7 @@ export function StopHud({
   const homeS = tl.totalS - tAt
   const spareL = s.o2Left - tl.reserveL - s.homeL
   const ret =
-    routeMode === 'fastest' ? 'FASTEST ROUTE BACK' : tl.fastHome ? 'FASTEST WAY HOME' : 'BACK ALONG ROUTE'
+    tl.fastHome ? 'ALTERNATE RETURN' : 'BACK ALONG MODELED ROUTE'
   const habKm = distanceM(stopLonLat, habitatLonLat) / 1000
   const habBearing = bearingDeg(stopLonLat, habitatLonLat)
   const log = tl.events.filter((e) => e.t <= tAt + 1e-6 && e.type !== 'status').slice(-5).reverse()
@@ -291,7 +291,7 @@ export function StopHud({
   const startEmergency = () => {
     setEmergency(true)
     commsRef.current?.send(
-      `EMERGENCY at ${pano.stopId}: returning to habitat by fastest way, O₂ ${pct(s.o2Left)}, ETA ${formatDuration(emTimeS)}`,
+      `EMERGENCY at ${pano.stopId}: returning to habitat on the modeled return path, O₂ ${pct(s.o2Left)}, ETA ${formatDuration(emTimeS)}`,
       true,
     )
   }

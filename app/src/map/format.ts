@@ -1,6 +1,6 @@
 import type {
   ContractBadge,
-  EngineRouteMode,
+  EngineRoutePreference,
   PlanMember,
 } from '@/lib/engineDataContext'
 import type { EvidenceClass } from '@/types/layers'
@@ -21,20 +21,23 @@ export function badgeToEvidence(badge: ContractBadge | undefined): EvidenceClass
 }
 
 /** Mode names shown to the crew. "Safe"/"safest" is never shown (AGENTS rule 3). */
-export const MODE_LABEL: Record<EngineRouteMode, string> = {
+export const MODE_LABEL: Record<EngineRoutePreference, string> = {
   fastest: 'Fastest',
-  safest: 'Lowest hazard',
+  safest: 'Lowest modeled hazard',
+  balanced: 'Balanced',
 }
 
-export const MODE_CAPTION: Record<EngineRouteMode, string> = {
+export const MODE_CAPTION: Record<EngineRoutePreference, string> = {
   fastest: 'Least walking time, inside the slope limit.',
   safest: 'Gentlest ground and fewest modeled hazards. Takes longer.',
+  balanced: 'Equal-weight time and mapped slope-hazard cost within the modeled corridor.',
 }
 
 /** Route colours on the map and the cards. */
-export const MODE_COLOR: Record<EngineRouteMode, string> = {
+export const MODE_COLOR: Record<EngineRoutePreference, string> = {
   fastest: '#ffb224',
   safest: '#4fd08a',
+  balanced: '#7ca9ff',
 }
 
 /** In a split, astronaut B is drawn in white so the two lines never read as two modes. */
