@@ -23,7 +23,7 @@ export function CrewStep() {
     <div className="flex flex-col gap-6">
       <Field
         label="Astronauts on this EVA"
-        hint="NASA plans Mars walks in pairs (buddy system). A pair can walk together or split up to sample two areas."
+        hint="NASA plans Mars walks in pairs (buddy system). The pair walks the route together."
       >
         {() => (
           <div role="radiogroup" aria-label="Crew size" className="flex gap-3">
@@ -197,6 +197,9 @@ export function LoadStep() {
 
 /* -- Step 3: rover ---------------------------------------------------------------- */
 
+/** No plan/*_rover.json ships: drive speed, seated O₂ rate and park point have no primary source yet. */
+const ROVER_PLANS_MODELED = false
+
 export function RoverStep() {
   const { state, patchConfig } = useMission()
   const available = state.config.roverAvailable
@@ -210,7 +213,7 @@ export function RoverStep() {
             [
               true,
               'Rover available',
-              'Drive most of the way, park, and walk the last part. The plan shows where to drive and where to walk.',
+              'Not modeled yet: no sourced rover drive model for this terrain, so every plan is on foot.',
               Rocket,
             ],
             [
@@ -225,9 +228,10 @@ export function RoverStep() {
             key={String(value)}
             type="button"
             aria-pressed={available === value}
+            disabled={value && !ROVER_PLANS_MODELED}
             onClick={() => patchConfig({ roverAvailable: value })}
             className={cn(
-              'flex flex-col items-start gap-2 border p-4 text-left transition-colors',
+              'flex flex-col items-start gap-2 border p-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50',
               available === value
                 ? 'border-signal/60 bg-signal-soft/50'
                 : 'border-seam bg-inset/40 hover:border-seam-lit',

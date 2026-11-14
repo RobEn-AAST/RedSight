@@ -137,8 +137,10 @@ page and UI audit in [`submission/`](submission/). **Routes are still mock; tile
 **Yassin's proposed plan files** (`targets.geojson`, `plan/*.json`, `limits_*.geojson`, [`app-redesign.md`](app-redesign.md) §4)
 are **optional for Ali**: the app falls back to the §15 route files, which stay the must-ship engine output.
 Rover legs and crew split are Tier 2 features (D20) running on mock data; the demo leans on the Tier 1 parts
-until real routes exist. After any change to `routes/`, re-run `node app/public/data/_mock/make-plan-mock.mjs`
-(only while the plan files are still mock).
+until real routes exist. After any change to `routes/`, re-run `node app/scripts/build-plans.mjs`.
+*(Update 2026-11-14: plan files are no longer mock. Rover, split and no-return-line files were removed for
+lack of a primary-sourced model; crew-1 and crew-2 on-foot plans and `targets.geojson` are built from the
+real routes and `stops.json`.)*
 
 **Still unowned:** delivery pool item 1 (ask the Local Lead: cutoff, who submits) and item 7 (demo
 GIF/recording). Item 8 (submit) after the Local Lead answers.

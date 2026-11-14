@@ -17,8 +17,8 @@ has landed; `_mock/make-mock.mjs` overwrites every data file.
 | `hazards.geojson` | Ali | primary-DTM nodata, unavailable native slope support and native Horn slope hard masks |
 | `engine-build-manifest.json` | Ali | input/output hashes, source/licence, seam/alignment evidence, G1–G4 status, timing, model and route outcomes |
 | `cards/rad.json`, `cards/rems.json` | Ayman | real (no `_mock`): RAD GCR baseline + Sept 2017 SEP (Si) + Scenario 4-h walk dose; REMS pressure, air/ground temp, Armstrong limit, PDS links |
-| `plan/{target}_{mode}_c2_l15_foot.json` (10) | built by `node app/scripts/build-plans.mjs` | real (no `_mock`): the route file copied unchanged (coords, seg, cum, back, back_fast, pnr_index); `derived_from` holds the route file + SHA-256; `split: null` because the separation limit has no primary source yet |
-| other `plan/*.json` (c1, rover), `plan/limits_*.geojson`, `targets.geojson` | `_mock/make-plan-mock.mjs` | still `_mock: true`: crew-1 factor 0.96, rover drive model, split limit, no-return lines and target extents have no source. `plan/index.json` keeps `_mock: true` while any listed plan is mock, which keeps the header "Mock data" badge on |
+| `plan/{target}_{mode}_c{1,2}_l15_foot.json` (20) | built by `node app/scripts/build-plans.mjs` | real (no `_mock`): the route file copied unchanged (coords, seg, cum, back, back_fast, pnr_index); `derived_from` holds the route file + SHA-256. Crew 1 uses the same numbers because the engine's O₂ model is per member with no crew-size term (`engine/export.py`, `engine/route/pnr.py`). `split: null` because the separation limit has no primary source yet |
+| `targets.geojson` | built by `node app/scripts/build-plans.mjs` | real (no `_mock`): Observed site from `stops.json`; the polygon is the routes' Scenario access bound (`goal_access.access_bound_m`, 10 m), not a mapped rock extent. Not shipped (removed 2026-11-14, no primary-sourced model): rover plans, split plans and `plan/limits_*.geojson`; the app hides those options |
 | `fields/*.png`, `fields/coverage.png` | Ali / Youssef | not mocked yet (If-time features) |
 
 ## Check your files before a PR
