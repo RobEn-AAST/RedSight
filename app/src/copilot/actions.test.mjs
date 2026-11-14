@@ -45,3 +45,8 @@ test('nonfinite mission values and inconsistent cost arrays are rejected', () =>
   r.total_s=7; r.cum.o2_l[1]=2
   assert.equal(validateDynamicRoute(r,'fastest',['D1']),false)
 })
+
+test('custom science goal text is bounded and accepted as a mission UI input',()=>{
+ assert.equal(validateMissionPatch({scienceGoalNote:'Look for veins'}),null)
+ assert.match(validateMissionPatch({scienceGoalNote:'x'.repeat(501)}),/500/)
+})

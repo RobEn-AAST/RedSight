@@ -175,6 +175,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
   const [crewMode, setCrewMode] = useState<CrewMode>('together')
   const [map, setMap] = useState<MapLibreMap | null>(null)
   const [o2BudgetL, setO2BudgetL] = useState<number | null>(null)
+  const [showImagery, setShowImagery] = useState(true)
   const [showCuriosityPath, setShowCuriosityPath] = useState(true)
   const [loaded, setLoaded] = useState<Loaded | null>(null)
   const [loadedContract, setLoadedContract] = useState<LoadedRoutes | null>(null)
@@ -339,12 +340,14 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       routesStatus: status,
       o2BudgetL,
       setO2BudgetL,
+      showImagery,
+      setShowImagery,
       showCuriosityPath,
       setShowCuriosityPath,
       map,
       setMap,
     }
-  }, [goalTargets, goalUnmatched, selectedTargetId, mode, crewMode, loaded, key, loadedContract, routeKey, pick, limits, limitsFile, legacy, map, o2BudgetL, showCuriosityPath, dynamicRoute, state.config, chooseMode, applyDynamicRoute, clearDynamicRoute, layerVisibility, setLayerVisibility])
+  }, [goalTargets, goalUnmatched, selectedTargetId, mode, crewMode, loaded, key, loadedContract, routeKey, pick, limits, limitsFile, legacy, map, o2BudgetL, showImagery, showCuriosityPath, dynamicRoute, state.config, chooseMode, applyDynamicRoute, clearDynamicRoute, layerVisibility, setLayerVisibility])
 
   return <PlanContext.Provider value={store}>{children}</PlanContext.Provider>
 }
