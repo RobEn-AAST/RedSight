@@ -29,7 +29,7 @@ export function Button({ variant = 'ghost', size = 'md', className, children, ..
   return (
     <button
       className={cn(
-        'label-console chamfer-sm inline-flex items-center justify-center gap-2 tracking-[0.1em] transition-colors duration-150',
+        'label-console chamfer-sm inline-flex items-center justify-center gap-2 tracking-[0.1em] transition-[color,background-color,border-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] motion-reduce:active:scale-100',
         'disabled:cursor-not-allowed disabled:opacity-40',
         variants[variant],
         sizes[size],

@@ -10,6 +10,7 @@ import {
   formatRadiationDoseMSv,
   parseRadCardParams,
 } from '@/map/evaRadiation'
+import { Fold } from '@/map/Fold'
 import { formatDuration, summarizeMember } from '@/map/format'
 import { usePlan } from '@/map/usePlan'
 import { SourceCard } from '@/provenance/SourceCard'
@@ -126,12 +127,12 @@ export function EvaRadiationCard() {
   const barPct = estimate.doseMSv > 0 ? Math.min(100, Math.max(estimate.careerLimitPct, 0.75)) : 0
 
   return (
-    <div className="flex flex-col gap-2.5 border border-seam bg-inset/50 p-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="label-console flex items-center gap-1.5 text-ink">
-          <Radiation size={12} aria-hidden className="text-scenario" />
-          EVA radiation dose
-        </span>
+    <Fold
+      icon={<Radiation size={14} />}
+      title="Radiation dose"
+      answer={estimate.evaDurationS > 0 ? `≈ ${formatRadiationDoseMSv(estimate.doseMSv)} mSv` : 'No walk'}
+    >
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <div className="flex items-center gap-2">
           <EvidenceBadge evidence="scenario" />
           <button
@@ -236,6 +237,6 @@ export function EvaRadiationCard() {
           />
         </div>
       )}
-    </div>
+    </Fold>
   )
 }

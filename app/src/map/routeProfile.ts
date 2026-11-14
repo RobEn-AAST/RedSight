@@ -332,7 +332,7 @@ export function buildWhyRoute(
         detail: `Mean ${active.terms.power_w.mean.toFixed(0)} W (peak ${active.terms.power_w.max.toFixed(0)} W), ${active.totalO2L.toFixed(1)} L O₂ outbound.`,
       })
     }
-    if (terrainTerm) {
+    if (terrainTerm && terrainTerm.max > 1.01) {
       reasons.push({
         label: 'Terrain factor',
         detail:
@@ -439,8 +439,10 @@ export function buildWhyRoute(
   }
 
   // 4. Terrain factor (THEMIS sand proxy / surface cost)
-  if (terrainTerm) {
-    const otherMax = otherTerrain?.max ?? terrainTerm.max
+  // Only worth a line when either route actually pays a terrain penalty.
+  const otherTerrainMax = otherTerrain?.max ?? terrainTerm?.max ?? 1
+  if (terrainTerm && (terrainTerm.max > 1.01 || otherTerrainMax > 1.01)) {
+    const otherMax = otherTerrainMax
     reasons.push({
       label: 'Terrain factor',
       detail:

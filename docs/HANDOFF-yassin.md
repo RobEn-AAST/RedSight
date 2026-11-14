@@ -105,6 +105,30 @@ Ali changed the O₂ model on main (`fix/engine-o2`), but **the routes haven't b
   PDF, unclaimed); `open-questions.md` "Update — 2026-11-14"; a no-live-pitch warning on
   `submission/demo-script.md` §1.
 
+- **2026-11-14, UI simplification (uncommitted, on main):** the routes panel is shorter and plainer.
+  - "Why this route" and the radiation dose are now `Fold` rows (one-line answer, detail on tap), like O₂,
+    Daylight and Replay (`RouteBreakdown.tsx`, `EvaRadiationCard.tsx`).
+  - The terrain-factor tile and reason are hidden while the penalty is a flat 1.00× (`routeProfile.ts`).
+  - Sample-area rows drop the inline citations ("stops.json science, NASA source", "Fraeman et al. 2016")
+    in display only; `targets.geojson` is unchanged (`PlanPanel.tsx`).
+  - Goal cards keep the caveat; the source line shows only on the selected card (`MissionSteps.tsx`).
+  - The copilot moved from a floating bubble (it covered **Next** and the panel) into the header next to
+    Sources (`App.tsx`).
+  - Console buttons scale to 0.97 on press, off with reduced motion (`ui/Button.tsx`).
+  - Checked: typecheck, oxlint, 26/26 unit tests, `npm run build`, browser at phone and narrow widths.
+  - Follow-up: the **O₂ and turn-back** fold now starts open (`Fold defaultOpen`), so the O₂ budget slider is
+    visible without a tap.
+  - **Crew split is not shown, by data, not by this change:** `build-plans.mjs` writes `split: null` because no
+    primary-sourced separation limit exists, and the app hides "Who goes where" when there is no split data.
+    Bringing it back needs a sourced limit and new plan files (Marwan's script).
+  - **User decision (2026-11-14):** for pairs, "Who goes where" now always shows: **Walk together** (selected) and
+    **Split up** disabled, "Not modeled yet", with a one-line reason. When split data returns, the full choice
+    shows again automatically (`PlanPanel.tsx` `CrewChoice`).
+- **Sources rule (checked 2026-11-14):** the NASA Submission Guide requires listing every source **in the
+  submission** (NASA Data field, references; Cairo also wants them in the PDF). Showing the source next to
+  every number in the app is a **team choice** (demo-focus-plan B5), not a rule. Keep the evidence badges;
+  full citations can live behind "Source" toggles and the Sources dialog.
+
 ## 6. Next steps (suggested order)
 
 1. Real-data switch: now parked in `stash@{0}`; main builds real plans, so most likely drop

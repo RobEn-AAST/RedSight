@@ -12,16 +12,19 @@ export function Fold({
   title,
   answer,
   tone = 'plain',
+  defaultOpen = false,
   children,
 }: {
   icon: ReactNode
   title: string
   answer: ReactNode
   tone?: 'plain' | 'caution'
+  /** Start open: for a row whose control people need, not just its detail. */
+  defaultOpen?: boolean
   children: ReactNode
 }) {
   return (
-    <details className={cn('group border', tone === 'caution' ? 'border-caution/50 bg-caution-soft/30' : 'border-seam')}>
+    <details open={defaultOpen} className={cn('group border', tone === 'caution' ? 'border-caution/50 bg-caution-soft/30' : 'border-seam')}>
       <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2.5 px-3 py-2 [&::-webkit-details-marker]:hidden">
         <span aria-hidden className="flex-none text-ink-dim">
           {icon}

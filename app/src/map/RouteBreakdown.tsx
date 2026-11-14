@@ -5,6 +5,7 @@ import { cn } from '@/lib/cn'
 import type { EngineRoute, EngineRouteMode, PlanMember } from '@/lib/engineDataContext'
 import { useEngineData } from '@/lib/useEngineData'
 import { compareRouteWithCuriosity } from '@/map/curiosityPath'
+import { Fold } from '@/map/Fold'
 import { MODE_COLOR, MODE_LABEL, NO_RETURN_COLOR, formatDistance } from '@/map/format'
 import {
   buildElevationProfile,
@@ -251,12 +252,12 @@ export function RouteBreakdown() {
   }
 
   return (
-    <div className="flex flex-col gap-3 border border-seam bg-inset/50 p-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="label-console flex items-center gap-1.5 text-ink">
-          <Route size={12} aria-hidden className="text-derived" />
-          Why this route &amp; elevation
-        </span>
+    <Fold
+      icon={<Route size={14} />}
+      title="Why this route"
+      answer={why ? `${formatDistance(why.activeSum.distanceM)} · elevation` : 'Elevation'}
+    >
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <div className="flex items-center gap-2">
           <EvidenceBadge evidence="derived" />
           <button
@@ -321,7 +322,7 @@ export function RouteBreakdown() {
                 </dd>
               </div>
             )}
-            {terrainTerm && (
+            {terrainTerm && terrainTerm.max > 1.01 && (
               <div className="border border-seam bg-panel/70 px-2 py-1.5">
                 <dt className="label-console text-[9px] text-ink-faint">Terrain factor</dt>
                 <dd className="data-readout text-xs text-ink">
@@ -639,6 +640,6 @@ export function RouteBreakdown() {
           />
         </div>
       )}
-    </div>
+    </Fold>
   )
 }

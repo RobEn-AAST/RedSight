@@ -282,10 +282,10 @@ export function GoalStep() {
             <EvidenceBadge evidence={goal.evidence} className="ml-auto" />
           </span>
           <span className="text-xs leading-relaxed text-ink-dim">{goal.summary}</span>
-          <span className="text-[11px] leading-relaxed text-ink-faint">
-            Source: {goal.sourceName}
-            {goal.caveat ? ` — ${goal.caveat}` : ''}
-          </span>
+          {goal.caveat && <span className="text-[11px] leading-relaxed text-ink-faint">{goal.caveat}</span>}
+          {selected === goal.id && (
+            <span className="text-[11px] leading-relaxed text-ink-faint">Source: {goal.sourceName}</span>
+          )}
         </label>
       ))}
 

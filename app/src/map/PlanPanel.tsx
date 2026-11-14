@@ -85,7 +85,9 @@ function TargetPicker() {
               </span>
               <span className="flex min-w-0 flex-col gap-0.5">
                 <span className="text-sm font-medium text-ink">{t.name}</span>
-                <span className="text-xs leading-relaxed text-ink-dim">{t.substances.join(' · ')}</span>
+                <span className="text-xs leading-relaxed text-ink-dim">
+                  {t.substances.map((x) => x.replace(/\s*\([^)]*\)\s*$/, '')).join(' · ')}
+                </span>
               </span>
             </button>
           )
@@ -157,7 +159,40 @@ function RouteChoice() {
 function CrewChoice({ plan }: { plan: PlanFile }) {
   const { crewMode, setCrewMode } = usePlan()
   const split = plan.split
-  if (!split) return null
+  if (!split) {
+    // No sourced separation limit yet, so there are no split plans: show the choice, honestly unavailable.
+    return (
+      <div className="flex flex-col gap-2">
+        <div role="radiogroup" aria-label="Crew" className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            role="radio"
+            aria-checked
+            className="flex flex-col gap-1 border border-signal/70 bg-signal-soft/50 p-3 text-left"
+          >
+            <span className="label-console text-ink">Walk together</span>
+            <span className="text-xs leading-relaxed text-ink-dim">Both go to {plan.target}</span>
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={false}
+            aria-disabled
+            aria-describedby="split-unavailable"
+            disabled
+            className="flex cursor-not-allowed flex-col gap-1 border border-dashed border-seam bg-inset/20 p-3 text-left opacity-60"
+          >
+            <span className="label-console text-ink-dim">Split up</span>
+            <span className="text-xs leading-relaxed text-ink-faint">Not modeled yet</span>
+          </button>
+        </div>
+        <p id="split-unavailable" className="text-xs leading-relaxed text-ink-dim">
+          Splitting up needs a limit on how far apart the two astronauts may walk. We have no sourced limit yet, so
+          this plan keeps the pair together.
+        </p>
+      </div>
+    )
+  }
   const within = split.planned_max_separation_m <= split.max_separation_limit_m
   return (
     <div className="flex flex-col gap-2">
@@ -290,6 +325,7 @@ function OxygenFold({ plan, members }: { plan: PlanFile; members: PlanMember[] }
     <Fold
       icon={<Gauge size={14} />}
       title="O₂ and turn-back"
+      defaultOpen
       tone={s.reachesAll ? 'plain' : 'caution'}
       answer={s.reachesAll ? `${Math.round(s.spareO2L)} L spare each` : 'Turns back early'}
     >
@@ -379,14 +415,14 @@ export function PlanPanel({ onOpenSources }: { onOpenSources: () => void }) {
         <RouteBreakdown />
       </Section>
 
-      {activePlan?.split && (
+      {activePlan && (activePlan.split || config.crewCount === 2) && (
         <Section step={3} title="Who goes where">
           <CrewChoice plan={activePlan} />
         </Section>
       )}
 
       {activePlan && (
-        <Section step={activePlan.split ? 4 : 3} title="Your plan">
+        <Section step={activePlan.split || config.crewCount === 2 ? 4 : 3} title="Your plan">
           {activeMembers.map((m, i) => (
             <MemberTimeline
               key={m.member}
