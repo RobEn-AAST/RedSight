@@ -12,7 +12,7 @@ import { Fold } from '@/map/Fold'
 import { summarizeCrew } from '@/map/format'
 import { usePlan } from '@/map/usePlan'
 import { EvidenceBadge } from '@/ui/Badge'
-import type { MissionConfig } from '@/types/mission'
+import { bodyMassText, type MissionConfig } from '@/types/mission'
 import type { EvidenceClass } from '@/types/layers'
 
 const evidence = (badge: string): EvidenceClass => (badge.toLowerCase() as EvidenceClass)
@@ -67,7 +67,7 @@ export function MissionFactorsFold() {
 
   const summary = (d: FactorDef): string | null => {
     if (d.id === 'slope') return `${config.routeSlopeCapDeg}° (set above)`
-    if (d.id === 'crewLoad') return `${config.crewCount} crew · ${config.bodyMassKg} kg · ${config.loadKg} kg load (Mission setup)`
+    if (d.id === 'crewLoad') return `${config.crewCount} crew · ${bodyMassText(config)} · ${config.loadKg} kg load (Mission setup)`
     if (d.id === 'goal') return config.scienceGoalId || 'not chosen (Mission setup)'
     return null
   }

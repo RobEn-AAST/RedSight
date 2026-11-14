@@ -46,16 +46,6 @@ export const scienceGoalOptions: ScienceGoalOption[] = [
     sourceUrl: 'https://www.jpl.nasa.gov/news/nasas-curiosity-mars-rover-starts-unpacking-boxwork-formations',
     caveat: 'Identified by Curiosity mastcam/ChemCam — hosted in the CRISM-mapped sulfate unit.',
   },
-  {
-    id: 'survey',
-    label: 'Open survey traverse',
-    evidence: 'scenario',
-    summary:
-      'No fixed target: visit any site in the area.',
-    sourceName: 'Team choice — terrain-guided planning',
-    sourceUrl: 'https://github.com/RobEn-AAST/RedSight',
-    caveat: 'Target selection is operator judgment, not a dataset.',
-  },
 ]
 
 /** Honest status of goals the data cannot support. */

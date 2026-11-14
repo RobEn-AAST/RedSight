@@ -1,3 +1,4 @@
+import type { O2Scale } from '@/map/format'
 import { createContext } from 'react'
 import type { Map as MapLibreMap } from 'maplibre-gl'
 import type { FeatureCollection } from 'geojson'
@@ -58,6 +59,10 @@ export interface PlanStore {
   activeMembers: PlanMember[]
   /** The modeled no-return line for the current crew/load/rover setup. */
   noReturnLine: FeatureCollection | null
+  /** O₂ factor per astronaut from body mass (1 = the mass the route was modeled for); A first. */
+  memberFactors: number[]
+  /** Worst member's factor + the return margin, for summaries (map/format.ts summarizeMember). */
+  o2Scale: O2Scale
   preset: PlanPreset | null
   /** true when plans come from the older single-route files (no legs, no split). */
   legacy: boolean
