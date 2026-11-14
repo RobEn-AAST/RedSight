@@ -16,6 +16,12 @@ are the default. Judges score Impact, Creativity, Validity, Relevance, Presentat
 
 ## 1. Live 60-second walkthrough (Cairo judging table)
 
+> **Update 2026-11-14 (Yassin):** the official Cairo guides say judges get the demo, the project description
+> PDF and the actual project, with **no live presentation or conversation** with the team
+> ([`../../requirements/cairo-participant-guidance.md`](../../requirements/cairo-participant-guidance.md)). So this
+> walkthrough **can't be the judged demo**. Keep it for rehearsal, People's Choice pitching if that is
+> separate, or as the shot list for the GIF recordings on slide 4. The 7 slides must stand on their own.
+
 What's built today is marked ✅; ⏳ = waiting on another owner (skip that line if it isn't merged).
 
 | Time | Click | Say (short) | Status |

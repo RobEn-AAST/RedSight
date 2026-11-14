@@ -52,6 +52,7 @@ Marwan). Work it on your own branch. Order = priority.
 | 5 | Logged-out test of the public URL on phone + laptop | |
 | 6 | Wording + badge audit of the UI (AGENTS rule 3) | Marwan (first pass done: [`submission/ui-audit.md`](submission/ui-audit.md); re-run on real data + deployed URL) |
 | 7 | Demo GIF/recording for the project page | |
+| 7a | **Project description PDF** (Cairo local requirement, added 2026-11-14): 5 sections, exported as PDF, public no-login link for the Cairo form's project-documentation field. Spec: [`../requirements/cairo-participant-guidance.md`](../requirements/cairo-participant-guidance.md) §A | |
 | 8 | **Submit** (by whoever the Local Lead says may submit) | |
 
 Swapping: change the names in this table (one commit), nothing else needs editing.

@@ -36,6 +36,22 @@ Companion to `competition-requirements.md`.
   `~/Downloads` on the current workstation (checked 2026-11-13). Their links are broken here. Share copies
   in the team drive if anyone needs them; their verified content already lives in `competition-requirements.md`.
 
+### Update — 2026-11-14 (source: official Cairo 2026 Participant Guide PDFs, rank 2)
+
+Notes and links: [`cairo-participant-guidance.md`](cairo-participant-guidance.md).
+
+- **#1 judging format — partly answered in writing:** both Cairo PDFs say "Cairo judges receive the demo,
+  this PDF and the actual project. They do not have a live presentation or conversation with your team."
+  So there is no live pitch for judging; the submitted materials must explain themselves. **Still open:**
+  the judging start time, the Cairo cutoff, who may submit, and whether People's Choice pitching is separate.
+- **New Cairo local requirement:** a **project description PDF**, pasted as a public link into the Cairo
+  submission's project-documentation field (delivery pool item 7a in `../docs/team-plan.md`). NASA's global
+  guide does not ask for it.
+- **Cairo local submission form** is separate from the NASA project page; organizers say it will be
+  announced on Discord (Tips and Tricks video).
+- **Submission opening time — conflict:** the Tips and Tricks video says global submission opens at midnight;
+  the official global window here says Sat Nov 14 09:00 Africa/Cairo (#6). Keep the official time; ask the Lead.
+
 ## Resolved this session (2026-11-13)
 
 - ✅ 2026 Project Submission Guide fetched and mined — https://www.spaceappschallenge.org/resources/project-submission-guide/
