@@ -1,4 +1,18 @@
-import { Footprints, Gauge, Home, Microscope, Pencil, PlayCircle, ScanEye, Truck, TriangleAlert, Users } from 'lucide-react'
+import {
+  Footprints,
+  Gauge,
+  Home,
+  ListChecks,
+  MapPin,
+  Microscope,
+  Pencil,
+  PlayCircle,
+  Route as RouteIcon,
+  ScanEye,
+  Truck,
+  TriangleAlert,
+  Users,
+} from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Map as MapLibreMap } from 'maplibre-gl'
 import type { FeatureCollection } from 'geojson'
@@ -26,20 +40,58 @@ import { Fold } from '@/map/Fold'
 import { usePlan } from '@/map/usePlan'
 import { MissionReplay, OPEN_360_EVENT } from '@/replay/MissionReplay'
 import { TurnBackPanel } from '@/turnback/TurnBackPanel'
+import { EvidenceBadge } from '@/ui/Badge'
+import { BottomSheet } from '@/ui/BottomSheet'
 import { Button } from '@/ui/Button'
 
 
-function Section({ step, title, children }: { step: number; title: string; children: ReactNode }) {
+/* -- At a glance: the answer first, the steps below explain it ----------------------- */
+
+function PlanSummary({ plan, members }: { plan: PlanFile; members: PlanMember[] }) {
+  const { goalTargets, selectedTargetId } = usePlan()
+  const target = goalTargets.find((t) => t.id === selectedTargetId)
+  const s = summarizeCrew(members, plan.budget_l)
+  const outS = Math.max(...members.map((m) => m.cum.t_s[m.coords.length - 1]))
+  const backS = Math.max(...members.map((m) => m.back.t_s[m.coords.length - 1]))
+  const distanceM = Math.max(...s.each.map((e) => e.distanceM))
+  const ok = s.reachesAll
+  const stats: [string, string][] = [
+    ['Walk', formatDistance(distanceM)],
+    ['Out', formatDuration(outS)],
+    ['Home', formatDuration(backS)],
+    [members.length > 1 ? 'O₂ spare/ea' : 'O₂ spare', ok ? `${Math.round(s.spareO2L)} L` : 'Too little'],
+  ]
   return (
-    <section className="flex flex-col gap-3 border-b border-seam px-4 py-4">
-      <h2 className="flex items-center gap-2.5">
-        <span className="data-readout flex size-5 flex-none items-center justify-center border border-seam-lit text-[11px] text-ink-dim">
-          {step}
-        </span>
-        <span className="label-console text-ink">{title}</span>
-      </h2>
-      {children}
-    </section>
+    <div
+      role="status"
+      aria-live="polite"
+      className={cn(
+        'pointer-events-auto flex flex-col gap-2 border bg-hull/95 px-3 py-2.5 shadow-panel backdrop-blur-sm',
+        ok ? 'border-observed/60' : 'border-caution/70',
+      )}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <p className="flex min-w-0 flex-col">
+          <span className="truncate text-sm font-medium text-ink">
+            <span className="label-console mr-1.5 text-[10px] text-ink-dim">Your walk</span>
+            {selectedTargetId}
+            {target ? ` · ${target.name}` : ''}
+          </span>
+          <span className={cn('text-xs', ok ? 'text-observed' : 'text-caution')}>
+            {ok ? 'Gets there and back on the modeled O₂.' : 'Not enough modeled O₂: the plan turns back early.'}
+          </span>
+        </p>
+        <EvidenceBadge evidence="scenario" />
+      </div>
+      <dl className="grid grid-cols-4 gap-2">
+        {stats.map(([k, v]) => (
+          <div key={k} className="flex flex-col gap-0.5">
+            <dt className="label-console text-[9px] text-ink-faint">{k}</dt>
+            <dd className="data-readout whitespace-nowrap text-sm text-ink">{v}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   )
 }
 
@@ -208,7 +260,7 @@ function RouteChoice() {
         Balanced routes and other slope limits need the terrain service, which isn't running on this site.
       </p>
     )}
-    <p role="status" className="text-xs text-ink-dim">{pending ? 'Calculating on native terrain…' : plan.activeRoute?.routing ? `Scenario estimate · ${plan.activeRoute.routing.slope_cap_deg}° cap · same-path return only` : plan.activeRoute ? 'Scenario estimate · precomputed engine route · 15° cap' : 'Calculate a route using the selected slope constraint.'}</p>
+    <p role="status" className="text-xs text-ink-dim">{pending ? 'Calculating on native terrain…' : plan.activeRoute?.routing ? `Modeled estimate · calculated route · ${plan.activeRoute.routing.slope_cap_deg}° slope limit · same path home` : plan.activeRoute ? 'Modeled estimate · ready-made route · 15° slope limit' : 'Pick a route type to calculate a route.'}</p>
     {error && <p role="alert" className="text-sm text-ink">{error}</p>}
   </div>
 }
@@ -409,96 +461,127 @@ function showWholeLine(map: MapLibreMap, line: FeatureCollection) {
   )
 }
 
-/* -- The panel ------------------------------------------------------------------------- */
+/* -- Floating "Your walk" card ----------------------------------------------------------- */
 
-export function PlanPanel({ onOpenSources }: { onOpenSources: () => void }) {
+export function PlanSummaryCard() {
+  const { activePlan, activeMembers } = usePlan()
+  if (!activePlan || activeMembers.length === 0) return null
+  return <PlanSummary plan={activePlan} members={activeMembers} />
+}
+
+/* -- The sheet: one tab per step --------------------------------------------------------- */
+
+const TABS = [
+  { id: 'stop', label: 'Stop', icon: <MapPin size={16} /> },
+  { id: 'route', label: 'Route', icon: <RouteIcon size={16} /> },
+  { id: 'plan', label: 'Plan', icon: <ListChecks size={16} /> },
+  { id: 'replay', label: 'Replay', icon: <PlayCircle size={16} /> },
+]
+
+function TabBody({ children }: { children: ReactNode }) {
+  return <div className="flex flex-col gap-3 px-4 py-4">{children}</div>
+}
+
+function Disclaimer({ onOpenSources }: { onOpenSources: () => void }) {
+  return (
+    <p className="pt-1 text-xs leading-relaxed text-ink-dim">
+      Times and O₂ are model estimates, not a safety guarantee.{' '}
+      <button type="button" onClick={onOpenSources} className="text-ink underline underline-offset-2 hover:text-signal">
+        Data sources
+      </button>
+    </p>
+  )
+}
+
+export function PlanSheet({ onOpenSources }: { onOpenSources: () => void }) {
   const { state, reopenMission } = useMission()
   const { activePlan, activeMembers, activeRoute, crewMode, mode, preset } = usePlan()
   const hasPano = !!(activeRoute?.stop && PANORAMAS[activeRoute.stop])
   const { config } = state
   const wantLoad = nearestLoadBucket(perAstronautLoadKg(config))
   const goal = scienceGoalOptions.find((g) => g.id === config.scienceGoalId)
+  const [tab, setTab] = useState('stop')
 
   return (
-    <div className="flex flex-col">
-      <div className="flex items-start gap-3 border-b border-seam px-4 py-3">
-        <Users size={16} aria-hidden className="mt-0.5 flex-none text-ink-dim" />
-        <p className="min-w-0 flex-1 text-sm leading-relaxed text-ink">
-          {config.crewCount === 2 ? '2 astronauts' : '1 astronaut'} · {config.loadKg} kg{' '}
-          {config.loadBasis === 'perAstronaut' ? 'each' : 'total'} · {config.roverAvailable ? 'rover' : 'on foot'}
-          <span className="block text-xs text-ink-dim">
-            Goal: {goal?.label ?? (config.scienceGoalId === 'custom' ? config.scienceGoalNote || 'custom' : 'none set')}
-          </span>
-        </p>
-        <Button size="sm" variant="ghost" onClick={reopenMission}>
-          <Pencil size={12} aria-hidden /> Edit
-        </Button>
-      </div>
-
-      <Section step={1} title="Where to sample">
+    <BottomSheet tabs={TABS} active={tab} onTab={setTab} label="Plan">
+      {/* Stop: who is walking, and where to */}
+      <TabBody>
+        <div className="flex items-start gap-3">
+          <Users size={16} aria-hidden className="mt-0.5 flex-none text-ink-dim" />
+          <p className="min-w-0 flex-1 text-sm leading-relaxed text-ink">
+            {config.crewCount === 2 ? '2 astronauts' : '1 astronaut'} · {config.loadKg} kg{' '}
+            {config.loadBasis === 'perAstronaut' ? 'each' : 'total'} · {config.roverAvailable ? 'rover' : 'on foot'}
+            <span className="block text-xs text-ink-dim">
+              Goal: {goal?.label ?? (config.scienceGoalId === 'custom' ? config.scienceGoalNote || 'custom' : 'none set')}
+            </span>
+          </p>
+          <Button size="sm" variant="ghost" onClick={reopenMission}>
+            <Pencil size={12} aria-hidden /> Edit
+          </Button>
+        </div>
+        <h2 className="label-console pt-1 text-ink">Where to sample</h2>
         <TargetPicker />
-      </Section>
+      </TabBody>
 
-      <Section step={2} title="Pick a route">
+      {/* Route: which way, and why */}
+      <TabBody>
+        <h2 className="label-console text-ink">Pick a route</h2>
         <RouteChoice />
         <RouteBreakdown />
-      </Section>
+        {activePlan?.split && (
+          <>
+            <h2 className="label-console pt-1 text-ink">Who goes where</h2>
+            <CrewChoice plan={activePlan} />
+          </>
+        )}
+      </TabBody>
 
-      {activePlan?.split && (
-        <Section step={3} title="Who goes where">
-          <CrewChoice plan={activePlan} />
-        </Section>
-      )}
+      {/* Plan: the walk step by step, and the checks on it */}
+      <TabBody>
+        {activePlan ? (
+          <>
+            {activeMembers.map((m, i) => (
+              <MemberTimeline
+                key={m.member}
+                member={m}
+                plan={activePlan}
+                color={crewMode === 'split' && i === 1 ? MEMBER_B_COLOR : MODE_COLOR[mode]}
+                split={crewMode === 'split'}
+              />
+            ))}
+            <OxygenFold plan={activePlan} members={activeMembers} />
+            <DaylightNote plan={activePlan} members={activeMembers} />
+            <EvaRadiationCard />
+            {preset && (preset.crew !== config.crewCount || preset.load_kg !== wantLoad) && (
+              <p className="text-xs leading-relaxed text-scenario">
+                No plan exists yet for your exact setup. Showing crew {preset.crew}, {preset.load_kg} kg,{' '}
+                {preset.rover ? 'with rover' : 'on foot'} instead.
+              </p>
+            )}
+            {config.roverAvailable && !preset?.rover && (
+              <p className="text-xs leading-relaxed text-scenario">
+                No rover plan for this stop (the route is too short to drive). This plan is on foot.
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="text-sm text-ink-dim">Pick a stop to see the plan.</p>
+        )}
+        <Disclaimer onOpenSources={onOpenSources} />
+      </TabBody>
 
-      {activePlan && (
-        <Section step={activePlan.split ? 4 : 3} title="Your plan">
-          {activeMembers.map((m, i) => (
-            <MemberTimeline
-              key={m.member}
-              member={m}
-              plan={activePlan}
-              color={crewMode === 'split' && i === 1 ? MEMBER_B_COLOR : MODE_COLOR[mode]}
-              split={crewMode === 'split'}
-            />
-          ))}
-          <OxygenFold plan={activePlan} members={activeMembers} />
-          <DaylightNote plan={activePlan} members={activeMembers} />
-          <EvaRadiationCard />
-          <Fold
-            icon={<PlayCircle size={14} />}
-            title={hasPano ? 'Replay + 360° view' : 'Replay the walk'}
-            answer={hasPano ? `Play · look around ${activeRoute?.stop}` : 'Play bar on the map'}
-          >
-            <p className="text-xs leading-relaxed text-ink-dim">
-              Plays the modeled walk on the map: crew position, O₂ tank, the turn-back moment. Drills raise O₂ use from
-              any point to test the plan.
-            </p>
-            <div className="-mx-3 -mb-3">
-              <MissionReplay bare />
-            </div>
-          </Fold>
-          {preset && (preset.crew !== config.crewCount || preset.load_kg !== wantLoad) && (
-            <p className="text-xs leading-relaxed text-scenario">
-              No plan exists yet for your exact setup. Showing crew {preset.crew}, {preset.load_kg} kg,{' '}
-              {preset.rover ? 'with rover' : 'on foot'} instead.
-            </p>
-          )}
-          {config.roverAvailable && !preset?.rover && (
-            <p className="text-xs leading-relaxed text-scenario">
-              No rover plan for this stop (the route is too short to drive). This plan is on foot.
-            </p>
-          )}
-        </Section>
-      )}
-
-      <footer className="flex flex-col gap-2 px-4 py-4 text-xs leading-relaxed text-ink-dim">
-        <p>
-          Times and O₂ are model estimates, not a safety guarantee.{' '}
-          <button type="button" onClick={onOpenSources} className="text-ink underline underline-offset-2 hover:text-signal">
-            Data sources
-          </button>
+      {/* Replay: play the walk on the map, and the 360° view */}
+      <TabBody>
+        <p className="text-xs leading-relaxed text-ink-dim">
+          Plays the modeled walk on the map: crew position, O₂ tank, the turn-back moment. Drills raise O₂ use from any
+          point to test the plan.
+          {hasPano && ` The 360° view + helmet HUD for ${activeRoute?.stop} opens below the controls.`}
         </p>
-      </footer>
-    </div>
+        <div className="-mx-4">
+          <MissionReplay bare />
+        </div>
+        <Disclaimer onOpenSources={onOpenSources} />
+      </TabBody>
+    </BottomSheet>
   )
 }
