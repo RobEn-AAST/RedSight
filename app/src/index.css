@@ -1,2 +1,32 @@
 /* RedSight console styles — tokens live in styles/tokens.css */
 @import './styles/tokens.css';
+
+/* Fold rows: the detail fades and slides in when a row opens (closing stays instant, so it
+   never feels slow). Opacity + transform only, so it stays smooth. Reduced motion: tokens.css
+   shortens it to nothing. */
+details.fold[open] > div {
+  animation: fold-in 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+@keyframes fold-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* Routes screen on phones: the sheet's peek strip covers the map's bottom edge, so the
+   map's own bottom controls (zoom, replay bar) sit just above it. */
+@media (max-width: 1023px) {
+  .routes-screen .maplibregl-ctrl-bottom-right {
+    margin-bottom: 92px;
+  }
+  .routes-screen .replay-hud {
+    bottom: 102px;
+  }
+}
+@media (min-width: 1024px) {
+  /* Laptop: the sheet docks left, so the replay bar centres in the map space beside it. */
+  .routes-screen .replay-hud {
+    left: calc(50% + 13.75rem);
+  }
+}

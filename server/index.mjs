@@ -491,7 +491,9 @@ async function serveStatic(req, res, pathname) {
 const server = createServer(async (req, res) => {
   const started = Date.now()
   const url = new URL(req.url, 'http://localhost')
-  const ip = req.socket.remoteAddress ?? '?'
+  // Behind a reverse proxy (TRUST_PROXY=1, e.g. nginx on the VPS) every request
+  // arrives from loopback; take the client IP the proxy set so rate limits stay per-visitor.
+  const ip = (config.trustProxy && String(req.headers['x-real-ip'] ?? '').trim()) || req.socket.remoteAddress || '?'
   const cors = corsHeaders(req)
 
   // Preflight

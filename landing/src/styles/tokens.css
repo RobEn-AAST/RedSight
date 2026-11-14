@@ -1,0 +1,43 @@
+/* ── RedSight design tokens · Rust & Void · see DESIGN.md ───────────── */
+:root {
+  /* color ladder */
+  --void: #070A12;
+  --surface-1: #0C101B;
+  --surface-2: #141A28;
+  --hairline: #1D2637;
+  --hairline-strong: #2A3550;
+
+  /* ink */
+  --ink: #E9E4DA;
+  --ink-muted: #9BA3B4;
+  --ink-faint: #5E6678;
+
+  /* signature + interaction */
+  --rust: #E0653A;
+  --rust-bright: #F0854F;
+  --rust-deep: #8F3A1F;
+  --blue: #5B8CFF;
+  --blue-hover: #8AA9FF;
+  --warning: #E8B34B;
+  --success: #6FBF8F;
+
+  /* type */
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'Switzer', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* rhythm */
+  --radius: 2px;
+  --content: 1200px;
+  --gutter: clamp(20px, 4vw, 56px);
+  --section-pad: clamp(96px, 14vh, 160px);
+
+  /* motion (animate skill tables) */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+
+  /* HUD accents */
+  --rust-glow: rgba(224, 101, 58, 0.28);
+  --rust-glow-soft: rgba(224, 101, 58, 0.14);
+  --scanline: rgba(233, 228, 218, 0.025);
+}

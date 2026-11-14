@@ -24,7 +24,7 @@ export function Fold({
   children: ReactNode
 }) {
   return (
-    <details open={defaultOpen} className={cn('group border', tone === 'caution' ? 'border-caution/50 bg-caution-soft/30' : 'border-seam')}>
+    <details open={defaultOpen} className={cn('fold group border', tone === 'caution' ? 'border-caution/50 bg-caution-soft/30' : 'border-seam')}>
       <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2.5 px-3 py-2 [&::-webkit-details-marker]:hidden">
         <span aria-hidden className="flex-none text-ink-dim">
           {icon}
@@ -33,7 +33,7 @@ export function Fold({
         <span className={cn('ml-auto text-right text-xs', tone === 'caution' ? 'text-caution' : 'text-ink-dim')}>
           {answer}
         </span>
-        <ChevronDown size={14} aria-hidden className="flex-none text-ink-dim transition-transform group-open:rotate-180" />
+        <ChevronDown size={14} aria-hidden className="flex-none text-ink-dim transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-open:rotate-180" />
       </summary>
       <div className="flex flex-col gap-3 border-t border-seam px-3 py-3">{children}</div>
     </details>

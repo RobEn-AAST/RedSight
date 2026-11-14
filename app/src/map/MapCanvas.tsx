@@ -43,7 +43,11 @@ const FIRST_VECTOR_LAYER = 'mask'
 const SCALE_STEPS_M = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000]
 // Views are padded clear of the legend strip at the top of the map.
 const BOX_PADDING = { top: 56, bottom: 24, left: 24, right: 24 }
-const ROUTE_PADDING = { top: 88, bottom: 56, left: 56, right: 56 }
+/** Routes fit into the map area left clear by the floating "Your walk" card and the plan sheet. */
+const routePadding = () =>
+  window.matchMedia('(min-width: 1024px)').matches
+    ? { top: 96, bottom: 56, left: 448, right: 72 } // sheet docked left, 26rem + gap
+    : { top: 210, bottom: Math.round(window.innerHeight * 0.5) + 16, left: 40, right: 56 } // card on top, half sheet
 
 const BASE_STYLE: StyleSpecification = {
   version: 8,
@@ -565,7 +569,7 @@ export function MapCanvas({
     const target = plan.goalTargets.find((t) => t.id === selectedTargetId)
     if (target) points.push(...target.ring)
     const bounds = boundsOf(points)
-    if (bounds) map.fitBounds(bounds, { padding: ROUTE_PADDING, maxZoom: 16.5, duration: moveDuration() })
+    if (bounds) map.fitBounds(bounds, { padding: routePadding(), maxZoom: 16.5, duration: moveDuration() })
     else map.fitBounds([[west, south], [east, north]], { padding: BOX_PADDING, duration: moveDuration() })
   }, [ready, activeMembers, selectedTargetId, plan.goalTargets, west, east, south, north])
 
@@ -717,7 +721,7 @@ export function MapCanvas({
       )}
 
       {scale && (
-        <div className="pointer-events-none absolute bottom-3 left-3 flex flex-col gap-1">
+        <div className="pointer-events-none absolute bottom-[104px] left-3 flex flex-col gap-1 lg:bottom-3 lg:left-[calc(26rem+1.5rem)]">
           <span className="data-readout text-[10px] leading-none text-ink">{scale.label}</span>
           <span className="block h-1.5 border-x border-b border-ink" style={{ width: `${scale.px}px` }} />
         </div>

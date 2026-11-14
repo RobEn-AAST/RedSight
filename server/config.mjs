@@ -65,6 +65,8 @@ function resolveProvider() {
 export const config = {
   port: Number(env('PORT', '8788')),
   host: env('HOST', '127.0.0.1'), // loopback by default; set 0.0.0.0 only behind a proxy
+  /** Set TRUST_PROXY=1 only when a reverse proxy sets X-Real-IP (never when exposed directly). */
+  trustProxy: env('TRUST_PROXY') === '1',
   allowedOrigins: allowedOrigins(),
 
   provider: resolveProvider(),

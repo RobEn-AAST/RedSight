@@ -12,6 +12,16 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  build: {
+    rolldownOptions: {
+      output: {
+        // Emit .mjs assets (the MapLibre worker) as .js: common static hosts (nginx's
+        // default mime.types) serve .mjs as octet-stream, which browsers refuse as a module worker.
+        assetFileNames: (asset) =>
+          (asset.names?.[0] ?? '').endsWith('.mjs') ? 'assets/[name]-[hash].js' : 'assets/[name]-[hash][extname]',
+      },
+    },
+  },
   server: {
     proxy: {
       // Copilot backend (server/index.mjs) — keys stay server-side.

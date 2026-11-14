@@ -1,0 +1,18 @@
+# RedSight native-terrain routing engine (engine/api.py, FastAPI).
+# systemd *user* unit for the `roben` account (linger enabled by deploy/setup-root.sh).
+[Unit]
+Description=RedSight routing engine (FastAPI, :8790)
+After=network-online.target
+
+[Service]
+WorkingDirectory=%h/apps/redsight
+# Terrain bundle is git-ignored; uploaded once to ~/apps/redsight-data (deploy/README.md).
+Environment=REDSIGHT_ENGINE_MANIFEST=%h/apps/redsight-data/engine-pilot/input-manifest.json
+Environment=PYTHONUNBUFFERED=1
+ExecStart=%h/apps/redsight-venv/bin/uvicorn engine.api:app --host 127.0.0.1 --port 8790 --workers 1
+Nice=5
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target

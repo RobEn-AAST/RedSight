@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RedSight — See the Red Planet before you step on it</title>
+  <meta name="description" content="RedSight is a hyperlocal Marswalk planner for Gale crater / Mount Sharp: NASA map layers, real Curiosity stops, modeled walking routes with time, O₂ and a turn-back point. Every number is sourced. Built by the RobEn Software & AI team for NASA Space Apps 2026." />
+  <meta property="og:title" content="RedSight — Marswalk Mission Planner" />
+  <meta property="og:description" content="A walk-scale map of Gale crater: modeled routes, O₂ and a turn-back point, every number sourced. NASA Space Apps 2026 entry by RobEn Software & AI." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://mars.roben.club" />
+  <meta property="og:image" content="/assets/og-image.jpg" />
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="preconnect" href="/" />
+  <style>:root{--boot:#070A12}html{background:#070A12}</style>
+  <script type="module" src="/src/main.js"></script>
+</head>
+<body>
+  <!-- ══════════ BOOT SEQUENCE ══════════ -->
+  <div id="boot" aria-hidden="true">
+    <div class="boot-inner">
+      <svg class="boot-reticle" viewBox="0 0 64 64" width="44" height="44" aria-hidden="true">
+        <circle cx="32" cy="32" r="22" fill="none" stroke="var(--rust)" stroke-width="1.5" stroke-dasharray="104 34" stroke-linecap="square"/>
+        <circle cx="32" cy="32" r="4" fill="var(--rust)"/>
+        <path d="M32 2v10M32 52v10M2 32h10M52 32h10" stroke="var(--rust)" stroke-width="1.5"/>
+      </svg>
+      <pre id="boot-log" class="boot-log"></pre>
+    </div>
+  </div>
+
+  <!-- ══════════ 3D LAYER ══════════ -->
+  <canvas id="space" aria-hidden="true"></canvas>
+  <div id="vignette" aria-hidden="true"></div>
+
+  <!-- ══════════ MISSION RAIL (desktop) ══════════ -->
+  <aside id="rail" aria-label="Mission progress">
+    <div class="rail-track"><div class="rail-fill" id="rail-fill"></div></div>
+    <ol class="rail-nodes">
+      <li><a href="#problem" data-goto data-w="problem"><i></i><span class="mono">W-01</span></a></li>
+      <li><a href="#concept" data-goto data-w="concept"><i></i><span class="mono">W-02</span></a></li>
+      <li><a href="#science" data-goto data-w="science"><i></i><span class="mono">W-03</span></a></li>
+      <li><a href="#briefs" data-goto data-w="briefs"><i></i><span class="mono">W-04</span></a></li>
+      <li><a href="#proposal" data-goto data-w="proposal"><i></i><span class="mono">W-05</span></a></li>
+      <li><a href="#crew" data-goto data-w="crew"><i></i><span class="mono">W-06</span></a></li>
+    </ol>
+  </aside>
+
+  <!-- ══════════ NAV ══════════ -->
+  <header id="nav">
+    <a class="brand" href="#top" aria-label="RedSight home">
+      <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
+        <circle cx="16" cy="16" r="11" fill="none" stroke="var(--rust)" stroke-width="1.5" stroke-dasharray="52 17"/>
+        <circle cx="16" cy="16" r="2.5" fill="var(--rust)"/>
+        <path d="M16 1v6M16 25v6M1 16h6M25 16h6" stroke="var(--rust)" stroke-width="1.5"/>
+      </svg>
+      <span>RED<b>SIGHT</b></span>
+    </a>
+    <nav aria-label="Sections">
+      <a href="#problem" data-goto>Problem</a>
+      <a href="#concept" data-goto>Concept</a>
+      <a href="#science" data-goto>Science</a>
+      <a href="#briefs" data-goto>Briefs</a>
+      <a href="#proposal" data-goto>Proposal</a>
+      <a href="#crew" data-goto>Crew</a>
+    </nav>
+    <a class="nav-cta" href="/demo/">Live demo</a>
+  </header>
+
+  <main id="top">
+
+    <!-- ══════════ 01 · HERO ══════════ -->
+    <section class="hero" data-cam="hero">
+      <div class="wrap">
+      <p class="hero-mission mono">NASA SPACE APPS 2026 · INTERPLANETARY SURVIVAL GUIDE: MARTIAN MAP</p>
+      <h1 class="hero-title">
+        <span class="line">RED<span class="rust">SIGHT</span></span>
+      </h1>
+      <p class="hero-tag">See the Red Planet <em>before</em> you step on it.</p>
+      <p class="hero-sub">A walk-scale mission planner for Gale crater / Mount Sharp. Set your crew and load,
+      pick a science stop on Curiosity's real path, and get modeled walking routes with time, O₂ and the
+      point where you must turn back. Every number shows its source.</p>
+      <div class="hero-ctas">
+        <a class="btn btn-primary btn-demo" href="/demo/"><span class="mono">DEMO THE WEBSITE</span><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg></a>
+        <a class="btn btn-ghost" href="#proposal" data-goto><span class="mono">WATCH THE PITCH</span><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg></a>
+        <a class="btn btn-ghost" href="#briefs" data-goto><span class="mono">THE STOPS</span></a>
+      </div>
+      <div class="hero-telemetry mono" aria-hidden="true">
+        <span>SOL 5073</span><span class="sep"></span>
+        <span>GALE · 4.80°S 137.39°E</span><span class="sep"></span>
+        <span>LAYERS 06 · STOPS 05</span><span class="sep"></span>
+        <span class="rust-text">SLOPE LIMIT 15°</span>
+      </div>
+      </div>
+    </section>
+
+    <!-- ══════════ 02 · PROBLEM ══════════ -->
+    <section id="problem" class="section problem" data-cam="problem">
+      <span class="ghost" aria-hidden="true">01</span>
+      <div class="wrap">
+      <div class="section-grid">
+        <div class="statement reveal">
+          <p class="marker mono">W-01 // THE PROBLEM</p>
+          <h2>One wrong<br>step.</h2>
+          <p class="lede">The first astronauts on Mars will walk terrain no human has seen, on a
+          fixed supply of oxygen, where a slope that is too steep or a walk that is too long
+          can end the mission. NASA has mapped Gale crater in great detail, but its tools
+          (Mars Trek, USGS maps) are <strong>built for regional and global views</strong>,
+          not for the few square kilometres an astronaut actually walks.</p>
+        </div>
+        <div class="readout reveal" aria-label="NASA Mars data inventory">
+          <p class="readout-title mono">WHAT WE BUILT ON — GALE CRATER, 6 × 6 KM</p>
+          <ul class="readout-list">
+            <li><span class="mono idx">HIRISE</span><div><b>Optical imagery</b><small>MRO HiRISE 0.25 m mosaic · Observed</small></div></li>
+            <li><span class="mono idx">DEM</span><div><b>Elevation, hillshade &amp; slope</b><small>Mars Trek Gale 1 m DEM + HiRISE DTM · Derived</small></div></li>
+            <li><span class="mono idx">THEMIS</span><div><b>Thermal inertia (sand proxy)</b><small>Mars Odyssey THEMIS mosaic · Derived</small></div></li>
+            <li><span class="mono idx">CRISM</span><div><b>Mineral indicators</b><small>Hydrated sulfates + clays, MRO CRISM · Derived</small></div></li>
+            <li><span class="mono idx">SIM 3292</span><div><b>Geologic units</b><small>USGS global geologic map (Tanaka 2014) · Derived</small></div></li>
+            <li><span class="mono idx">RAD</span><div><b>Radiation</b><small>Curiosity, one point at the rover · Observed</small></div></li>
+            <li><span class="mono idx">REMS</span><div><b>Weather</b><small>Curiosity, rover-local climatology · Observed</small></div></li>
+          </ul>
+          <p class="readout-note mono">GREAT MAPS. NO WALK-SCALE PLAN. <span class="rust-text">THAT'S THE GAP.</span></p>
+        </div>
+      </div>
+          </div>
+</section>
+
+    <!-- ══════════ 03 · CONCEPT ══════════ -->
+    <section id="concept" class="section concept" data-cam="concept">
+      <span class="ghost ghost-right" aria-hidden="true">02</span>
+      <div class="wrap">
+      <div class="section-head reveal">
+        <p class="marker mono">W-02 // THE CONCEPT</p>
+        <h2>One map.<br>Three ways to<br>rehearse a walk.</h2>
+      </div>
+      <div class="modes reveal">
+        <div class="mode-tabs" role="tablist" aria-label="RedSight modes">
+          <button class="mode-tab is-active" role="tab" aria-selected="true" data-mode="plan"><span class="mono">01</span> PLAN</button>
+          <button class="mode-tab" role="tab" aria-selected="false" data-mode="visor"><span class="mono">02</span> VISOR</button>
+          <button class="mode-tab" role="tab" aria-selected="false" data-mode="storm"><span class="mono">03</span> REPLAY</button>
+        </div>
+        <div class="mode-panels">
+          <div class="mode-panel is-active" data-mode="plan" role="tabpanel">
+            <div class="mode-copy">
+              <h3>Plan the walk before the airlock opens</h3>
+              <p>Answer five questions (crew, load, rover, goal, review), then open the map.
+              For each stop RedSight shows the fastest and the lowest-hazard walking route,
+              modeled time and O₂ out and back, the turn-back point, green / amber / red return
+              zones, and where ridges cut the radio link to the habitat. Have a rover? It drives,
+              parks 100 m out, and the crew walks the rest.</p>
+              <ul class="mode-facts mono">
+                <li>ROUTING — DIJKSTRA ON THE HIRISE DTM, 8 NEIGHBORS</li>
+                <li>ON FOOT — EVERY SLOPE OVER 15° IS BLOCKED</li>
+                <li>OUTPUT — TIME · O₂ · TURN-BACK POINT · RADIO SHADOW</li>
+              </ul>
+            </div>
+            <div class="mode-visual" aria-hidden="true">
+              <svg viewBox="0 0 420 300">
+                <rect x="14" y="14" width="392" height="272" fill="none" stroke="var(--hairline-strong)" stroke-width="1"/>
+                <path d="M14 40h392M40 14v272" stroke="var(--hairline)" stroke-width="1"/>
+                <text x="30" y="32" fill="var(--ink-faint)" font-family="IBM Plex Mono" font-size="9" letter-spacing="2">PLAN / LAYERS 6 · SCENARIO</text>
+                <ellipse cx="210" cy="170" rx="150" ry="86" fill="none" stroke="var(--rust-deep)" stroke-width="1" stroke-dasharray="3 5"/>
+                <circle cx="96" cy="200" r="5" fill="var(--rust)"/><text x="82" y="224" fill="var(--ink-muted)" font-family="IBM Plex Mono" font-size="9">HABITAT</text>
+                <circle cx="210" cy="128" r="5" fill="none" stroke="var(--rust)" stroke-width="1.5"/><text x="196" y="116" fill="var(--ink-muted)" font-family="IBM Plex Mono" font-size="9">S1 BOXWORK</text>
+                <circle cx="318" cy="196" r="5" fill="none" stroke="var(--rust)" stroke-width="1.5"/><text x="296" y="222" fill="var(--ink-muted)" font-family="IBM Plex Mono" font-size="9">D1 ALTADENA</text>
+                <path d="M96 200 C 140 150, 170 130, 210 128 S 290 180, 318 196" fill="none" stroke="var(--rust)" stroke-width="2" stroke-dasharray="6 5"/>
+                <path d="M14 258h392" stroke="var(--hairline)" stroke-width="1"/>
+                <text x="30" y="276" fill="var(--ink-faint)" font-family="IBM Plex Mono" font-size="9" letter-spacing="1">D1 FASTEST · OUT 46 MIN · BACK 51 MIN · MODELED</text>
+              </svg>
+            </div>
+          </div>
+          <div class="mode-panel" data-mode="visor" role="tabpanel" hidden>
+            <div class="mode-copy">
+              <h3>Stand at the stop, inside the helmet</h3>
+              <p>At each stop, step into a real 360° panorama Curiosity took on that spot,
+              with a see-through visor HUD on top: a heading-up radar of your route that turns
+              with your view, O₂, the way home, and the radio delay to Earth. The crew sees the
+              ground before they walk it.</p>
+              <ul class="mode-facts mono">
+                <li>REAL CURIOSITY 360° PANORAMAS (NASA PIA)</li>
+                <li>HEADING-UP ROUTE RADAR · O₂ · WAY HOME</li>
+                <li>EARTH ↔ MARS RADIO DELAY</li>
+              </ul>
+            </div>
+            <div class="mode-visual" aria-hidden="true">
+              <svg viewBox="0 0 420 300">
+                <rect x="14" y="14" width="392" height="272" fill="none" stroke="var(--hairline-strong)" stroke-width="1"/>
+                <circle cx="210" cy="150" r="96" fill="none" stroke="var(--rust-deep)" stroke-width="1"/>
+                <circle cx="210" cy="150" r="96" fill="none" stroke="var(--rust)" stroke-width="1.5" stroke-dasharray="60 240" stroke-dashoffset="-30"/>
+                <path d="M210 38v22M210 240v22M98 150h22M300 150h22" stroke="var(--rust)" stroke-width="1.5"/>
+                <circle cx="210" cy="150" r="3" fill="var(--rust)"/>
+                <path d="M252 108l52-52M252 108l-8-2M252 108l2 8" stroke="var(--rust)" stroke-width="1.5" fill="none"/>
+                <text x="278" y="52" fill="var(--ink)" font-family="IBM Plex Mono" font-size="10">S1 · BOXWORK 360</text>
+                <text x="34" y="270" fill="var(--ink-faint)" font-family="IBM Plex Mono" font-size="9" letter-spacing="2">O₂ · WAY HOME · EARTH DELAY</text>
+              </svg>
+            </div>
+          </div>
+          <div class="mode-panel" data-mode="storm" role="tabpanel" hidden>
+            <div class="mode-copy">
+              <h3>Play the plan, then break it</h3>
+              <p>Press play and two astronauts walk the plan on the map. An O₂ gauge counts down
+              with a reserve that is never planned, a callout comes every 10 %, and the turn-back
+              moment is marked. Run a drill (suit leak, hard work) to see how the plan holds up.
+              A voice copilot answers by speech or text, can set up the mission for you, and
+              explains every number.</p>
+              <ul class="mode-facts mono">
+                <li>MISSION REPLAY + DRILLS</li>
+                <li>25 % O₂ RESERVE, NEVER PLANNED</li>
+                <li>VOICE COPILOT — SPEECH IN, SPEECH OUT</li>
+              </ul>
+            </div>
+            <div class="mode-visual" aria-hidden="true">
+              <svg viewBox="0 0 420 300">
+                <rect x="14" y="14" width="392" height="272" fill="none" stroke="var(--hairline-strong)" stroke-width="1"/>
+                <path d="M60 120 C140 96, 220 150, 360 118 L360 210 C240 244, 130 190, 60 208 Z" fill="var(--rust-deep)" opacity="0.18"/>
+                <path d="M60 120 C140 96, 220 150, 360 118" fill="none" stroke="var(--warning)" stroke-width="1.5" stroke-dasharray="4 4"/>
+                <text x="222" y="96" fill="var(--warning)" font-family="IBM Plex Mono" font-size="9" letter-spacing="2">SUIT LEAK DRILL</text>
+                <path d="M60 210 C130 214, 200 224, 360 216" fill="none" stroke="var(--ink-faint)" stroke-width="1.5" stroke-dasharray="2 6"/>
+                <path d="M60 210 C140 250, 240 246, 360 216" fill="none" stroke="var(--rust)" stroke-width="2"/>
+                <text x="30" y="270" fill="var(--ink-faint)" font-family="IBM Plex Mono" font-size="9" letter-spacing="2">TURN BACK · HEAD HOME ON THE SAME PATH</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+          </div>
+</section>
+
+    <!-- ══════════ 04 · SCIENCE ══════════ -->
+    <section id="science" class="section science" data-cam="science">
+      <span class="ghost" aria-hidden="true">03</span>
+      <div class="wrap">
+      <div class="section-head reveal">
+        <p class="marker mono">W-03 // THE SCIENCE</p>
+        <h2>Every number<br>has a source.</h2>
+        <p class="lede">The routes come from our own Python engine running on a HiRISE elevation
+        model of the site. Time and O₂ come from a published load-carriage model moved to Mars
+        gravity, with a suit penalty. Every layer and constant in the app is labeled
+        <strong>Observed</strong>, <strong>Derived</strong> or <strong>Scenario</strong>, and the
+        numbers are model estimates, never guarantees.</p>
+      </div>
+      <div class="science-grid">
+        <div class="formula-panel panel reveal">
+          <p class="panel-title mono">COST MODEL — PER TRAVERSE STEP</p>
+          <pre class="formula mono">blocked if slope &gt; 15° on foot, or no terrain data
+
+fastest        = Dijkstra, cost = walking time
+lowest-hazard  = Dijkstra, cost = d × (1 + slope²)
+
+P   = Pandolf(M, L, v, grade) at g = 3.71 × κ (suit)
+O₂  = P × 2.9 mL/min per W × minutes
+turn back when  O₂ used + 1.2 × O₂ home &gt; budget</pre>
+          <p class="panel-note mono">BUDGET = 385 L USABLE × 75 % (25 % RESERVE) · PER ASTRONAUT</p>
+        </div>
+        <div class="constants-panel panel reveal">
+          <p class="panel-title mono">CONSTANTS — WITH SOURCES</p>
+          <table class="constants">
+            <tbody>
+              <tr><td class="mono">g</td><td>3.71 m/s²</td><td class="src">NSSDC Mars Fact Sheet</td></tr>
+              <tr><td class="mono">SLOPE LIMIT</td><td>15° foot · 20° rover</td><td class="src">team limit · Apollo LRV 20–25°</td></tr>
+              <tr><td class="mono">WALK SPEED</td><td>1.6 km/h</td><td class="src">ALSJ lunar gaits, 1.1–2.2 km/h</td></tr>
+              <tr><td class="mono">SUIT FACTOR κ</td><td>× 1.3</td><td class="src">Norcross et al., NASA/TP-2010-216115</td></tr>
+              <tr><td class="mono">O₂ PER WATT</td><td>2.9 mL/min per W</td><td class="src">Scott 2005; Weir 1949</td></tr>
+              <tr><td class="mono">USABLE O₂</td><td>385 L</td><td class="src">EMU Data Book, 0.55 kg primary O₂</td></tr>
+              <tr><td class="mono">CREW / MASS</td><td>2 · 82 kg</td><td class="src">DRA 5.0 buddy rule · NASA ICES example</td></tr>
+              <tr><td class="mono">ROVER</td><td>1.7 m/s</td><td class="src">Apollo 16 LRV, NTRS 20250011301</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <p class="science-cite reveal">Methods: Pandolf et&nbsp;al. 1977 (load carriage) · Norcross et&nbsp;al. 2010 (suited walking, NASA) ·
+      Horn 1981 (slope) · Dijkstra 1959 · Apollo traverse planning (ALSJ, NTRS). Terrain: HiRISE DTM DTEEC_019698_1750_019988_1750 (USGS, CC0).</p>
+          </div>
+</section>
+
+    <!-- ══════════ 05 · MISSION BRIEFS ══════════ -->
+    <section id="briefs" class="section briefs" data-cam="briefs">
+      <span class="ghost ghost-right" aria-hidden="true">04</span>
+      <div class="wrap">
+      <div class="section-head reveal">
+        <p class="marker mono">W-04 // THE STOPS</p>
+        <h2>Five real stops<br>on Curiosity's path.</h2>
+      </div>
+      <ol class="dossiers">
+        <li class="dossier reveal">
+          <div class="dossier-no mono">S1 · S2</div>
+          <div class="dossier-body">
+            <h3>Boxwork 360 sites</h3>
+            <p class="mono coords">4.80°S 137.39°E · LOWER MOUNT SHARP, GALE</p>
+            <p>The two spots where Curiosity shot its 360° panoramas of the boxwork ridges in
+            2025: the first boxwork 360 and Nevado Sajama. Each stop carries the real photos
+            from those sols and the evidence behind it.</p>
+            <p class="dossier-layers mono">FASTEST WALK OUT · S1 50 MIN · S2 32 MIN (MODELED)</p>
+          </div>
+          <div class="dossier-badge mono">PANORAMA</div>
+        </li>
+        <li class="dossier reveal">
+          <div class="dossier-no mono">D1 · D2</div>
+          <div class="dossier-body">
+            <h3>Drill sites</h3>
+            <p class="mono coords">4.80°S 137.38°E · ALTADENA · VALLE DE LA LUNA</p>
+            <p>Where Curiosity drilled rock samples in the boxwork unit. The goal picker ties them
+            to what you are looking for (sulfates, clays, boxwork veins) and the CRISM and
+            geology layers show why the site matters.</p>
+            <p class="dossier-layers mono">FASTEST WALK OUT · D1 46 MIN · D2 32 MIN (MODELED)</p>
+          </div>
+          <div class="dossier-badge mono alt">DRILL</div>
+        </li>
+        <li class="dossier reveal">
+          <div class="dossier-no mono">S3</div>
+          <div class="dossier-body">
+            <h3>Curiosity today</h3>
+            <p class="mono coords">4.83°S 137.39°E · SOL 5073</p>
+            <p>The rover's latest position, the closest stop to the habitat. The rover-local cards
+            for radiation (RAD) and weather (REMS) are measured here, at one point, and the app
+            says so.</p>
+            <p class="dossier-layers mono">FASTEST WALK OUT · 15 MIN (MODELED)</p>
+          </div>
+          <div class="dossier-badge mono alt">ROVER</div>
+        </li>
+      </ol>
+          </div>
+</section>
+
+    <!-- ══════════ 06 · PROPOSAL ══════════ -->
+    <section id="proposal" class="section proposal" data-cam="proposal">
+      <span class="ghost" aria-hidden="true">05</span>
+      <div class="wrap">
+      <div class="section-head reveal">
+        <p class="marker mono">W-05 // THE PROPOSAL</p>
+        <h2>Try it, then<br>read the code.</h2>
+      </div>
+      <div class="proposal-grid">
+        <div class="panel video-panel reveal">
+          <p class="panel-title mono">THE PITCH</p>
+          <div class="video-facade" id="video-facade" role="button" tabindex="0" aria-label="Play the RedSight pitch video">
+            <svg viewBox="0 0 24 24" width="56" height="56" aria-hidden="true"><path d="M8 5v14l11-7z" fill="var(--rust)"/></svg>
+            <p class="mono video-note" id="video-note">PLAY THE PITCH VIDEO</p>
+          </div>
+        </div>
+        <div class="panel docs-panel reveal">
+          <p class="panel-title mono">DOCUMENTS</p>
+          <ul class="docs">
+            <li>
+              <div><b>Live demo</b><small>The planner, map, replay, 360 HUD and voice copilot</small></div>
+              <a class="btn btn-primary btn-sm" href="/demo/"><span class="mono">OPEN DEMO</span></a>
+            </li>
+            <li>
+              <div><b>Source code</b><small>GitHub · app, route engine, data checker</small></div>
+              <a class="btn btn-ghost btn-sm" href="https://github.com/RobEn-AAST/RedSight" target="_blank" rel="noopener"><span class="mono">REPOSITORY</span></a>
+            </li>
+            <li>
+              <div><b>Data sources</b><small>Every file: URL, date, license, transform</small></div>
+              <a class="btn btn-ghost btn-sm" href="https://github.com/RobEn-AAST/RedSight/blob/main/data/PROVENANCE.md" target="_blank" rel="noopener"><span class="mono">PROVENANCE</span></a>
+            </li>
+          </ul>
+          <p class="panel-note mono">BUILT DURING THE HACKATHON · CAIRO · NOV 13–14, 2026</p>
+        </div>
+      </div>
+          </div>
+</section>
+
+    <!-- ══════════ 07 · CREW + ROBEN ══════════ -->
+    <section id="crew" class="section crew" data-cam="crew">
+      <span class="ghost ghost-right" aria-hidden="true">06</span>
+      <div class="wrap">
+      <div class="section-head reveal">
+        <p class="marker mono">W-06 // THE CREW</p>
+        <h2>Six people.<br>One visor.</h2>
+      </div>
+      <ul class="crew-list reveal">
+        <li><span class="mono idx">CREW-01</span><span class="avatar" aria-hidden="true">AO</span><b>Ali Omar</b></li>
+        <li><span class="mono idx">CREW-02</span><span class="avatar" aria-hidden="true">MM</span><b>Marwan Mesbah</b></li>
+        <li><span class="mono idx">CREW-03</span><span class="avatar" aria-hidden="true">YA</span><b>Yassin Abdallah</b></li>
+        <li><span class="mono idx">CREW-04</span><span class="avatar" aria-hidden="true">YN</span><b>Youssef Nader</b></li>
+        <li><span class="mono idx">CREW-05</span><span class="avatar" aria-hidden="true">MA</span><b>Mohamed Ayman</b></li>
+        <li><span class="mono idx">CREW-06</span><span class="avatar" aria-hidden="true">JA</span><b>Jana Adham</b></li>
+      </ul>
+      <div class="roben-about reveal">
+        <div class="roben-copy">
+          <p class="marker mono">WHO WE ARE</p>
+          <h3>RobEn — the robotics family at AASTMT</h3>
+          <p>Founded in 2013 at the Arab Academy for Science, Technology &amp; Maritime
+          Transport, RobEn is seven teams strong — underwater ROVs, autonomous UAVs,
+          a race car, media, PR, cybersecurity, and us: the <strong>Software &amp; AI
+          team</strong>, the people who build RobEn's intelligent systems and its web.
+          28 achievements and counting, from MATE ROV nationals to Shell Eco-marathon.</p>
+          <div class="roben-links">
+            <a href="https://roben.club" target="_blank" rel="noopener">roben.club</a>
+            <a href="https://github.com/RobEn-AAST" target="_blank" rel="noopener">GitHub</a>
+            <a href="https://www.instagram.com/roben_aast/" target="_blank" rel="noopener">Instagram</a>
+            <a href="https://www.linkedin.com/company/roben" target="_blank" rel="noopener">LinkedIn</a>
+          </div>
+        </div>
+        <ul class="roben-teams mono" aria-label="RobEn teams">
+          <li class="us">SOFTWARE &amp; AI <span class="rust-text">← US</span></li>
+          <li>ROV — UNDERWATER</li>
+          <li>UAV — AERIAL</li>
+          <li>RACING TEAM</li>
+          <li>CYBERSECURITY</li>
+          <li>MEDIA</li>
+          <li>PR &amp; MARKETING</li>
+        </ul>
+      </div>
+          </div>
+</section>
+
+  </main>
+
+  <!-- ══════════ FOOTER ══════════ -->
+  <footer id="footer" class="stage" data-cam="footer">
+    <div class="wrap">
+    <div class="footer-brand">
+      <svg viewBox="0 0 32 32" width="34" height="34" aria-hidden="true">
+        <circle cx="16" cy="16" r="11" fill="none" stroke="var(--rust)" stroke-width="1.5" stroke-dasharray="52 17"/>
+        <circle cx="16" cy="16" r="2.5" fill="var(--rust)"/>
+        <path d="M16 1v6M16 25v6M1 16h6M25 16h6" stroke="var(--rust)" stroke-width="1.5"/>
+      </svg>
+      <p class="footer-word mono">RED SIGHT</p>
+    </div>
+    <p class="footer-made">Built by the <strong>Software &amp; AI Team</strong> · RobEn — AASTMT</p>
+    <p class="footer-disclaimer">RedSight is an independent project created for the NASA International Space Apps Challenge 2026.
+    Not affiliated with or endorsed by NASA. Mars data &amp; imagery: NASA / JPL-Caltech / USGS Astrogeology / ASU / PSI.
+    Globe texture: Solar System Scope (CC BY 4.0). Fonts: Syne, Switzer, IBM Plex Mono (OFL).</p>
+    <p class="footer-legal mono">ROBEN™ · CAIRO, EGYPT · MMXXVI</p>
+      </div>
+  </footer>
+</body>
+</html>

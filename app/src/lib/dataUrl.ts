@@ -40,8 +40,9 @@ export async function fetchJsonUrl<T>(url: string): Promise<T | null> {
   try {
     const res = await fetch(url)
     if (!res.ok) return null
-    // A dev server answers unknown paths with index.html: treat that as absent.
-    if (!(res.headers.get('content-type') ?? '').includes('json')) return null
+    // A dev server / SPA fallback answers unknown paths with index.html: treat that as absent.
+    // Anything else is parsed: nginx serves .geojson as application/octet-stream by default.
+    if ((res.headers.get('content-type') ?? '').includes('text/html')) return null
     return (await res.json()) as T
   } catch {
     return null
