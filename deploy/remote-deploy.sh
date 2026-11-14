@@ -30,6 +30,8 @@ if [ -z "${REDSIGHT_REEXEC:-}" ]; then REDSIGHT_REEXEC=1 exec bash "$APP/deploy/
     npm ci --no-audit --no-fund --loglevel=error
     echo "$LOCK_HASH" > node_modules/.lock-hash
   fi
+  # Tiles are git-ignored and live in the web root; link them so build + data check see them.
+  [ -e public/tiles ] || ln -s /var/www/mars.roben.club/tiles public/tiles
   npm run build --silent
   npm run check:data --silent | tail -1
 )

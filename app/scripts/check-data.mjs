@@ -94,6 +94,8 @@ if (layers) {
     if (l.available) {
       const dir = join(DATA, l.tiles.split("{z}")[0]);
       if (/^https?:/.test(l.tiles)) warn("layers.json", `${w}: remote tiles (${l.tiles}); check they load without login`);
+      // CI has no tiles (git-ignored, hosted on the VPS); the VPS deploy runs the full check.
+      else if (process.env.CHECK_DATA_SKIP_TILES === "1") continue;
       else if (!existsSync(dir) || readdirSync(dir).length === 0) err("layers.json", `${w}: available:true but no tiles in ${relative(DATA, dir)}`);
     }
   }

@@ -47,6 +47,8 @@ jobs:
       - name: Check data contract
         working-directory: app
         run: npm run check:data
+        env:
+          CHECK_DATA_SKIP_TILES: '1' # tiles are git-ignored; the VPS deploy runs the full check
 
       - name: Backend tests
         run: node --test server/*.test.mjs
