@@ -7,7 +7,8 @@
     "clips": "bash build/clips.sh",
     "video": "node build/video.mjs",
     "narrated": "node build/narrated.mjs",
-    "slides": "node build/slides.mjs"
+    "slides": "node build/slides.mjs",
+    "deck": "node build/deck.mjs"
   },
   "devDependencies": {
     "kokoro-js": "^1.2.1",
