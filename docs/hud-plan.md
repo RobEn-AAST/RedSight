@@ -80,3 +80,19 @@ git fetch && git checkout feat/marwan-hud
 cd app && npm install        # adds three.js (~36 MB in node_modules)
 npm run dev                  # Set up → Show routes → stop S1 → Mission Replay card → 360° view at S1 + HUD
 ```
+
+## Street View-style viewer and clean HUD (2026-11-14, Marwan)
+
+- **Sphere, not cylinder:** each Mastcam mosaic spans 360° across its width with the same angle per pixel
+  vertically, so it is placed at its true angles on a full sphere (S1 ≈ 95° tall, S2 ≈ 74° tall).
+- **Gaps:** Mastcam did not image the black parts of the NASA mosaics (sky above the frames, rover deck below).
+  The viewer fills them in the browser: each column's sky/ground colour is carried outward and blurred. The fill is
+  **not imagery**. The footer says "blurred areas = not photographed", and **show gaps** shows them dark again.
+  The original JPEGs are unchanged.
+- **Controls:** drag with inertia, scroll/pinch zoom (30–90°), double-click to zoom toward a point, arrow keys,
+  +/−, look up/down to ±85°.
+- **Clean view by default:** title bar, heading tape, one status strip (O₂, mission clock, time home,
+  habitat distance/bearing, Earth delay) and EMERGENCY. **DETAILS** (or H) opens the full panels, which now have
+  more opaque backgrounds and larger text.
+- **Limit:** one photo per stop, so you cannot walk around inside it the way Street View steps between photos;
+  moving between stops is a jump.
