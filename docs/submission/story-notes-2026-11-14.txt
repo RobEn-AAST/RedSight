@@ -1,0 +1,55 @@
+USER-REQUESTED EDITORIAL HANDOFF — RedSight demo/slides/PDF — 2026-11-14
+
+The user explicitly asked this session to inspect your submission work and send these notes. They endorsed all three themes below and want them woven into the demo/slides WITHOUT losing the other project contributions. This is presentation direction for the existing team concept, not authorization to add app features, change scope, publish, or submit. I have not edited your files. Continue your capture pipeline and production work; adapt this outline to the final verified app.
+
+CONTEXT I CHECKED
+You are preparing repeatable Playwright captures in submission/ for the seven-slide deck, <=30 s video, and Cairo project PDF, per docs/submission/demo-production-plan.md. I read that plan, demo-script.md, project-page.md, docs/ai-context.md, demo-focus-plan.md, and engine/README.md. The older demo script contains mock-route-era and alternate-return claims that need checking against current app/data. The user also wants a simple, visually clear PDF that judges can understand without a presenter. Keep that priority.
+
+THE THREE USER-APPROVED THEMES (all should be legible in the package)
+1. A meaningful decision: the crew wants a scientific observation, but its modeled return budget may require turning back. Show the scientific opportunity being deferred and why. A successful expedition can include choosing to turn back. Keep this as decision support and a labeled Scenario, never a guarantee.
+2. A scientific purpose: make clear why this particular Gale / lower Mount Sharp walk matters. Boxwork investigations concern ancient groundwater and rock/mineral history. State one defensible question tied to an EXISTING stop and its actual evidence, the intended observation, and what remains unanswered if the visit is deferred. Do not fabricate sample findings, unique discoveries, instrument capabilities, quantitative science scores, or ridge-vs-trough sampling missions absent from the app. Distinguish intended investigation from demonstrated results.
+3. Knowing the evidence limits: Observed / Derived / Scenario / Unavailable should explain a consequential decision, beyond a badge legend. Example from engine/README.md: paths end at Derived approach pixels; the final leg to the Observed target is not modeled. This is an honest boundary worth explaining concisely. No new UI is necessary; use a caption/callout over an actual capture. Do not generalize one limitation into a claim of calibrated accuracy.
+
+SUGGESTED NARRATIVE
+One scientifically motivated expedition, one route choice, one changed assumption, one understandable turn-back decision, and the evidence behind it. These themes should unite the existing features, not displace them. Candidate hook: "You can see the target. Does the return budget still support continuing?" This is a question to the audience; do not imply a photographic target or visibility the capture does not show. Candidate closing: "Explore with purpose. Know when to turn back. Know what the map can support."
+
+SUGGESTED SEVEN-SLIDE FIT (adapt rather than adding slides)
+1. Identity + purpose: RedSight, team/member names as permitted by governing rules, exact challenge title; one clear sentence about science-driven Marswalk planning and modeled return decisions.
+2. Why this walk: actual Gale/boxwork imagery, one sourced science question, and the crew's decision under limited resources. Earth communication delay is supporting context, not an originality claim.
+3. Evidence becomes a map: show actual orbital terrain/layers, real rover stop positions and photos, and which data change the decision. Use three short source-to-role captions. Avoid a list of promised or missing layers.
+4. Plan the expedition: actual mission setup and fastest versus lowest-modeled-hazard route comparison. Include time/O2/load/crew only as supported by the chosen final dataset/configuration. A compact inset/caption can credit voice/chat mission controls if working. Do not turn this into an unreadable feature grid.
+5. The decision: a clear before/after pair or short replay GIF of the same mission as the Scenario budget changes. Keep the scientific objective visible; show the turn-back consequence and deferred observation. Label any suit-use multiplier drill as a Scenario assumption. Demonstrate only the return behavior actually supported by current geometry/cost arrays.
+6. Trust and limits: show a source card plus one concrete Observed -> Derived -> Scenario chain and one material Unavailable/final-approach limit. RAD/REMS are rover-local context, not spatial measurements across the route. Explain how the boundary affects what users may conclude.
+7. What works + access: short verified capability strip and public project/repo links. Preserve other implemented contributions here or in small contextual insets on slides 3/4, with status labels. Any 360/HUD/rover/3D item must match current tier and actual build status; label prototype/future where appropriate. Prefer demonstrated results and limits over a slide dominated by future features.
+
+VIDEO <=30 S: PROPOSED EDITING BUDGET
+0-4 s identity + scientific purpose; 4-9 s real map/stop evidence; 9-14 s route choice; 14-23 s budget change and actual replay/turn-back consequence; 23-27 s source card + one evidence boundary; 27-30 s closing/project URL. Optional copilot/HUD glimpses can share the relevant shots if readable and verified, not consume the decision sequence. These are edit targets, not a requirement to use every screenshot. Measure final duration. The deck must stand alone; no assumed spoken explanation. Keep supplementary-video placement subject to the existing unresolved demo-link rule.
+
+DO-NOT-FORGET COVERAGE CHECK (not all need equal screen time)
+- Selected science goal and the real Gale/boxwork stop, rover photos/positions.
+- Actual NASA data integration: terrain/imagery and operational role of each shown layer.
+- Two modeled route choices; assumptions and available time/O2 estimates.
+- Turn-back budget, reserve, Mission Replay, and supported scenario drill.
+- Source inspector, four evidence classes, RAD/REMS limits and approach-only caveat.
+- Crew/load configuration and voice/chat assistant if final configuration actually supports them; AI actions are interface controls, not a substitute for route calculations or scientific evidence.
+- Any completed optional 360/HUD/rover work acknowledged at its correct status without claiming unfinished tiers.
+- Public links, team attribution, actual data/tool credits and AI disclosure, and required challenge identity.
+Keep a private feature-to-slide/shot/PDF checklist in your existing production source so no owner's work silently disappears. The PDF can carry the fuller inventory and source references while remaining short and visual: scientific purpose, map evidence, route comparison, decision sequence, limits, contribution summary. Honor the five required Cairo PDF sections already identified in your requirements.
+
+FACT CHECKS BEFORE CAPTIONS
+- B4b alternate-return geometry/cost support is marked unavailable in the current focus plan, despite the older demo script claiming automatic fastest-return switching. Inspect actual final route arrays and UI; show same-path return/turn-back where that is all supported. Do not stage a capability that is absent.
+- engine/README.md reports approach-only outcomes and no modeled final leg. Exact target arrival or successful sampling is not established by the animation.
+- Verify actual data coverage before naming CRISM/minerals or other proposed layers as implemented. Keep scenario quantities visibly labeled; rover-local RAD/REMS observations are not crew measurements.
+- Do not assert first/unique, NASA operational readiness, proven benefit, or guaranteed outcomes. NASA BASALT already studied crew science decisions under Earth-Mars delay.
+- All numerical examples come from final captures. Reconcile slide/video/PDF/project-page wording; no mock-route-era numbers.
+
+PRIMARY SOURCES (web checked in this session 2026-11-14)
+JPL, 2025-06-23, boxwork science context:
+https://www.jpl.nasa.gov/news/nasas-curiosity-mars-rover-starts-unpacking-boxwork-formations/
+NASA NTRS, 2019, Tactical Scientific Decision-Making during Crewed Astrobiology Mars Missions:
+https://ntrs.nasa.gov/citations/20190026720
+NASA BASALT context:
+https://www.nasa.gov/missions/analog-field-testing/what-is-basalt/
+Local implementation evidence: engine/README.md and the final app/data are authoritative for built behavior. Source URLs belong in discreet footnotes/PDF references, not dense main slide paragraphs.
+
+Please incorporate this user direction into your existing script/captions/deck/PDF production plan before final rendering. The user wants the complete project represented through this stronger story, with clear visuals and minimal prose. No response to this session is required.

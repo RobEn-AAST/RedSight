@@ -9,7 +9,7 @@
 > **Status (2026-11-13, evening):** the web app runs on `main`: map of the boxwork area, science stops with
 > sources, route cards A/B, turn-back slider, source cards and Mission Replay. **Routes are still mock data**
 > (marked "Mock data" in the app) until the engine's real routes land; map tiles are a single preview image
-> until the tile build lands. Links and license are placeholders pending team decisions.
+> until the tile build lands. Links are placeholders pending team decisions; license: Apache-2.0.
 
 **Start here:** [docs/challenge-in-plain-language.md](docs/challenge-in-plain-language.md) (the challenge, the
 glossary, and the corrections behind our framing) · [docs/ai-context.md](docs/ai-context.md) (workspace state &
@@ -77,7 +77,7 @@ this explicitly. See the provenance inspector in the app.
 ```
 ├── README.md                 # this file
 ├── AGENTS.md                 # project working rules (agents & teammates)
-├── LICENSE                   # team decision pending (Apache-2.0 proposed for our code)
+├── LICENSE                   # Apache-2.0 (our code and docs; third-party terms in data/PROVENANCE.md)
 ├── docs/
 │   ├── challenge-in-plain-language.md  # challenge explained + glossary + corrections
 │   ├── ai-context.md                  # workspace state & navigation
@@ -107,15 +107,16 @@ this explicitly. See the provenance inspector in the app.
   collected in `data/PROVENANCE.md`. ESA/DLR HRSC products are CC BY-SA 3.0 IGO if used.
 - **License:** the official Space Apps 2026 Terms require original content to be OSI-licensed (or
   restriction-free) **with license documentation included**, and state that unspecified content is distributed by
-  NASA under Apache 2.0. We therefore propose an explicit **Apache-2.0 LICENSE** — team sign-off pending.
+  NASA under Apache 2.0. Our original code and docs are released under **Apache-2.0** ([`LICENSE`](LICENSE),
+  adopted 2026-11-14 by the integration owner).
 - No NASA logos/branding in any AI-generated content (Space Apps SI rule).
 
-## Super Intelligence (AI) disclosure *(draft — team to confirm before submit)*
+## Super Intelligence (AI) disclosure
 
-The team chose the problem framing, site, features and data sources. AI coding assistants (Claude Code) helped
-write and test code, summarize research and edit text; team members reviewed and tested the results. No
-AI-generated images, video or audio are used; no NASA branding in AI-generated content. Full draft for the
-project page: [docs/submission/project-page.md](docs/submission/project-page.md).
+The team chose the problem, site, features and data. Claude Code (Claude Opus 5.5 / Sonnet 5.5) helped write and
+test code and edit text; Claude (claude.ai) and Manus AI helped with research and drafting; members reviewed and tested every change. In the app, an LLM copilot (Groq / Gemini),
+Whisper speech-to-text and Kokoro text-to-speech are runtime features. The demo narration and slide-6 voice clips
+are AI-generated audio (Kokoro); the landing share image is AI-generated and marked as such. Full disclosure: [docs/submission/project-page.md](docs/submission/project-page.md).
 
 ## Demo & links *(fill at submission)*
 

@@ -25,7 +25,7 @@ export default defineConfig({
   server: {
     proxy: {
       // Copilot backend (server/index.mjs) — keys stay server-side.
-      '/api': 'http://127.0.0.1:8788',
+      '/api': process.env.VITE_COPILOT_PROXY || 'http://127.0.0.1:8788',
     },
   },
 })

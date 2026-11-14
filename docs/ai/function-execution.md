@@ -89,3 +89,51 @@ Latest-main integration retained the new panorama/HUD work and offline keyed-ret
 Keyed display paths cannot activate the alternate-return recommendation because a reconstructed
 walk-to-key geometry does not match the independently exported per-vertex shortest-return costs.
 Production alternate payloads remain omitted under the user's complete-return-or-omit requirement.
+
+
+## Mission control extension — 2026-11-14
+
+User-approved extension on `feat/copilot-mission-control`:
+
+- `read_app_data(section, id)` reads current mission/oxygen, stops, targets,
+  constants, layers, cards, route comparisons, hazard summaries, factors and
+  provenance. Large datasets remain bounded; no credentials or raw rasters enter chat.
+- `mission_control` operates replay, map focus, imagery/traverse, crew mode,
+  panorama, sources, drills/callouts and Scenario telemetry, incidents and pickup.
+  Existing mission/destination/layer/factor/routing tools remain available.
+- Injury records an operator report, holds current position, requests a complete
+  fastest modeled return and dispatches an available illustrative rover in one
+  action. Cannot-walk disables walking. Low oxygen, leaks, rover failure,
+  radiation, cold/daylight concerns, buddy incidents, cancellation and reset are
+  supported. Leak reports do not invent a measured leak rate.
+- `POST /api/routing/return` proxies the single-worker engine `/return`. It accepts
+  an exact native vertex or an exact point on a legal adjacent native edge.
+  The engine checks both edge directions, blocked corners and the existing cap,
+  computes partial directional costs and chooses the least modeled return time
+  inside the bounded native corridor. Complete matching geometry/costs are drawn
+  in red. Habitat endpoint is the existing modeled native cell, distinct from
+  the Scenario map-marker coordinate. No unmodeled connector is introduced.
+- Rover motion is a dashed illustrative Scenario preview with dispatch, arrival,
+  boarding and return states; it establishes neither terrain accessibility nor a
+  rescue ETA. Holds and rides show last-known oxygen with interval consumption
+  explicitly unavailable. Manual controls work without an AI provider.
+- Mission edits preserve incidents/oxygen/position and invalidate old route jobs;
+  stale/reset/cancelled results cannot replace state. Busy/failed pickup does not
+  suppress independent astronaut return planning. Completed pickup retires old
+  walking geometry.
+
+Local browser evidence: real native terrain return from the exact interpolated
+S1 replay position, partial-edge costs, red route and illustrative pickup; chat
+oxygen readback and injury actions traversed the SSE/app acknowledgement bridge
+using an explicit test-only provider fixture. Desktop/mobile were captured and
+mobile had no horizontal overflow. No live provider key was configured in this
+checkout; live LLM language behavior and microphone/TTS were not tested.
+Existing map image-decode errors and Vite large-chunk warnings remain visible;
+these checks do not establish production deployment or physical rover operation.
+
+Final local checks: **72 Python tests and 103 app/server tests passed**;
+production build and lint passed; check:data reported **0 errors**, with the
+existing 6.1 MB hazards-file warning. Local ignored terrain/TI/tiles were reused
+by symlink for verification and are excluded from the commit. Production build
+retains existing large-chunk warnings. A follow-up review fixed ordinary replay
+pause/resume and avoided duplicate incident controls over the visible Replay tab.

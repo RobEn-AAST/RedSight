@@ -64,16 +64,38 @@ walk-scale radiation or weather map exists, and the app says so.
 
 **Tools.** Python (NumPy, SciPy, GDAL) [confirm], TypeScript/React, MapLibre GL JS, Vite, Node test runner.
 
-## Use of Super Intelligence (SI): draft, team to confirm
+## Use of Super Intelligence (SI)
 
-[Team: confirm or edit before submitting. The Submission Guide asks how SI tools were used and says SI should
-not be used to come up with the idea of how to solve the challenge.]
+*Updated 2026-11-14 from the repository and the team's answers.*
 
-The team chose the problem framing, the site (Gale / Mount Sharp), the features and the data sources. We
-used AI coding assistants (Claude Code) to help write and test code, summarize research papers and
-documentation, and edit text; team members reviewed, ran and tested the results. No AI-generated images,
-video or audio are used in the app or the demo. [If any is added: visible watermark, per the guide.] No NASA
-logos or branding are used in AI-generated content.
+**Idea and decisions: people, not SI.** The team chose the problem framing, the site (Gale crater / lower
+Mount Sharp, boxwork), the features, the oxygen model's sources and the data sources. Per the Submission
+Guide, SI was not used to come up with how to solve the challenge.
+
+**SI used to build it (development tools):**
+- **Claude Code** (Anthropic; models Claude Opus 5.5 and Claude Sonnet 5.5, credited as co-author on ~96
+  commits): helped write and test code (app, engine, server, capture scripts), summarize papers and
+  documentation, and edit text. Team members reviewed, ran and tested every change before merging.
+- **Claude (claude.ai)** and **Manus AI**: research help, drafting and editing text, and planning; the team checked
+  every claim against primary sources before using it.
+
+**SI inside the app (runtime features, labeled in the UI):**
+- **Voice/text copilot:** a large language model answers questions about the mission plan and can operate
+  mission controls through checked app actions (Groq `openai/gpt-oss-120b` / `gpt-oss-20b`, or Google Gemini
+  ; a Gemini Live voice version is in progress). Its answers use the app's own modeled numbers; it is a prototype aid, not a
+  safety system.
+- **Speech-to-text:** Whisper (Groq `whisper-large-v3-turbo` in the cloud, or `whisper-tiny.en` in the browser).
+- **Text-to-speech:** Kokoro-82M (Apache-2.0) or the browser's speech voice.
+
+**SI-generated media in our submission (disclosed):**
+- **AI-generated audio:** the narration of the walkthrough video and the two astronaut voice clips on
+  slide 6 of the deck are synthetic voices (Kokoro TTS). Stated on the video's end card, in its file metadata
+  and in the slide notes.
+- **AI-generated image:** the landing page's share image (`landing/public/assets/og-image.jpg`) is AI-generated;
+  it carries a visible "AI-GENERATED IMAGE" mark.
+- **No other AI-generated images or video:** map and photos are NASA/USGS data, screen recordings are of the
+  working app, and the 3D astronaut model (`app/src/copilot/assets/astronaut.glb`) was made by the team.
+- No NASA logos or branding in any AI-generated content.
 
 ## NASA Data
 

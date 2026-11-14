@@ -26,6 +26,9 @@ Per-person status and next steps: [`team-plan.md`](team-plan.md) §4c. Data chec
 
 ## 2. Document map (read order for a new agent)
 
+Implemented extension on `feat/copilot-mission-control`: [Copilot mission control and emergency simulation](superpowers/specs/2026-11-14-copilot-mission-control-design.md)
+— mission read/action coverage, oxygen readback, exact-position red return and illustrative rover pickup; local verification in [function execution](ai/function-execution.md).
+
 | Priority | Doc | Role |
 |---|---|---|
 | — | [`../deploy/README.md`](../deploy/README.md) | Live deploy of https://mars.roben.club (landing `/` + app `/demo/`): CI/CD on push to `main`, VPS layout, services, voice keys (2026-11-14) |
@@ -50,6 +53,9 @@ Per-person status and next steps: [`team-plan.md`](team-plan.md) §4c. Data chec
 | 7k | [`handoff-map-figures.md`](handoff-map-figures.md) | **Map figures dev handoff** (Yassin, 2026-11-14): how the app places, turns (8-sector heading rule with dead band), animates and falls back for the habitat, rover and astronaut figures; replay opt-in `figures` option for Marwan |
 | 7f | [`submission/project-page.md`](submission/project-page.md) | **Project page draft** (2026-11-13): every required field (summary, description, SI answer to confirm, NASA Data with built/planned status, references) |
 | 7e | [`submission/demo-script.md`](submission/demo-script.md) | **Demo draft** (2026-11-13): live 60-second walkthrough, ≤ 30 s video cut, 7-slide outline with speaker notes, screenshots to retake with real data |
+| 7l | [`submission/demo-production-plan.md`](submission/demo-production-plan.md) | **Demo production plan** (Marwan, 2026-11-14): judged 7-slide deck + supplementary 30 s video + project PDF, re-runnable capture pipeline for UI changes, rules checklist |
+| 7m | [`submission/story-notes-2026-11-14.txt`](submission/story-notes-2026-11-14.txt), [`submission/feature-audit-2026-11-14.txt`](submission/feature-audit-2026-11-14.txt) | **Demo story + feature audit** (2026-11-14, user-endorsed editorial notes from a second session): three themes, 41-item feature inventory with limits and caption rules |
+| 7n | [`submission/compliance-remaining-2026-11-14.md`](submission/compliance-remaining-2026-11-14.md) | **Compliance: remaining items** (2026-11-14): licence, Cairo PDF, judged demo, credits + SI disclosure, placeholders, organizer checks |
 | 7d | [`24-48-hour-plan.md`](24-48-hour-plan.md) | Must/Should/Stretch scope, phase plan, acceptance evidence, risks (scope/ops area superseded by demo-focus-plan) |
 | 7e | [`../engine/README.md`](../engine/README.md) | **Offline engine status and handoff**: native-slope real-data build, local ignored pilot bundle, explicit partial route outcomes, model and reproducibility limits |
 | 8 | [`research/mapping-options.md`](research/mapping-options.md), [`research/routing-options.md`](research/routing-options.md) | Deep evidence: datasets/live checks/CRS traps; graph/algorithms/PNR — keep as evidence, see their Errata headers |
