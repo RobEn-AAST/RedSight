@@ -33,8 +33,10 @@ import {
   copilotActionResult,
   copilotHealth,
   copilotReset,
+  copilotSessionId,
   type ChatStreamEvent,
 } from '@/lib/copilotClient'
+import { GeminiLiveCall, fetchLiveToken, runLiveTool, type LiveStatus } from '@/copilot/geminiLive'
 import { setTtsHealth, ttsSpeakStream, ttsStop, type StreamingSpeech } from '@/copilot/tts'
 import { useDictation } from '@/copilot/useDictation'
 import type { ChatMessage, CopilotHealth, CopilotRequestContext } from '@/types/copilot'
@@ -182,6 +184,75 @@ export function CopilotDock({
     return { missionState, availableData: available }
   }, [engine, mission, plan])
 
+  /** Validate and apply one app action (text chat and Gemini Live share this). Returns the authoritative result. */
+  const applyAction = useCallback(
+    async (name: string, args: Record<string, unknown>, routeArg?: unknown): Promise<Record<string, unknown>> => {
+      let result: Record<string, unknown>
+      try {
+        const a = args
+        const latest = actionStateRef.current
+        if (name === 'set_mission_screen') {
+          if (a.screen === 'setup') missionActions.reopenMission()
+          else if (a.screen === 'routes' && latest.mission.config.scienceGoalId) missionActions.confirmMission()
+          else throw new Error('Choose a science goal before opening routes.')
+          result = { applied:true, screen:a.screen }
+        } else if (name === 'set_oxygen_budget') {
+          const budget = latest.plan.activeRoute?.budget_l
+          if (typeof a.litres !== 'number' || !Number.isFinite(a.litres) || budget === undefined || a.litres < 0 || a.litres > budget) throw new Error('Oxygen budget must be within the active route usable budget, in litres.')
+          latest.plan.setO2BudgetL(a.litres)
+          result = { applied:true, usableBudgetL:a.litres, maximumBudgetL:budget }
+        } else if (name === 'set_mission') {
+          const error = validateMissionPatch(a)
+          if (error) throw new Error(error)
+          missionActions.patchConfig(a as never)
+          result = { applied:true, mission:{...latest.mission.config,...a}, status:latest.mission.status }
+        } else if (name === 'select_destination') {
+          const target = latest.plan.goalTargets.find((t) => t.id === a.id)
+          if (!target) throw new Error('Destination ID is not an available target for this mission.')
+          latest.plan.selectTarget(target.id)
+          result = { applied:true, selectedDestination:{id:target.id,name:target.name,badge:target.badge} }
+        } else if (name === 'set_layer') {
+          const layer = (engine.layers ?? []).find((l) => l.id === a.id && l.available)
+          if (!layer || typeof a.visible !== 'boolean') throw new Error('Layer ID is unavailable or visibility is not boolean.')
+          plan.setLayerVisibility(layer.id, a.visible)
+          result = { applied:true, layer:{id:layer.id,name:layer.name,visible:a.visible,badge:layer.badge} }
+        } else if (name === 'set_route_preference' || name === 'reset_route_constraints') {
+          const preference = name === 'reset_route_constraints' ? 'fastest' : a.mode
+          if (!['fastest','safest','balanced'].includes(String(preference))) throw new Error('Unsupported route preference.')
+          const route = routeArg as unknown as EngineRoute | undefined
+          const config = latest.mission.config
+          const targetIds = latest.plan.goalTargets.map((target) => target.id)
+          const sandWeight = name === 'reset_route_constraints' ? 0 : (typeof a.sandWeight === 'number' ? a.sandWeight : config.sandWeight)
+          const hazardWeight = name === 'reset_route_constraints' ? 0.5 : (typeof a.hazardWeight === 'number' ? a.hazardWeight : config.hazardWeight)
+          if (route?.routing?.sand_weight !== sandWeight || route?.routing?.hazard_weight !== hazardWeight) throw new Error('The routing service did not apply the requested sand/hazard weights; the current route was retained.')
+          const slopeCapDeg = name === 'reset_route_constraints' ? 15 : (typeof a.slopeCapDeg === 'number' ? a.slopeCapDeg : config.routeSlopeCapDeg)
+          if (!validateDynamicRoute(route, preference as 'fastest'|'safest'|'balanced', targetIds, slopeCapDeg)) throw new Error('The routing service returned incomplete, mismatched or unsupported route data; the current route was retained.')
+          const destination = latest.plan.goalTargets.find((target) => target.id === route.stop)
+          if (!route || !destination) throw new Error('Route destination is not available to this mission; the current route was retained.')
+          if (a.destinationId === undefined && route.stop !== latest.plan.selectedTargetId) throw new Error('The selected destination changed while the route was being calculated; the stale route was discarded.')
+          if (config.roverAvailable) throw new Error('Rover availability changed while the route was being calculated; the foot-only route was discarded.')
+          if (route.crew !== config.crewCount || route.routing?.body_mass_kg !== config.bodyMassKg || route.routing?.load_kg_per_astronaut !== perAstronautLoadKg(config) || route.routing?.sample_kg_per_stop !== config.sampleKgPerStop) throw new Error('Mission values changed while the route was being calculated; the stale route was discarded.')
+          if (slopeCapDeg < 0 || slopeCapDeg > 15) throw new Error('Slope cap must be 0–15 degrees; the model hard limit remains 15 degrees.')
+          missionActions.patchConfig({ sandWeight, hazardWeight, routePreference:preference as 'fastest'|'safest'|'balanced', routeSlopeCapDeg:slopeCapDeg, routeSlopeCapExplicit:name === 'reset_route_constraints' ? false : (typeof a.slopeCapDeg === 'number' || config.routeSlopeCapExplicit) })
+          if (route.stop !== latest.plan.selectedTargetId) latest.plan.selectTarget(route.stop)
+          latest.plan.applyDynamicRoute(route)
+          result = { applied:true, preference, selectedCandidate:route.mode, routeId:route.id, metrics:{total_s:route.total_s,distance_m:route.distance_m,budget_l:route.budget_l,pnr_index:route.pnr_index}, routing:route.routing, goalAccess:route.goal_access, routeSlopeCapExplicit:name === 'reset_route_constraints' ? false : (typeof a.slopeCapDeg === 'number' || mission.config.routeSlopeCapExplicit) }
+        } else if (name === 'set_mission_factors') {
+          const defs = await loadFactorDefs()
+          if (!defs) throw new Error('Mission factor definitions are unavailable.')
+          if (Object.keys(a).length === 0) throw new Error('No factor values were supplied.')
+          const error = validateFactorPatch(a, defs)
+          if (error) throw new Error(error)
+          missionActions.patchConfig(a as never)
+          result = { applied:true, factors:a, badge:'Scenario', note:'Modeled dose, daylight and cold checks update in the plan panel; these are Scenario inputs, not measurements.' }
+        } else throw new Error('Unsupported command.')
+      } catch (error) { result = { applied:false, error:error instanceof Error ? error.message : 'Command failed.' } }
+      return result
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [missionActions, mission, plan, engine],
+  )
+
   /** Core send used by both the composer and the voice-call loop. */
   const sendText = useCallback(
     async (text: string) => {
@@ -237,66 +308,7 @@ export function CopilotDock({
 
       const executeAction = async (ev: Extract<ChatStreamEvent, { t: 'action' }>) => {
         if (ctrl.signal.aborted) return
-        let result: Record<string, unknown>
-        try {
-          const a = ev.args
-          const latest = actionStateRef.current
-          if (ev.name === 'set_mission_screen') {
-            if (a.screen === 'setup') missionActions.reopenMission()
-            else if (a.screen === 'routes' && latest.mission.config.scienceGoalId) missionActions.confirmMission()
-            else throw new Error('Choose a science goal before opening routes.')
-            result = { applied:true, screen:a.screen }
-          } else if (ev.name === 'set_oxygen_budget') {
-            const budget = latest.plan.activeRoute?.budget_l
-            if (typeof a.litres !== 'number' || !Number.isFinite(a.litres) || budget === undefined || a.litres < 0 || a.litres > budget) throw new Error('Oxygen budget must be within the active route usable budget, in litres.')
-            latest.plan.setO2BudgetL(a.litres)
-            result = { applied:true, usableBudgetL:a.litres, maximumBudgetL:budget }
-          } else if (ev.name === 'set_mission') {
-            const error = validateMissionPatch(a)
-            if (error) throw new Error(error)
-            missionActions.patchConfig(a as never)
-            result = { applied:true, mission:{...latest.mission.config,...a}, status:latest.mission.status }
-          } else if (ev.name === 'select_destination') {
-            const target = latest.plan.goalTargets.find((t) => t.id === a.id)
-            if (!target) throw new Error('Destination ID is not an available target for this mission.')
-            latest.plan.selectTarget(target.id)
-            result = { applied:true, selectedDestination:{id:target.id,name:target.name,badge:target.badge} }
-          } else if (ev.name === 'set_layer') {
-            const layer = (engine.layers ?? []).find((l) => l.id === a.id && l.available)
-            if (!layer || typeof a.visible !== 'boolean') throw new Error('Layer ID is unavailable or visibility is not boolean.')
-            plan.setLayerVisibility(layer.id, a.visible)
-            result = { applied:true, layer:{id:layer.id,name:layer.name,visible:a.visible,badge:layer.badge} }
-          } else if (ev.name === 'set_route_preference' || ev.name === 'reset_route_constraints') {
-            const preference = ev.name === 'reset_route_constraints' ? 'fastest' : a.mode
-            if (!['fastest','safest','balanced'].includes(String(preference))) throw new Error('Unsupported route preference.')
-            const route = ev.route as unknown as EngineRoute | undefined
-            const config = latest.mission.config
-            const targetIds = latest.plan.goalTargets.map((target) => target.id)
-            const sandWeight = ev.name === 'reset_route_constraints' ? 0 : (typeof a.sandWeight === 'number' ? a.sandWeight : config.sandWeight)
-            const hazardWeight = ev.name === 'reset_route_constraints' ? 0.5 : (typeof a.hazardWeight === 'number' ? a.hazardWeight : config.hazardWeight)
-            if (route?.routing?.sand_weight !== sandWeight || route?.routing?.hazard_weight !== hazardWeight) throw new Error('The routing service did not apply the requested sand/hazard weights; the current route was retained.')
-            const slopeCapDeg = ev.name === 'reset_route_constraints' ? 15 : (typeof a.slopeCapDeg === 'number' ? a.slopeCapDeg : config.routeSlopeCapDeg)
-            if (!validateDynamicRoute(route, preference as 'fastest'|'safest'|'balanced', targetIds, slopeCapDeg)) throw new Error('The routing service returned incomplete, mismatched or unsupported route data; the current route was retained.')
-            const destination = latest.plan.goalTargets.find((target) => target.id === route.stop)
-            if (!route || !destination) throw new Error('Route destination is not available to this mission; the current route was retained.')
-            if (a.destinationId === undefined && route.stop !== latest.plan.selectedTargetId) throw new Error('The selected destination changed while the route was being calculated; the stale route was discarded.')
-            if (config.roverAvailable) throw new Error('Rover availability changed while the route was being calculated; the foot-only route was discarded.')
-            if (route.crew !== config.crewCount || route.routing?.body_mass_kg !== config.bodyMassKg || route.routing?.load_kg_per_astronaut !== perAstronautLoadKg(config) || route.routing?.sample_kg_per_stop !== config.sampleKgPerStop) throw new Error('Mission values changed while the route was being calculated; the stale route was discarded.')
-            if (slopeCapDeg < 0 || slopeCapDeg > 15) throw new Error('Slope cap must be 0–15 degrees; the model hard limit remains 15 degrees.')
-            missionActions.patchConfig({ sandWeight, hazardWeight, routePreference:preference as 'fastest'|'safest'|'balanced', routeSlopeCapDeg:slopeCapDeg, routeSlopeCapExplicit:ev.name === 'reset_route_constraints' ? false : (typeof a.slopeCapDeg === 'number' || config.routeSlopeCapExplicit) })
-            if (route.stop !== latest.plan.selectedTargetId) latest.plan.selectTarget(route.stop)
-            latest.plan.applyDynamicRoute(route)
-            result = { applied:true, preference, selectedCandidate:route.mode, routeId:route.id, metrics:{total_s:route.total_s,distance_m:route.distance_m,budget_l:route.budget_l,pnr_index:route.pnr_index}, routing:route.routing, goalAccess:route.goal_access, routeSlopeCapExplicit:ev.name === 'reset_route_constraints' ? false : (typeof a.slopeCapDeg === 'number' || mission.config.routeSlopeCapExplicit) }
-          } else if (ev.name === 'set_mission_factors') {
-            const defs = await loadFactorDefs()
-            if (!defs) throw new Error('Mission factor definitions are unavailable.')
-            if (Object.keys(a).length === 0) throw new Error('No factor values were supplied.')
-            const error = validateFactorPatch(a, defs)
-            if (error) throw new Error(error)
-            missionActions.patchConfig(a as never)
-            result = { applied:true, factors:a, badge:'Scenario', note:'Modeled dose, daylight and cold checks update in the plan panel; these are Scenario inputs, not measurements.' }
-          } else throw new Error('Unsupported command.')
-        } catch (error) { result = { applied:false, error:error instanceof Error ? error.message : 'Command failed.' } }
+        const result = await applyAction(ev.name, ev.args, ev.route)
         try { await copilotActionResult(ev.callId, result) } catch { /* Stale/aborted stream: do not retry an action. */ }
       }
       const onEvent = (ev: ChatStreamEvent) => {
@@ -362,7 +374,7 @@ export function CopilotDock({
         }
       }
     },
-    [llmLive, backendDown, buildContext, missionActions, mission, plan, engine, startSpeech],
+    [llmLive, backendDown, buildContext, applyAction, startSpeech],
   )
 
   const send = () => {
@@ -426,21 +438,94 @@ export function CopilotDock({
   }, [dictation])
   listenRestart.current = startListening
 
+  // Gemini Live call (lowest latency: browser <-> Google audio stream). Falls back to the STT -> chat -> TTS loop.
+  const liveRef = useRef<GeminiLiveCall | null>(null)
+  const liveTurn = useRef<{ operator: string | null; copilot: string | null }>({ operator: null, copilot: null })
+  const appendLive = useCallback((who: 'operator' | 'copilot', delta: string, final: boolean) => {
+    const turn = liveTurn.current
+    if (who === 'copilot' && turn.operator) turn.operator = null // the operator finished speaking
+    if (final) {
+      const id = turn.copilot
+      turn.copilot = null
+      if (id) setMessages((m) => m.map((msg) => (msg.id === id ? { ...msg, delivery: 'delivered' } : msg)))
+      return
+    }
+    if (!delta) return
+    const key = who
+    const existing = turn[key]
+    if (existing) {
+      setMessages((m) => m.map((msg) => (msg.id === existing ? { ...msg, text: msg.text + delta } : msg)))
+    } else {
+      const msg = newMessage(who, delta, who === 'copilot' ? 'streaming' : 'delivered')
+      turn[key] = msg.id
+      setMessages((m) => [...m, msg])
+    }
+  }, [])
+
+  const startLiveCall = async () => {
+    const statusMap: Record<LiveStatus, CallStatus> = { connecting: 'thinking', listening: 'listening', speaking: 'speaking', thinking: 'thinking', closed: 'gap', error: 'gap' }
+    const call = new GeminiLiveCall({
+      onStatus: (st, detail) => {
+        setCallStatus(statusMap[st])
+        if (st === 'error' || (st === 'closed' && liveRef.current === call && detail)) {
+          setMessages((m) => [...m, newMessage('system', detail ?? 'Gemini Live call ended.', 'local-only')])
+        }
+        if ((st === 'closed' || st === 'error') && liveRef.current === call) {
+          liveRef.current = null
+          setCallMode(false)
+        }
+      },
+      onTranscript: appendLive,
+      onToolCall: async (name, args) => {
+        const ctx = buildContext()
+        const { result, route } = await runLiveTool(name, args, ctx, copilotSessionId())
+        setMessages((m) => m.map((msg) => (msg.id === liveTurn.current.copilot ? { ...msg, tool: { name, resultCount: Number(result.matchCount ?? 0) } } : msg)))
+        if (!result.clientAction) return result
+        return applyAction(name, args, route)
+      },
+    })
+    liveRef.current = call
+    try {
+      const { token, model } = await fetchLiveToken(buildContext(), copilotSessionId())
+      if (liveRef.current !== call) return
+      await call.start(token, model)
+    } catch (e) {
+      if (liveRef.current === call) {
+        liveRef.current = null
+        call.stop()
+        setCallMode(false)
+        setCallStatus('gap')
+        setMessages((m) => [...m, newMessage('system', e instanceof Error ? e.message : 'Gemini Live call failed.', 'local-only')])
+      }
+    }
+  }
+
   const startCall = () => {
     setCallMode(true)
     setCallStatus('gap')
     ttsStop()
+    if (health?.live) {
+      void startLiveCall()
+      return
+    }
     window.setTimeout(() => listenRestart.current?.(), 150)
   }
 
   function endCall() {
+    const live = liveRef.current
+    liveRef.current = null
+    live?.stop()
     setCallMode(false)
     setCallStatus('gap')
     ttsStop()
     dictation.cancel()
   }
 
+  // Leaving the page or unmounting ends a live call (mic released).
+  useEffect(() => () => liveRef.current?.stop(), [])
+
   const micClick = () => {
+    if (callMode && liveRef.current) return // Gemini Live listens continuously; speaking interrupts the reply.
     if (callMode) {
       // Barge-in: interrupt the spoken reply and take the floor.
       if (callStatus === 'speaking') ttsStop()

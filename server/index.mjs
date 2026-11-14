@@ -32,7 +32,7 @@ import { randomUUID } from 'node:crypto'
 import { config, bannedPhrases } from './config.mjs'
 import { buildSystemPrompt } from './prompt.mjs'
 import { getHistory, addMessage, resetSession } from './memory.mjs'
-import { streamChat, runTool, ProviderError } from './providers.mjs'
+import { streamChat, runTool, ProviderError, liveFunctionDeclarations } from './providers.mjs'
 import { searchToolSchema } from './search.mjs'
 
 const serverDir = path.dirname(fileURLToPath(import.meta.url))
@@ -153,6 +153,7 @@ function health() {
     model: config.provider === 'groq' ? config.groqModel : config.provider === 'gemini' ? config.geminiModel : null,
     webSearch: config.provider === 'gemini' && config.geminiWebSearch,
     tool: searchToolSchema.name,
+    live: config.geminiApiKey ? { model: config.geminiLiveModel } : null,
   }
 }
 
@@ -203,6 +204,127 @@ async function handleStt(req, res, ip) {
 
 function sseWrite(res, obj) {
   res.write(`data: ${JSON.stringify(obj)}\n\n`)
+}
+
+/** Native-terrain route for set_route_preference / reset_route_constraints: { route } or { error }. Never a fallback. */
+async function computeRoute(name, args, mission, signal) {
+  const destinationId = args.destinationId ?? mission.selectedDestinationId
+  const routeMode = name === 'reset_route_constraints' ? 'fastest' : args.mode
+  const cap = name === 'reset_route_constraints' ? 15 : (args.slopeCapDeg ?? mission.routeSlopeCapDeg ?? 15)
+  const fail = (error, code) => ({ error: { applied:false, error, ...(code ? { code } : {}) } })
+  if (!['S1','S2','S3','D1','D2'].includes(destinationId)) return fail('Select an available destination before requesting a route.')
+  if (typeof cap !== 'number' || !Number.isFinite(cap) || cap < 0 || cap > 15) return fail('Slope cap must be 0–15 degrees; the hard model limit is 15 degrees.')
+  const sandWeight = name === 'reset_route_constraints' ? 0 : (args.sandWeight ?? mission.sandWeight ?? 0)
+  const hazardWeight = name === 'reset_route_constraints' ? 0.5 : (args.hazardWeight ?? mission.hazardWeight ?? 0.5)
+  if (typeof sandWeight !== 'number' || !Number.isFinite(sandWeight) || sandWeight < 0 || sandWeight > 3) return fail('Sand weight must be 0–3.')
+  if (typeof hazardWeight !== 'number' || !Number.isFinite(hazardWeight) || hazardWeight < 0 || hazardWeight > 1) return fail('Hazard weight must be 0–1.')
+  if (mission.roverAvailable === true) return fail('The native routing engine currently supports foot travel only; no rover route was calculated or substituted.')
+  const base = (process.env.ROUTING_API_URL || 'http://127.0.0.1:8790').replace(/\/$/, '')
+  let response
+  try {
+    response = await fetch(`${base}/route`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+      destination_id:destinationId, mode:routeMode, slope_cap_deg:cap,
+      crew_count:mission.crewCount, body_mass_kg:mission.bodyMassKg, load_kg:mission.routeLoadKg,
+      sample_kg_per_stop:mission.sampleKgPerStop, sand_weight:sandWeight, hazard_weight:hazardWeight,
+    }), signal })
+  } catch (e) {
+    if (signal?.aborted) throw e
+    return fail('Native routing service is unavailable; no route changed. Start engine/api.py with the verified terrain manifest configured.')
+  }
+  const payload = await response.json().catch(() => ({}))
+  if (!response.ok || payload.status !== 'ok' || !payload.route) {
+    const detail = payload.detail
+    return fail(typeof detail === 'string' ? detail : detail?.message ?? payload.message ?? 'Route calculation failed; no existing route was substituted.', detail?.code ?? payload.code)
+  }
+  return { route: payload.route }
+}
+
+async function readJsonBody(req, res) {
+  try {
+    return JSON.parse((await readBody(req, config.maxJsonBytes)).toString('utf8') || '{}')
+  } catch {
+    send(res, 400, { error: 'bad-json', message: 'Request body is not valid JSON.' })
+    return null
+  }
+}
+
+function contextOf(body) {
+  try {
+    const ctx = { missionState: body.missionState ?? null, availableData: Array.isArray(body.availableData) ? body.availableData.slice(0, 40) : [] }
+    return JSON.stringify(ctx).length > 12_000 ? {} : ctx
+  } catch {
+    return {}
+  }
+}
+
+/**
+ * Gemini Live voice call: a single-use ephemeral token whose setup (model, system prompt, tools, VAD) is locked
+ * here, so the browser can stream audio straight to Google (lowest latency) without the API key and without
+ * being able to change the prompt or tools.
+ */
+async function handleLiveToken(req, res, ip) {
+  if (!config.geminiApiKey) return send(res, 503, { error: 'live-not-configured', message: 'No GEMINI_API_KEY on the server.' })
+  if (!rateCheck(ip, 5)) return send(res, 429, { error: 'rate-limited', message: 'Too many call starts — wait a moment.' }, { 'Retry-After': '10' })
+  const body = await readJsonBody(req, res)
+  if (!body) return
+  const ctx = contextOf(body)
+  const system = buildSystemPrompt({ missionState: ctx.missionState, availableData: ctx.availableData ?? [], webSearchActive: false, voice: true })
+  const model = `models/${config.geminiLiveModel}`
+  const now = Date.now()
+  const setup = {
+    model,
+    generationConfig: {
+      responseModalities: ['AUDIO'],
+      thinkingConfig: { thinkingLevel: 'minimal' },
+      ...(config.geminiLiveVoice ? { speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: config.geminiLiveVoice } } } } : {}),
+    },
+    systemInstruction: { parts: [{ text: system }] },
+    tools: [{ functionDeclarations: liveFunctionDeclarations() }],
+    inputAudioTranscription: {},
+    outputAudioTranscription: {},
+    realtimeInputConfig: {
+      automaticActivityDetection: { startOfSpeechSensitivity: 'START_SENSITIVITY_HIGH', endOfSpeechSensitivity: 'END_SENSITIVITY_HIGH', prefixPaddingMs: 20, silenceDurationMs: 300 },
+      activityHandling: 'START_OF_ACTIVITY_INTERRUPTS',
+    },
+  }
+  let r
+  try {
+    r = await fetch('https://generativelanguage.googleapis.com/v1alpha/auth_tokens', {
+      method: 'POST', headers: { 'x-goog-api-key': config.geminiApiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uses: 1, expireTime: new Date(now + 30 * 60e3).toISOString(), newSessionExpireTime: new Date(now + 60e3).toISOString(), bidiGenerateContentSetup: setup }),
+      signal: AbortSignal.timeout(10_000),
+    })
+  } catch (e) {
+    console.error(`[live] token request failed: ${e.message}`)
+    return send(res, 502, { error: 'live-upstream', message: 'Could not reach Gemini to start the call.' })
+  }
+  const tok = await r.json().catch(() => ({}))
+  if (!r.ok || typeof tok.name !== 'string') {
+    console.error(`[live] token rejected: ${r.status} ${JSON.stringify(tok).slice(0, 300)}`)
+    return send(res, 502, { error: 'live-upstream', message: 'Gemini refused to start the call.' })
+  }
+  send(res, 200, { token: tok.name, model, expiresInS: 1800 }, corsHeaders(req))
+}
+
+/** Tool calls from a Live session: search runs here; app actions get their native route here, the app applies them. */
+async function handleLiveTool(req, res, ip) {
+  if (!rateCheck(ip, 1)) return send(res, 429, { error: 'rate-limited', message: 'Too many tool calls — wait a moment.' }, { 'Retry-After': '5' })
+  const body = await readJsonBody(req, res)
+  if (!body) return
+  const name = String(body.name ?? '')
+  const args = body.args && typeof body.args === 'object' ? body.args : {}
+  let result
+  try {
+    result = await runTool(name, args)
+  } catch (e) {
+    return send(res, 200, { result: { error: e.message } }, corsHeaders(req))
+  }
+  if (result?.clientAction && (name === 'set_route_preference' || name === 'reset_route_constraints')) {
+    const out = await computeRoute(name, args, contextOf(body).missionState ?? {}, AbortSignal.timeout(120_000))
+    if (out.error) return send(res, 200, { result: out.error }, corsHeaders(req))
+    return send(res, 200, { result: { clientAction: true, name, args }, route: out.route }, corsHeaders(req))
+  }
+  send(res, 200, { result }, corsHeaders(req))
 }
 
 async function handleChat(req, res, ip) {
@@ -279,35 +401,9 @@ async function handleChat(req, res, ip) {
     actionFingerprint = fingerprint
     let route = null
     if (name === 'set_route_preference' || name === 'reset_route_constraints') {
-      const mission = context.missionState ?? {}
-      const destinationId = args.destinationId ?? mission.selectedDestinationId
-      const routeMode = name === 'reset_route_constraints' ? 'fastest' : args.mode
-      const cap = name === 'reset_route_constraints' ? 15 : (args.slopeCapDeg ?? mission.routeSlopeCapDeg ?? 15)
-      if (!['S1','S2','S3','D1','D2'].includes(destinationId)) return { applied:false, error:'Select an available destination before requesting a route.' }
-      if (typeof cap !== 'number' || !Number.isFinite(cap) || cap < 0 || cap > 15) return { applied:false, error:'Slope cap must be 0–15 degrees; the hard model limit is 15 degrees.' }
-      const sandWeight = name === 'reset_route_constraints' ? 0 : (args.sandWeight ?? mission.sandWeight ?? 0)
-      const hazardWeight = name === 'reset_route_constraints' ? 0.5 : (args.hazardWeight ?? mission.hazardWeight ?? 0.5)
-      if (typeof sandWeight !== 'number' || !Number.isFinite(sandWeight) || sandWeight < 0 || sandWeight > 3) return { applied:false, error:'Sand weight must be 0–3.' }
-      if (typeof hazardWeight !== 'number' || !Number.isFinite(hazardWeight) || hazardWeight < 0 || hazardWeight > 1) return { applied:false, error:'Hazard weight must be 0–1.' }
-      if (mission.roverAvailable === true) return { applied:false, error:'The native routing engine currently supports foot travel only; no rover route was calculated or substituted.' }
-      const base = (process.env.ROUTING_API_URL || 'http://127.0.0.1:8790').replace(/\/$/, '')
-      let response
-      try {
-        response = await fetch(`${base}/route`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
-          destination_id:destinationId, mode:routeMode, slope_cap_deg:cap,
-          crew_count:mission.crewCount, body_mass_kg:mission.bodyMassKg, load_kg:mission.routeLoadKg,
-          sample_kg_per_stop:mission.sampleKgPerStop, sand_weight:sandWeight, hazard_weight:hazardWeight,
-        }), signal:abort.signal })
-      } catch (e) {
-        if (abort.signal.aborted) throw e
-        return { applied:false, error:'Native routing service is unavailable; no route changed. Start engine/api.py with the verified terrain manifest configured.' }
-      }
-      const payload = await response.json().catch(() => ({}))
-      if (!response.ok || payload.status !== 'ok' || !payload.route) {
-        const detail = payload.detail
-        return { applied:false, error:typeof detail === 'string' ? detail : detail?.message ?? payload.message ?? 'Route calculation failed; no existing route was substituted.', code:detail?.code ?? payload.code }
-      }
-      route = payload.route
+      const out = await computeRoute(name, args, context.missionState ?? {}, abort.signal)
+      if (out.error) return out.error
+      route = out.route
     }
     const callId = randomUUID()
     const key = `${sessionId}:${callId}`
@@ -520,6 +616,10 @@ const server = createServer(async (req, res) => {
       await handleActionResult(req, res)
     } else if (url.pathname === '/api/copilot/tts' && req.method === 'POST') {
       await handleTts(req, res, ip)
+    } else if (url.pathname === '/api/copilot/live/token' && req.method === 'POST') {
+      await handleLiveToken(req, res, ip)
+    } else if (url.pathname === '/api/copilot/live/tool' && req.method === 'POST') {
+      await handleLiveTool(req, res, ip)
     } else if (url.pathname === '/api/copilot/reset' && req.method === 'POST') {
       await handleReset(req, res)
     } else if (url.pathname.startsWith('/api/')) {

@@ -17,6 +17,8 @@ export interface CopilotHealth {
   model: string | null
   webSearch: boolean
   tool: string
+  /** Gemini Live voice calls available (server holds a Gemini key). */
+  live?: { model: string } | null
 }
 
 export type MessageDelivery =

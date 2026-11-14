@@ -56,9 +56,12 @@ function allowedOrigins() {
 /** Provider priority per voice-copilot-plan §4: Groq first, Gemini second.
  *  Keys are prefix-checked so an unrelated same-named variable (e.g. some
  *  other tool's GEMINI_API_KEY) doesn't silently masquerade as a provider. */
+/** Google API keys: classic `AIza…` and the newer `AQ.…` format. */
+const GEMINI_KEY_RE = /^(AIza|AQ\.)[A-Za-z0-9_.-]{20,}$/
+
 function resolveProvider() {
   if (/^gsk_/.test(env('GROQ_API_KEY'))) return 'groq'
-  if (/^AIza/.test(env('GEMINI_API_KEY'))) return 'gemini'
+  if (GEMINI_KEY_RE.test(env('GEMINI_API_KEY'))) return 'gemini'
   return null
 }
 
@@ -71,7 +74,10 @@ export const config = {
 
   provider: resolveProvider(),
   groqApiKey: /^gsk_/.test(env('GROQ_API_KEY')) ? env('GROQ_API_KEY') : '',
-  geminiApiKey: /^AIza/.test(env('GEMINI_API_KEY')) ? env('GEMINI_API_KEY') : '',
+  geminiApiKey: GEMINI_KEY_RE.test(env('GEMINI_API_KEY')) ? env('GEMINI_API_KEY') : '',
+  /** Gemini Live voice calls (browser connects to Google directly with a locked single-use token). */
+  geminiLiveModel: env('GEMINI_LIVE_MODEL', 'gemini-3.1-flash-live-preview'),
+  geminiLiveVoice: env('GEMINI_LIVE_VOICE', ''),
 
   /** Plan §4 verified IDs (2026-11-13). Defaults favor speed; override per env. */
   groqModel: env('GROQ_MODEL', 'openai/gpt-oss-120b'),
