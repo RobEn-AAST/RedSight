@@ -81,8 +81,8 @@ Guide, SI was not used to come up with how to solve the challenge.
 
 **SI inside the app (runtime features, labeled in the UI):**
 - **Voice/text copilot:** a large language model answers questions about the mission plan and can operate
-  mission controls through checked app actions (Groq `openai/gpt-oss-120b` / `gpt-oss-20b`, or Google Gemini
-  ; a Gemini Live voice version is in progress). Its answers use the app's own modeled numbers; it is a prototype aid, not a
+  mission controls through checked app actions. Text chat: Groq `openai/gpt-oss-120b`. Voice calls: Google Gemini Live
+  (`gemini-3.1-flash-live-preview`, speech to speech). Its answers use the app's own modeled numbers; it is a prototype aid, not a
   safety system.
 - **Speech-to-text:** Whisper (Groq `whisper-large-v3-turbo` in the cloud, or `whisper-tiny.en` in the browser).
 - **Text-to-speech:** Kokoro-82M (Apache-2.0) or the browser's speech voice.
