@@ -8,7 +8,10 @@ const SRC = { ends: "replay-ends", observed: "replay-observed-stop", trail: "rep
 const CREW_FIGURE = "replay-crew-figure", FIGURE_IMAGE = "replay-astronaut";
 // Rover plans: the rover sprite (opts.roverFigure) drives with the crew, then waits at the park point.
 const ROVER_FIGURE = "replay-rover-figure", ROVER_IMAGE = "replay-rover-img";
-const PAIR_GAP_PX = 16; // rover plans move the pair together; B stands this far to A's side on screen
+const PAIR_GAP_PX = 16;
+// The rover sprite is rendered with its front toward the south-east (bearing 135°, make_map_figures.py).
+const ROVER_SPRITE_BEARING = 135;
+const HEADING_WINDOW_S = 6; // heading = direction over ±this much mission time (smooths 1 m route zigzags) // rover plans move the pair together; B stands this far to A's side on screen
 const DURATIONS = [30, 60, 120]; // seconds of screen time for the whole walk
 const DRILLS = [
   { id: "leak", label: "Suit leak", factor: 2 },
@@ -27,6 +30,7 @@ export function createReplay(map, opts) {
   const showEnds = opts.showEnds ?? true; // false when the host map already draws habitat + stop markers
   const voice = createVoice({ enabled: opts.voice ?? false });
   let tl = build();
+  let roverHeading = initialHeading(); // degrees; rover plans only (set before the first render)
   let t = 0, playing = false, raf = 0, last = 0, firedUpTo = -1;
   const log = [];
 
@@ -46,6 +50,14 @@ export function createReplay(map, opts) {
       const r = map.unproject([q.x + PAIR_GAP_PX, q.y]);
       return [r.lng, r.lat];
     } catch { return pt; }
+  }
+  /** Heading of the first few metres of the route, so the rover waits at the habitat facing the way out. */
+  function initialHeading() {
+    const P = route?.coords ?? [];
+    for (let i = 1; i < P.length; i++) {
+      if (distanceM(P[0], P[i]) >= 10) return bearingDeg(P[0], P[i]) ?? ROVER_SPRITE_BEARING;
+    }
+    return ROVER_SPRITE_BEARING;
   }
   const onZoom = () => render();
   map.on("zoom", onZoom);
@@ -80,6 +92,7 @@ export function createReplay(map, opts) {
       if (!map.getSource(SRC.rover) || map.getLayer(ROVER_FIGURE)) return;
       map.addLayer({ id: ROVER_FIGURE, type: "symbol", source: SRC.rover,
         layout: { "icon-image": ROVER_IMAGE, "icon-anchor": "center", "icon-allow-overlap": true, "icon-ignore-placement": true,
+          "icon-rotate": ["get", "rot"], "icon-rotation-alignment": "map",
           "icon-size": ["interpolate", ["linear"], ["zoom"], 13, 0.6, 16, 0.95, 18, 1.2] } });
       if (map.getLayer(CREW_FIGURE)) map.moveLayer(CREW_FIGURE); // walkers above the parked rover
       render();
@@ -120,7 +133,13 @@ export function createReplay(map, opts) {
         if (tl.members.length >= 2) pts.push({ pt: beside(s.pt), color: CREW_B });
       }
       const roverAt = riding ? s.pt : s.phase === "home" ? route.coords[0] : route.coords[route.park_index];
-      map.getSource(SRC.rover).setData(fc([pointF(roverAt, {})]));
+      if (riding) {
+        // Face the direction of travel; parked, the rover keeps the heading it arrived with.
+        const a = sampleAt(tl, Math.max(0, t - HEADING_WINDOW_S)).pt, b = sampleAt(tl, t + HEADING_WINDOW_S).pt;
+        const h = bearingDeg(a, b);
+        if (h != null) roverHeading = h;
+      } else if (t === 0) roverHeading = initialHeading();
+      map.getSource(SRC.rover).setData(fc([pointF(roverAt, { rot: roverHeading - ROVER_SPRITE_BEARING })]));
     } else {
       pts.push({ pt: s.pt, color: CREW_A });
       if (tl.members.length >= 2) pts.push({ pt: sampleAt(tl, Math.max(0, t - lagS)).pt, color: CREW_B });
@@ -336,7 +355,7 @@ export function createReplay(map, opts) {
     setBudget(l) { model.budgetL = l; rebuild(); },
     /** Suit capacity (full tank); reserve is recomputed from it. */
     setCapacity(l) { model.capacityL = l; delete model.budgetL; delete model.reserveL; rebuild(); },
-    setRoute(r2) { route = r2; rebuild({ keepTime: false }); },
+    setRoute(r2) { route = r2; roverHeading = initialHeading(); rebuild({ keepTime: false }); },
     drill(factor, label = "Contingency") { model.drill = { atS: t, factor, label }; rebuild(); },
     clearDrill() { delete model.drill; rebuild(); },
     /** Move the replay layers above anything the host map added or reordered since. */
@@ -360,6 +379,13 @@ export function createReplay(map, opts) {
 }
 
 const fc = (features) => ({ type: "FeatureCollection", features });
+
+/** Compass bearing a → b in degrees (0 = north, clockwise), or null if the points coincide. */
+function bearingDeg(a, b) {
+  const dx = (b[0] - a[0]) * Math.cos(((a[1] + b[1]) / 2) * Math.PI / 180), dy = b[1] - a[1];
+  if (Math.abs(dx) < 1e-12 && Math.abs(dy) < 1e-12) return null;
+  return (Math.atan2(dx, dy) * 180) / Math.PI;
+}
 
 /** Distance from the habitat to the rover park point (0 on foot), measured like the replay frames. */
 function driveDistanceM(route) {
