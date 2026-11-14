@@ -175,13 +175,35 @@ def _simplify(points, tolerance_m):
     return np.flatnonzero(keep)
 
 
-def back_fast_arrays(graph, nodes, *, home, field, constants, path_tolerance_m=0.5, decimals=7):
+def _path_keys(graph, nodes, spacing_m):
+    """Route-point indices that carry a stored way-home path: the first, the last, and one every ``spacing_m``."""
+    if len(nodes) <= 2 or not spacing_m:
+        return list(range(len(nodes)))
+    rows, cols = np.divmod(np.asarray(nodes), graph.shape[1])
+    xs, ys = xy(graph.transform, rows, cols, offset="center")
+    step = np.hypot(np.diff(np.asarray(xs, dtype=np.float64)), np.diff(np.asarray(ys, dtype=np.float64)))
+    keys, since = [0], 0.0
+    for index, length in enumerate(step, start=1):
+        since += float(length)
+        if since >= spacing_m:
+            keys.append(index)
+            since = 0.0
+    if keys[-1] != len(nodes) - 1:
+        keys.append(len(nodes) - 1)
+    return keys
+
+
+def back_fast_arrays(graph, nodes, *, home, field, constants, path_tolerance_m=1.0, decimals=7, path_spacing_m=25.0):
     """Fastest modeled way home from every route point (demo-focus-plan §9 ``Back_fast``).
 
     Times and raw expected per-member O₂ are summed edge by edge with the same ``segment_cost`` model
     as ``back``; the walk follows the shortest-time tree toward ``home`` on the same admissible graph.
-    ``path[i]`` starts at route point i and ends at the habitat pixel; it is simplified for display
-    (Ramer-Douglas-Peucker, ``path_tolerance_m`` in projected metres) and does not change the costs.
+    Paths are stored only at key route points (``path_from``: the first, the last and one every
+    ``path_spacing_m`` of route length) to keep the files small: ``path[k]`` starts at route point
+    ``path_from[k]`` and ends at the habitat pixel. A reader draws the way home from point i as the route
+    walked back to the nearest key point at or before i, then ``path[k]``. Paths are simplified for display
+    (Ramer-Douglas-Peucker, ``path_tolerance_m`` in projected metres) and do not change the costs; ``t_s``
+    and ``o2_l`` stay exact for every route point.
     """
     distances, predecessors = field
     home_node = graph.node(home)
@@ -209,8 +231,9 @@ def back_fast_arrays(graph, nodes, *, home, field, constants, path_tolerance_m=0
     for node in nodes:
         resolve(node)
     crs = graph_crs(graph)
+    keys = _path_keys(graph, nodes, path_spacing_m)
     paths = []
-    for node in nodes:
+    for node in (nodes[k] for k in keys):
         walk = [node]
         while walk[-1] != home_node:
             walk.append(nxt[walk[-1]])
@@ -226,4 +249,5 @@ def back_fast_arrays(graph, nodes, *, home, field, constants, path_tolerance_m=0
         "t_s": [memo_t[node] for node in nodes],
         "o2_l": [memo_o[node] for node in nodes],
         "path": paths,
+        "path_from": keys,
     }

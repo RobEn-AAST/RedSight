@@ -78,6 +78,25 @@ function validate(route) {
   return n;
 }
 
+/**
+ * Fastest way home from route point i as a polyline (starts at coords[i], ends at the habitat), or null.
+ * With back_fast.path_from (engine export since 2026-11-14) paths are stored only at key points: walk the
+ * route back to the nearest key point at or before i, then follow its path. Without path_from, path has
+ * one polyline per route point (older contract).
+ */
+export function fastPathFrom(route, i) {
+  const bf = route?.back_fast;
+  const coords = route?.coords;
+  if (!bf || !Array.isArray(bf.path) || !Array.isArray(coords) || !(i >= 0 && i < coords.length)) return null;
+  const from = bf.path_from;
+  if (!Array.isArray(from)) return bf.path.length === coords.length && bf.path[i]?.length > 1 ? bf.path[i] : null;
+  let k = -1;
+  for (let j = 0; j < from.length && from[j] <= i; j++) k = j;
+  if (k < 0 || !Array.isArray(bf.path[k]) || bf.path[k].length < 1) return null;
+  const line = [...coords.slice(from[k], i + 1).reverse(), ...bf.path[k].slice(1)];
+  return line.length > 1 ? line : null;
+}
+
 /** Copy the route arrays; use engine back arrays if present, else assume home costs the same as out. */
 function arrays(route) {
   const n = route.coords.length;
@@ -88,7 +107,6 @@ function arrays(route) {
   const bf = route.back_fast;
   const hasFast = route.mode !== "fastest" &&
     Array.isArray(bf?.t_s) && bf.t_s.length === n && Array.isArray(bf?.o2_l) && bf.o2_l.length === n;
-  const hasFastPath = hasFast && Array.isArray(bf.path) && bf.path.length === n;
   return {
     P: route.coords.map((p) => [...p]),
     T: [...route.cum.t_s],
@@ -98,7 +116,7 @@ function arrays(route) {
     BFT: hasFast ? [...bf.t_s] : null,
     BFO: hasFast ? [...bf.o2_l] : null,
     // Without a path, the fastest way home is drawn back along this route (its cost still from back_fast).
-    BFP: hasFast ? route.coords.map((p, i) => (hasFastPath && bf.path[i]?.length > 1 ? bf.path[i] : route.coords.slice(0, i + 1).reverse())) : null,
+    BFP: hasFast ? route.coords.map((p, i) => fastPathFrom(route, i) ?? route.coords.slice(0, i + 1).reverse()) : null,
     fast: hasFast,
     assumed: !hasBack,
   };

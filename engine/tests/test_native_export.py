@@ -134,7 +134,12 @@ def test_synthetic_native_slope_manifest_drives_all_five_stop_exports(tmp_path):
             else:
                 fast = route["back_fast"]
                 n = len(route["coords"])
-                assert len(fast["t_s"]) == len(fast["o2_l"]) == len(fast["path"]) == n
+                assert len(fast["t_s"]) == len(fast["o2_l"]) == n
+                keys = fast["path_from"]
+                assert len(fast["path"]) == len(keys) and keys[0] == 0 and keys[-1] == n - 1
+                assert keys == sorted(set(keys))
+                for k, i in enumerate(keys):
+                    assert fast["path"][k][0] == pytest.approx(route["coords"][i], abs=1e-6)
                 assert fast["t_s"][0] == 0.0 and fast["o2_l"][0] == 0.0
                 assert all(t <= b + 1e-6 for t, b in zip(fast["t_s"], route["back"]["t_s"]))
                 assert all(path[-1] == fast["path"][0][-1] for path in fast["path"])
@@ -182,3 +187,8 @@ def test_back_fast_takes_the_shorter_way_home_from_a_detour():
     assert fast["path"][-1][0] == pytest.approx(arrays["coords"][-1], abs=1e-6)
     assert fast["path"][-1][-1] == pytest.approx(arrays["coords"][0], abs=1e-6)
     assert len(fast["path"][-1]) == 2  # a straight walk simplifies to its two ends
+    # The 13 m route is shorter than the 25 m key spacing: only the first and last points store a path.
+    assert fast["path_from"] == [0, len(nodes) - 1] and len(fast["path"]) == 2
+    dense = back_fast_arrays(graph, nodes, home=home, field=fastest_home_field(graph, home=home),
+                             constants=constants, path_spacing_m=0)
+    assert dense["path_from"] == list(range(len(nodes))) and dense["t_s"] == fast["t_s"]

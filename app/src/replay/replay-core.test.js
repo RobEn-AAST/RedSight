@@ -1,7 +1,7 @@
 // Run: node --test app/src/replay/replay-core.test.js
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildTimeline, routeGoalInfo, sampleAt, trailAt, o2Plan } from "./replay-core.js";
+import { buildTimeline, fastPathFrom, routeGoalInfo, sampleAt, trailAt, o2Plan } from "./replay-core.js";
 import { calloutFor } from "./voice.js";
 
 // 3 vertices, 10 + 10 min out, 5 + 5 L; return assumed symmetric.
@@ -127,6 +127,29 @@ test("auto-switch: own way back stops fitting → switch to the fastest way home
   assert.ok(tl.events.some((e) => e.type === "switch-fast"));
   assert.equal(tl.fastHome, true);
   assert.equal(tl.arrivalL, 24 - 13); // home by the fastest way: 10 out + 3 back
+});
+
+// Same route with paths stored only at key points 0 and 2 (engine path_from export).
+const withKeyed = {
+  ...withFast,
+  back_fast: { ...withFast.back_fast, path_from: [0, 2], path: [withFast.back_fast.path[0], withFast.back_fast.path[2]] },
+};
+
+test("keyed back_fast paths: same timeline as one path per point", () => {
+  const opts = { ...base, capacityL: 24, reserveL: 10 };
+  const a = buildTimeline(withFast, opts);
+  const b = buildTimeline(withKeyed, opts);
+  assert.equal(b.switchT, a.switchT);
+  assert.equal(b.arrivalL, a.arrivalL);
+  assert.deepEqual(b.events.map((e) => [e.type, e.t]), a.events.map((e) => [e.type, e.t]));
+  assert.deepEqual(fastPathFrom(withKeyed, 2), withFast.back_fast.path[2]);
+});
+
+test("keyed back_fast paths: a point between keys walks the route back to the earlier key", () => {
+  const line = fastPathFrom(withKeyed, 1);
+  assert.deepEqual(line, [withKeyed.coords[1], withKeyed.coords[0]]);
+  assert.deepEqual(fastPathFrom(withFast, 1), withFast.back_fast.path[1]);
+  assert.equal(fastPathFrom({ ...withKeyed, back_fast: undefined }, 1), null);
 });
 
 test("auto-switch: no switch when the own way back fits", () => {

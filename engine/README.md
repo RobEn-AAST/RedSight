@@ -50,9 +50,10 @@ triggers on any shipped route. `back_fast` is exported on the lowest-hazard rout
 | S3 fastest | 14.0 → 14.6 | 12.4 → 13.0 | 17.75 → 18.57 | 1.58 → 6.48 | no | no |
 | S3 lowest-hazard | 14.0 → 14.6 | 12.4 → 12.8 | 17.75 → 18.56 | 1.41 → 6.26 | yes | no |
 
-Size note: `back_fast.path` holds one simplified return path per route point, so the lowest-hazard route
-files grew (S1 0.6 → 9.0 MB; all routes 4.1 → 27 MB; about 3.2 MB gzipped together with the plans).
-`npm run check:data` warns on size only.
+Size note: storing one return path per route point made the lowest-hazard files large (S1 9.0 MB, all routes
+27 MB). Since the follow-up export the paths are stored only at key points (`back_fast.path_from`: first,
+last, one every 25 m of route) and simplified at 1 m: S1 lowest-hazard is 0.89 MB, all routes 4.8 MB. Every
+time, O₂ and turn-back value is unchanged; the path drawn from the stop moves at most 1 m.
 
 **(a) Ali, from the original bundle (preferred; keeps the G2 evidence).** On the machine holding
 `data/raw/engine-pilot/`, on a branch with these fixes, run the build command at the top of this file
@@ -209,9 +210,12 @@ disconnected Observed coordinate.
   `app/public/data/README.md`, demo-focus-plan §9 `Back_fast`): for every route point, the shortest
   modeled time home to the habitat pixel on the same native graph and corridor (one Dijkstra on the
   reversed time edges). `t_s[]` and `o2_l[]` are raw expected values per crew member summed edge by
-  edge with the same cost model as `back` (no reserve or margin). `path[i]` starts at point i and ends
-  at the habitat pixel; it is simplified for display (0.5 m Ramer–Douglas–Peucker) and the costs use
-  the unsimplified pixel path. `via` is omitted because the fastest way home is a shortest-time tree
+  edge with the same cost model as `back` (no reserve or margin). `path` is stored only at the key
+  points listed in `path_from` (first, last, one every 25 m of route length): `path[k]` starts at point
+  `path_from[k]` and ends at the habitat pixel. The way home drawn from any other point is the route
+  walked back to the nearest earlier key point, then that path (display only, within about 30 m of the
+  modeled one on the shipped routes). Paths are simplified for display (1 m Ramer–Douglas–Peucker, one
+  native pixel) and the costs use the unsimplified pixel path. `via` is omitted because the fastest way home is a shortest-time tree
   path, not necessarily the exported fastest route. Fastest routes carry no `back_fast`. The engine
   `pnr_index` still uses the same-path `back` arrays; the app applies the §9 switch rule itself.
 - The baseline PNR is `f * (used + m * home) <= B`, with `[1, 1]` member factors for the current
