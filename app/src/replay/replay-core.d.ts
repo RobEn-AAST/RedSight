@@ -36,3 +36,4 @@ export function sampleAt(tl: Timeline, t: number): Sample
 export function formatDuration(s: number): string
 export function formatClock(s: number): string
 export function distanceM(a: [number, number], b: [number, number]): number
+export function fastPathFrom(route: unknown, i: number): [number, number][] | null

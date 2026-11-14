@@ -295,7 +295,7 @@
   },
   "constants_sha256": "87b14a922e6427720cba0365b4f66719c50b0a9519101af8b0448354256155df",
   "engine": "RedSight Python NumPy rasterio SciPy sparse Dijkstra",
-  "engine_commit": "f0c8b3abc16005996893057ea7f6d02cd25ebf0a",
+  "engine_commit": "860a4a4a98ba49dd7019402ae4870a023e067777",
   "habitat": {
     "badge": "Scenario",
     "lonlat": [
@@ -566,15 +566,15 @@
     "hazards.geojson": "affcbec01b764a544fbe15d8b748f07ae4c5f60d6c836a963587aaf6f78cf95f",
     "meta.json": "9bbbccef52a55bc6ee751cf4067edf6ce6faaf8db6f7031f50d91c6f0f07baea",
     "routes/D1_fastest_2_15.json": "d517c80410dd622813da5cac56e247e04fd37ae2e006213489762f2a026a946e",
-    "routes/D1_safest_2_15.json": "a05e36346a367555464c8bd94feba6589144fb503da23bfe35d98924d27aca27",
+    "routes/D1_safest_2_15.json": "d9452fa4a9c19b0134bc74c5b19d196856b454b5412c781b94d7c2dd6349febf",
     "routes/D2_fastest_2_15.json": "eb7738ad68768a2bb74a72aa4cc5040e01beaccedf56b6d1202407f25237c19d",
-    "routes/D2_safest_2_15.json": "93a649c061d9b7262f13a141229b52b2406a38918d264849616ab0c49212e49d",
+    "routes/D2_safest_2_15.json": "697fe93a7b91c32beea6a64775fe75354b6c1f16f1cd0e27532532d98cbe1515",
     "routes/S1_fastest_2_15.json": "dec7f239f4dde9c7ee7fb8b3aebafb8b6b96237ce49ea1bf52f4578fbae7727f",
-    "routes/S1_safest_2_15.json": "9e7a7f5c161fa4bd9ecc2dc03e940aedb6aac7dec0b6dc3b0d435c87c4ad7f27",
+    "routes/S1_safest_2_15.json": "11fb5c42e1b1569e4d57e0322755e7b339e03c802cbe6afd286b552613ef46ef",
     "routes/S2_fastest_2_15.json": "e220d540d38abbaf6926e2a32431470a15ea5621551465cf36baa212bf89e776",
-    "routes/S2_safest_2_15.json": "0b4082a7323914aadba924e55aa3750420b1bf20b0c446884ec93c05a6e1b4f6",
+    "routes/S2_safest_2_15.json": "9511f83979d1fc94f2930bdb7a7b5de57efaf570e7c8630bd22bded1574d4ce4",
     "routes/S3_fastest_2_15.json": "168d116342d174d9c7db8f2e0703a00ab1f55972fef0053081fe7d06e31d5517",
-    "routes/S3_safest_2_15.json": "65eda0929d8898419267663336150ae53b3ec762a058ba1641b0759e5857a2e1",
+    "routes/S3_safest_2_15.json": "d95a132290356ce295320a7083af205613a73da9c4cc90ea2afe8890ec9fce80",
     "routes/index.json": "e0fdd113925aadde1db4a34738fef7263caaee424427781afbc513aae95b229f"
   },
   "pilot_gates": {
@@ -617,9 +617,9 @@
       "status": "unverified",
       "timing": {
         "acquisition_timing": {},
-        "build_completed_at": "2026-11-14T02:10:37+02:00",
-        "build_runtime_seconds": 71.086,
-        "build_started_at": "2026-11-14T02:09:26+02:00",
+        "build_completed_at": "2026-11-14T02:18:38+02:00",
+        "build_runtime_seconds": 45.91,
+        "build_started_at": "2026-11-14T02:17:52+02:00",
         "elapsed_seconds": null,
         "g4_status": "unverified",
         "g4_threshold_seconds": 10800
@@ -628,9 +628,9 @@
   },
   "pilot_timing": {
     "acquisition_timing": {},
-    "build_completed_at": "2026-11-14T02:10:37+02:00",
-    "build_runtime_seconds": 71.086,
-    "build_started_at": "2026-11-14T02:09:26+02:00",
+    "build_completed_at": "2026-11-14T02:18:38+02:00",
+    "build_runtime_seconds": 45.91,
+    "build_started_at": "2026-11-14T02:17:52+02:00",
     "elapsed_seconds": null,
     "g4_status": "unverified",
     "g4_threshold_seconds": 10800
@@ -711,14 +711,14 @@
     "access_goal_bound_m": 10.0,
     "component_count_in_bounded_extent": 842421,
     "edge_method": "8-neighbor; diagonal requires both orthogonal pixels walkable; absolute native endpoint-sampled grade at or below the same slope limit",
-    "graph_and_fields_runtime_seconds": 1.758,
+    "graph_and_fields_runtime_seconds": 1.399,
     "native_habitat_cell_rc": [
       4126,
       3051
     ],
     "native_habitat_component_pixels": 867641,
     "optimization_scope": "Fastest and lowest-modeled-hazard paths are minimized only inside the union of the existing Scenario habitat and Observed stop coordinates expanded by the stated source-data margin. This is a corridor-limited optimum.",
-    "process_peak_rss_bytes": 1207036805120,
+    "process_peak_rss_bytes": 1237940436992,
     "projected_bounds_m": [
       8142966.725607634,
       -286311.1901576792,

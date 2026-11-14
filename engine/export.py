@@ -581,8 +581,10 @@ def build_real_routes(
                         "method": (
                             "Shortest modeled time from each route point to the habitat pixel on the same native "
                             "graph and corridor (Dijkstra on reversed edges); t_s and o2_l are raw expected values "
-                            "per crew member with no reserve or margin, like back. path is simplified for display "
-                            "(0.5 m Ramer-Douglas-Peucker); costs use the unsimplified pixel path."
+                            "per crew member with no reserve or margin, like back. path is stored only at the route points in "
+                            "path_from (first, last, one every 25 m of route); the way home from another point is the "
+                            "route walked back to the nearest earlier key point, then that path. path is simplified "
+                            "for display (1 m Ramer-Douglas-Peucker, one native pixel); costs use the unsimplified pixel path."
                         ),
                     }
                 route_payload = {

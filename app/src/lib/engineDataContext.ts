@@ -112,7 +112,7 @@ export interface EngineRoute {
   /** Cost to walk home from each point (N values). */
   back: { t_s: number[]; o2_l: number[] }
   /** Optional fastest way home from each point (app/public/data/README.md); drives the switch to it. */
-  back_fast?: { t_s: number[]; o2_l: number[]; path?: [number, number][][]; via?: string }
+  back_fast?: { t_s: number[]; o2_l: number[]; path?: [number, number][][]; path_from?: number[]; via?: string }
   /** Last point where cum.o2_l + back.o2_l ≤ budget_l. */
   pnr_index: number
 }
@@ -225,7 +225,7 @@ export interface PlanMember {
   cum: { t_s: number[]; o2_l: number[] }
   back: { t_s: number[]; o2_l: number[] }
   /** Optional fastest way home from each point (app/public/data/README.md); drives the switch to it. */
-  back_fast?: { t_s: number[]; o2_l: number[]; path?: [number, number][][]; via?: string }
+  back_fast?: { t_s: number[]; o2_l: number[]; path?: [number, number][][]; path_from?: number[]; via?: string }
   pnr_index: number
   /** Where the rover parks and the walk starts; null on foot. */
   park_index: number | null

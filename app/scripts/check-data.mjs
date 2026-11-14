@@ -168,12 +168,20 @@ function checkRoute(rel, r, e) {
       if (r.back_fast.t_s.some((x, i) => x > r.back.t_s[i] + 1)) err(rel, "back_fast.t_s is longer than back.t_s at some points (not the fastest way home)");
     }
     const P = r.back_fast.path;
+    // path_from (optional): paths stored only at these route points, first and last included.
+    const F = r.back_fast.path_from;
+    const keyed = F != null;
+    if (keyed && (!Array.isArray(F) || F.length < 1 || F[0] !== 0 || F[F.length - 1] !== n - 1 ||
+      F.some((x, k) => !Number.isInteger(x) || (k > 0 && x <= F[k - 1]))))
+      err(rel, `back_fast.path_from must be increasing route-point indices from 0 to ${n - 1}`);
     if (P != null) {
-      if (!Array.isArray(P) || P.length !== n) err(rel, `back_fast.path must have ${n} polylines`);
-      else P.forEach((pl, i) => {
-        if (!Array.isArray(pl) || pl.length < 1) return err(rel, `back_fast.path[${i}] empty`);
-        if (distM(pl[0], r.coords[i]) > 30) err(rel, `back_fast.path[${i}] must start at coords[${i}]`);
-        if (habitat && distM(pl[pl.length - 1], habitat) > 30) err(rel, `back_fast.path[${i}] must end at the habitat`);
+      const want = keyed ? (Array.isArray(F) ? F.length : -1) : n;
+      if (!Array.isArray(P) || P.length !== want) err(rel, `back_fast.path must have ${want} polylines`);
+      else P.forEach((pl, k) => {
+        const i = keyed ? F[k] : k;
+        if (!Array.isArray(pl) || pl.length < 1) return err(rel, `back_fast.path[${k}] empty`);
+        if (distM(pl[0], r.coords[i]) > 30) err(rel, `back_fast.path[${k}] must start at coords[${i}]`);
+        if (habitat && distM(pl[pl.length - 1], habitat) > 30) err(rel, `back_fast.path[${k}] must end at the habitat`);
       });
     }
   }

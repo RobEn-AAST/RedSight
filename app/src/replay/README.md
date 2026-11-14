@@ -26,7 +26,7 @@ the top-left slider stands in for Jana's turn-back slider). **Voice:** 🔇/🔊
 | `coords` | `[[lon, lat], …]` habitat → stop, N points |
 | `cum.t_s`, `cum.o2_l` | cumulative time (s) and O₂ per crew member (L) from the habitat to each point, N values, non-decreasing |
 | `back.t_s`, `back.o2_l` *(optional)* | time / O₂ to walk home **from** each point (the engine's return field sampled on the route). If missing, the replay assumes the way home costs the same as the way out and says so on the panel |
-| `back_fast` *(optional)* | fastest way home from each point: `t_s`, `o2_l`, `path` (see `app/public/data/README.md`). Enables the automatic switch below |
+| `back_fast` *(optional)* | fastest way home from each point: `t_s`, `o2_l`, `path` + `path_from` (see `app/public/data/README.md`; decoded by `fastPathFrom` in `replay-core.js`). Enables the automatic switch below |
 | `budget_l` | default usable O₂ budget per member (after reserve) |
 | `stop`, `stop_name`, `mode`, `crew`, `load_kg`, `badge` | labels |
 
